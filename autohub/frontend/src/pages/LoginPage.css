@@ -1,0 +1,109 @@
+.login-container {
+  display: flex;
+  height: 100vh;
+  background-color: #000;
+  color: white;
+}
+
+.left-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: black;
+}
+
+.left-panel .logo {
+  width: 250px;
+  margin-bottom: 20px;
+}
+
+.left-panel .tagline {
+  font-size: 1.2rem;
+  text-align: center;
+  max-width: 300px;
+  color: #aaa;
+}
+
+.right-panel {
+  flex: 1;
+  background: #151515;
+  padding: 60px 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  color: #fff;
+}
+
+.right-panel .small-logo {
+  width: 100px;
+  margin-bottom: 20px;
+}
+
+.right-panel h2 {
+  font-size: 1.8rem;
+  margin-bottom: 10px;
+}
+
+.right-panel .subtext {
+  font-size: 0.95rem;
+  margin-bottom: 30px;
+  color: #bbb;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.login-form input {
+  padding: 10px;
+  margin-bottom: 15px;
+  border: none;
+  border-radius: 5px;
+  background: #222;
+  color: white;
+}
+
+.login-form input::placeholder {
+  color: #888;
+}
+
+.forgot {
+  text-align: right;
+  margin-bottom: 15px;
+}
+
+.forgot a {
+  color: #f472b6;
+  font-size: 0.9rem;
+}
+
+.captcha {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+button[type="submit"] {
+  background: #7c3aed;
+  color: white;
+  border: none;
+  padding: 12px;
+  border-radius: 5px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-bottom: 15px;
+}
+
+.signup {
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.signup a {
+  color: #818cf8;
+  text-decoration: none;
+}
