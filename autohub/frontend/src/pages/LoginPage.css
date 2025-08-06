@@ -1,3 +1,23 @@
+.login-form-box {
+  background: #18122b;
+  border-radius: 18px;
+  box-shadow: 0 0 24px 4px rgba(128, 90, 213, 0.45), 0 2px 8px 0 rgba(0,0,0,0.25);
+  padding: 36px 32px 28px 32px;
+  margin: 0 auto 0 auto;
+  max-width: 370px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  transition: box-shadow 0.3s;
+}
+
+@media (max-width: 700px) {
+  .login-form-box {
+    padding: 24px 8px;
+    max-width: 95vw;
+  }
+}
 .login-container {
   display: flex;
   height: 100vh;
