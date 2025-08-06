@@ -1,0 +1,47 @@
+/* Prevent page scrolling */
+body {
+  overflow: hidden;
+}
+
+/* Remove white box from form container */
+.form-container {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.register-page {
+  display: flex;
+  min-height: 100vh;
+  background-color: #0f0f10;
+  color: white;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.form-container {
+  width: 50%;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.logo {
+  width: 150px;
+  margin-bottom: 2rem;
+}
+
+.visual-container {
+  width: 50%;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.car-image {
+  width: 90%;
+  max-height: 80vh;
+  object-fit: cover; /* crop image to fill container */
+  /* Fade effect on the sides using mask-image */
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%);
+}

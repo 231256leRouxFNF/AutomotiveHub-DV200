@@ -1,14 +1,19 @@
+import { Link } from 'react-router-dom';
+import logo1 from '../assets/Logo-1.png';
+import logo2 from '../assets/Logo-2.png';
+
+
 const LoginSection = () => {
   return (
     <div className="login-container">
       <div className="left-panel">
-        <img src="/autohub-logo.png" alt="AutoHub logo" className="logo" />
+        <img src={logo1} alt="AutoHub logo" className="logo" />
         <p className="tagline">Connect, Showcase, Trade. Your ultimate automotive community.</p>
       </div>
 
       <div className="right-panel">
         <div className="login-form-box">
-          <img src="/autohub-logo.png" alt="AutoHub" className="small-logo" />
+          <img src={logo2} alt="AutoHub" className="small-logo" />
           <h2>Welcome Back to AutoHub!</h2>
           <p className="subtext">Sign in to access your garage, connect with the community, and explore the marketplace.</p>
           <form className="login-form">
@@ -27,7 +32,7 @@ const LoginSection = () => {
             <button type="submit">Login</button>
 
             <div className="signup">
-              Don’t have an account? <a href="#">Sign Up</a>
+              Don’t have an account? <Link to="/RegistrationPage">Sign Up</Link>
             </div>
           </form>
         </div>
