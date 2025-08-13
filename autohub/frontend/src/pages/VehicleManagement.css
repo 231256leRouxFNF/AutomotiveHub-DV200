@@ -323,14 +323,6 @@
     font-size: 24px;
   }
   
-  .footer-logo {
-    width: 280px;
-    height: auto;
-  }
-  
-  .newsletter-title {
-    font-size: 16px;
-  }
   
   .add-vehicle-card {
     padding: 16px;
@@ -340,7 +332,4 @@
     padding: 24px;
   }
   
-  .footer-content {
-    padding: 0 16px;
-  }
 }
