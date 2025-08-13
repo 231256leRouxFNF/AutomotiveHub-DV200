@@ -11,6 +11,9 @@ function App() {
       <Routes>
         <Route path="/" element={<LoginPage />} />
         <Route path="/RegistrationPage" element={<RegisterPage />} />
+        <Route path="/garage" element={<VehicleManagement />} />
+        <Route path="/vehicle-management" element={<VehicleManagement />} />
+        <Route path="/test" element={<div style={{color: 'white', padding: '20px'}}>App is working! 🚗</div>} />
       </Routes>
     </Router>
   );
