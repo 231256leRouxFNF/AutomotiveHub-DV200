@@ -1,0 +1,285 @@
+/* Vehicle Management Page Styles */
+.vehicle-management-container {
+  width: 100%;
+  min-height: 100vh;
+  background: #000;
+  color: #F4F4F6;
+  font-family: 'Inter', -apple-system, Roboto, Helvetica, sans-serif;
+}
+
+
+/* Main Content */
+.garage-main {
+  padding: 48px 32px 32px;
+}
+
+.garage-title {
+  color: #F4F4F6;
+  font-family: 'Archivo', sans-serif;
+  font-size: 36px;
+  font-weight: 800;
+  line-height: 40px;
+  margin: 0 0 40px 0;
+}
+
+/* Stats Cards */
+.stats-container {
+  display: flex;
+  gap: 23px;
+  margin-bottom: 32px;
+}
+
+/* Content Grid */
+.content-grid {
+  display: grid;
+  grid-template-columns: 308px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+/* Add Vehicle Card */
+.add-vehicle-card {
+  width: 308px;
+  border-radius: 8px;
+  border: 1px solid #393D47;
+  background: #19191F;
+  box-shadow: 4px 4px 0 #636AE8;
+  padding: 25px;
+  box-sizing: border-box;
+}
+
+.add-vehicle-title {
+  color: #F4F4F6;
+  font-family: 'Archivo', sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 32px;
+  margin: 0 0 10px 0;
+}
+
+.add-vehicle-description {
+  color: #8C8D8B;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+  margin: 0 0 23px 0;
+}
+
+/* Vehicle Form */
+.vehicle-form {
+  display: flex;
+  flex-direction: column;
+  gap: 21px;
+}
+
+.upload-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 17px;
+  padding: 34px;
+  border-radius: 8px;
+  border: 2px dashed #393D47;
+  background: rgba(0, 0, 0, 0);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.upload-area:hover {
+  border-color: #636AE8;
+}
+
+.upload-icon {
+  width: 48px;
+  height: 48px;
+}
+
+.upload-text {
+  color: #8C8D8B;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+  margin: 0;
+  max-width: 190px;
+}
+
+.form-row {
+  display: flex;
+  gap: 17px;
+}
+
+.form-group {
+  flex: 1;
+}
+
+.form-label {
+  color: #F4F4F6;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 22px;
+  margin-bottom: 6px;
+  display: block;
+}
+
+.form-input {
+  width: 100%;
+  padding: 9px 12px 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #393D47;
+  background: #000;
+  color: #F4F4F6;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 22px;
+  box-sizing: border-box;
+}
+
+.form-input::placeholder {
+  color: #8C8D8B;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #636AE8;
+}
+
+.form-textarea {
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #393D47;
+  background: #000;
+  color: #F4F4F6;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 22px;
+  box-sizing: border-box;
+  resize: vertical;
+  min-height: 79px;
+}
+
+.form-textarea::placeholder {
+  color: #8C8D8B;
+}
+
+.form-textarea:focus {
+  outline: none;
+  border-color: #636AE8;
+}
+
+.save-vehicle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 57px;
+  border-radius: 6px;
+  border: none;
+  background: #636AE8;
+  color: #FFF;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 22px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  width: 100%;
+  height: 40px;
+  box-sizing: border-box;
+}
+
+.save-vehicle-btn:hover {
+  background: #5a5fd4;
+}
+
+.plus-icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* Vehicles Grid */
+.vehicles-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(324px, 1fr));
+  gap: 24px;
+}
+
+.vehicles-placeholder {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 48px;
+  color: #8C8D8B;
+  font-size: 16px;
+  border: 2px dashed #393D47;
+  border-radius: 8px;
+}
+
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .stats-container {
+    flex-wrap: wrap;
+  }
+  
+  .content-grid {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+  
+  .add-vehicle-card {
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto;
+  }
+  
+  .footer-bottom {
+    padding: 0 32px;
+  }
+}
+
+@media (max-width: 768px) {
+  .garage-main {
+    padding: 24px 20px;
+  }
+  
+  .garage-title {
+    font-size: 28px;
+    margin-bottom: 24px;
+  }
+  
+  .stats-container {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .add-vehicle-card {
+    padding: 20px;
+  }
+  
+  .form-row {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+}
+
+@media (max-width: 480px) {
+  .garage-main {
+    padding: 20px 16px;
+  }
+  
+  .garage-title {
+    font-size: 24px;
+  }
+  
+  
+  .add-vehicle-card {
+    padding: 16px;
+  }
+  
+  .upload-area {
+    padding: 24px;
+  }
+  
+}
