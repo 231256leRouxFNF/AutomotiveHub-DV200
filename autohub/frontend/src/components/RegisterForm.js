@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import React, { useState } from "react";
 import "./RegisterForm.css";
 
 const RegisterForm = () => {
