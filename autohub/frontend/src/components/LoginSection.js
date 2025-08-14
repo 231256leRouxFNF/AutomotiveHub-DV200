@@ -1,18 +1,42 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const LoginSection = () => {
+  const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [isRobot, setIsRobot] = useState(false);
+  const [formData, setFormData] = useState({
+    email: '',
+    password: ''
+  });
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
 
-  const handleLoginClick = (e) => {
-    e.preventDefault();
-    window.location.href = '/VehicleManagement';
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value
+    });
   };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!isRobot) {
+      alert("Please confirm you're not a robot");
+      return;
+    }
+
+    console.log("Login attempt:", formData);
+    // TODO: Send login data to backend
+
+    // Simulate successful login and redirect to vehicle management
+    alert("Login successful! Welcome to AutoHub.");
+    navigate("/vehicle-management");
+  };
+
   return (
     <div className="login-main-container">
       <div className="left-side-panel">
@@ -46,22 +70,28 @@ const LoginSection = () => {
           <h1 className="welcome-title">Welcome Back to AutoHub!</h1>
           <p className="welcome-subtitle">Sign in to access your garage, connect with the community, and explore the marketplace.</p>
           
-          <form className="login-form">
+          <form className="login-form" onSubmit={handleSubmit}>
             <div className="input-group">
-              <input 
-                type="email" 
-                placeholder="johndoe@autohub.com" 
+              <input
+                type="email"
+                name="email"
+                placeholder="johndoe@autohub.com"
                 className="form-input"
-                required 
+                value={formData.email}
+                onChange={handleChange}
+                required
               />
             </div>
-            
+
             <div className="input-group password-group">
-              <input 
-                type={showPassword ? "text" : "password"} 
-                placeholder="Password" 
+              <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                placeholder="Password"
                 className="form-input password-input"
-                required 
+                value={formData.password}
+                onChange={handleChange}
+                required
               />
               <button 
                 type="button" 
@@ -92,7 +122,7 @@ const LoginSection = () => {
               </div>
             </div>
             
-            <button type="submit" className="login-button" onClick={handleLoginClick}>Login</button>
+            <button type="submit" className="login-button">Login</button>
             
             <div className="signup-section">
               <span className="signup-text">Don't have an account? </span>
