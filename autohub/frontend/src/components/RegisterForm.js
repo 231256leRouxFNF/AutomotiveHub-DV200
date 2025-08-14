@@ -1,7 +1,9 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "./RegisterForm.css";
 
 const RegisterForm = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     username: "",
     email: "",
@@ -39,6 +41,10 @@ const RegisterForm = () => {
     setErrors({});
     console.log("Form submitted:", formData);
     // TODO: Send data to backend
+
+    // Simulate successful registration and redirect to login
+    alert("Registration successful! Please log in with your new account.");
+    navigate("/login");
   };
 
   return (
@@ -117,7 +123,7 @@ const RegisterForm = () => {
         </button>
 
         <p className="login-redirect">
-          Already have an account? <a href="/login">Log in</a>
+          Already have an account? <button type="button" onClick={() => navigate("/login")} style={{background: 'none', border: 'none', color: '#E8618C', textDecoration: 'underline', cursor: 'pointer', fontSize: 'inherit', fontFamily: 'inherit'}}>Log in</button>
         </p>
         <small className="note">
           This site is protected by reCAPTCHA and the Google Privacy Policy and

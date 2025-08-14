@@ -5,11 +5,21 @@
   background: #000;
   color: #F4F4F6;
   font-family: 'Inter', -apple-system, Roboto, Helvetica, sans-serif;
+  display: flex;
+  flex-direction: column;
+  overflow-y: scroll; /* Force vertical scrollbar */
+}
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: auto !important;
 }
 
 
 /* Main Content */
 .garage-main {
+  flex: 1;
   padding: 48px 32px 32px;
 }
 
