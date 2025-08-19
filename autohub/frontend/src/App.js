@@ -4,6 +4,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import VehicleManagement from './pages/VehicleManagement';
 import CommunityFeed from './pages/CommunityFeed';
+import ListingDetails from './pages/ListingDetails';
 
 
 function App() {
@@ -16,6 +17,8 @@ function App() {
         <Route path="/garage" element={<VehicleManagement />} />
         <Route path="/vehicle-management" element={<VehicleManagement />} />
         <Route path="/community" element={<CommunityFeed />} />
+        <Route path="/listing/:id" element={<ListingDetails />} />
+        <Route path="/listing-details" element={<ListingDetails />} />
         <Route path="/test" element={<div style={{color: 'white', padding: '20px'}}>App is working! 🚗</div>} />
       </Routes>
     </Router>
