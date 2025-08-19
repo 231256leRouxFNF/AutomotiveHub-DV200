@@ -1,0 +1,753 @@
+/* Listing Details Styles */
+.listing-details {
+  min-height: 100vh;
+  background: #000;
+  color: #F4F4F6;
+  font-family: 'Inter', -apple-system, Roboto, Helvetica, sans-serif;
+}
+
+.listing-container {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 24px 32px;
+}
+
+/* Image Carousel */
+.image-carousel {
+  margin-bottom: 24px;
+}
+
+.carousel-container {
+  position: relative;
+  width: 100%;
+  height: 774px;
+  border-radius: 12px;
+  border: 1px solid #393D47;
+  background: linear-gradient(135deg, #19191F 0%, #000 100%);
+  box-shadow: 4px 4px 4px 0 #636AE8, 0 0 2px 0 rgba(23, 26, 31, 0.12), 0 0 1px 0 rgba(23, 26, 31, 0.07);
+  overflow: hidden;
+}
+
+.carousel-slides {
+  display: flex;
+  height: 100%;
+  transition: transform 0.3s ease;
+}
+
+.carousel-slide {
+  min-width: 100%;
+  height: 100%;
+}
+
+.carousel-slide img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.carousel-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  border-radius: 16px;
+  border: 1px solid #393D47;
+  background: rgba(99, 106, 232, 0.8);
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  z-index: 2;
+}
+
+.carousel-btn:hover {
+  background: rgba(99, 106, 232, 1);
+}
+
+.prev-btn {
+  left: 17px;
+}
+
+.next-btn {
+  right: 17px;
+}
+
+.carousel-btn.prev-btn {
+  opacity: 0.5;
+}
+
+.carousel-indicators {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  z-index: 2;
+}
+
+.indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 4px;
+  border: none;
+  background: #8C8D8B;
+  opacity: 0.5;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.indicator.active {
+  width: 24px;
+  background: #636AE8;
+  opacity: 1;
+}
+
+/* Content Grid */
+.content-grid {
+  display: grid;
+  grid-template-columns: 1fr 438px;
+  gap: 32px;
+  margin-bottom: 48px;
+}
+
+/* Vehicle Details */
+.vehicle-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.details-card {
+  background: #19191F;
+  border: 1px solid #393D47;
+  border-radius: 8px;
+  padding: 32px;
+  box-shadow: 4px 4px 4px 0 #636AE8;
+}
+
+.vehicle-title {
+  color: #F4F4F6;
+  font-family: 'Archivo', -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 48px;
+  font-weight: 800;
+  line-height: 48px;
+  margin: 0 0 32px 0;
+}
+
+.price {
+  color: #636AE8;
+  font-family: 'Archivo', -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 36px;
+  margin-bottom: 24px;
+}
+
+.vehicle-tags {
+  display: flex;
+  gap: 13px;
+  margin-bottom: 32px;
+}
+
+.tag {
+  display: flex;
+  align-items: center;
+  padding: 1px 16px;
+  background: #282C34;
+  border-radius: 14px;
+  color: #F4F4F6;
+  font-family: 'Inter', -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 26px;
+  height: 28px;
+}
+
+.description-section {
+  margin-bottom: 32px;
+}
+
+.section-title {
+  color: #F4F4F6;
+  font-family: 'Archivo', -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 32px;
+  margin: 0 0 20px 0;
+}
+
+.description-text {
+  color: #8C8D8B;
+  font-family: 'Inter', -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 30px;
+  letter-spacing: 0.4px;
+  margin: 0;
+}
+
+.seller-section {
+  padding-top: 32px;
+  border-top: 1px solid #393D47;
+}
+
+.seller-info {
+  background: #000;
+  border: 1px solid #393D47;
+  border-radius: 8px;
+  padding: 24px;
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.seller-avatar {
+  flex-shrink: 0;
+}
+
+.seller-avatar img {
+  width: 64px;
+  height: 64px;
+  border-radius: 32px;
+  border: 1px solid #DEE1E6;
+}
+
+.seller-details {
+  flex: 1;
+}
+
+.seller-name {
+  color: #F4F4F6;
+  font-family: 'Archivo', -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 28px;
+  margin: 0 0 4px 0;
+}
+
+.seller-join-date {
+  color: #8C8D8B;
+  font-family: 'Inter', -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+  margin: 0 0 8px 0;
+}
+
+.seller-location {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #8C8D8B;
+  font-family: 'Inter', -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+}
+
+.seller-location svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+/* Sidebar */
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.price-card {
+  background: #19191F;
+  border: 1px solid #393D47;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 4px 4px 4px 0 #636AE8;
+}
+
+.price-display {
+  color: #636AE8;
+  font-family: 'Archivo', -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 36px;
+  font-weight: 700;
+  line-height: 40px;
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.location {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  color: #8C8D8B;
+  font-family: 'Inter', -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 28px;
+  margin-bottom: 24px;
+}
+
+.location svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 6px;
+  border: none;
+  font-family: 'Inter', -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 28px;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-height: 48px;
+}
+
+.btn svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.btn-primary {
+  background: #636AE8;
+  color: #FFF;
+}
+
+.btn-primary:hover {
+  background: #5558d9;
+}
+
+.btn-secondary {
+  background: #000;
+  color: #F4F4F6;
+  border: 1px solid #393D47;
+}
+
+.btn-secondary:hover {
+  background: #393D47;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: #F4F4F6;
+}
+
+.btn-ghost:hover {
+  background: rgba(244, 244, 246, 0.1);
+}
+
+.specs-card {
+  background: #19191F;
+  border: 1px solid #393D47;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 4px 4px 4px 0 #636AE8;
+}
+
+.specs-title {
+  color: #F4F4F6;
+  font-family: 'Archivo', -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 32px;
+  margin: 0 0 16px 0;
+}
+
+.specs-table {
+  display: flex;
+  flex-direction: column;
+}
+
+.spec-row {
+  display: flex;
+  padding: 11px 16px;
+  border-top: 1px solid #393D47;
+  border-bottom: 1px solid #393D47;
+  background: #FFF;
+  color: #000;
+  align-items: center;
+}
+
+.spec-row:first-child {
+  border-top: 1px solid #393D47;
+}
+
+.spec-label {
+  font-family: 'Inter', -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  flex: 1;
+}
+
+.spec-value {
+  font-family: 'Inter', -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+  color: #666;
+}
+
+/* Related Listings */
+.related-listings {
+  margin-bottom: 48px;
+}
+
+.related-listings .section-title {
+  color: #F4F4F6;
+  font-family: 'Archivo', -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 36px;
+  margin-bottom: 32px;
+}
+
+.listings-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+}
+
+.listing-card {
+  background: #19191F;
+  border: 1px solid #393D47;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 4px 4px 4px 0 #636AE8;
+}
+
+.listing-image {
+  width: 100%;
+  height: 192px;
+  overflow: hidden;
+}
+
+.listing-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.listing-info {
+  padding: 16px;
+}
+
+.listing-title {
+  color: #F4F4F6;
+  font-family: 'Inter', -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 28px;
+  margin: 0 0 8px 0;
+}
+
+.listing-price {
+  color: #636AE8;
+  font-family: 'Archivo', -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 28px;
+  margin-bottom: 16px;
+}
+
+.view-details-btn {
+  width: 100%;
+  padding: 7px 0;
+  background: #282C34;
+  border: none;
+  border-radius: 6px;
+  color: #FFF;
+  font-family: 'Inter', -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 22px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.view-details-btn:hover {
+  background: #393D47;
+}
+
+/* Footer */
+.listing-footer {
+  background: #19191F;
+  border-top: 1px solid #393D47;
+  padding: 48px 0;
+}
+
+.newsletter-section {
+  text-align: center;
+  margin-bottom: 48px;
+}
+
+.newsletter-title {
+  color: #F4F4F6;
+  font-family: 'Archivo', -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 28px;
+  margin: 0 0 24px 0;
+}
+
+.newsletter-form {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.newsletter-input-group {
+  position: relative;
+  flex: 1;
+}
+
+.mail-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  color: #8C8D8B;
+}
+
+.newsletter-input {
+  width: 100%;
+  padding: 9px 12px 9px 40px;
+  background: #000;
+  border: 1px solid #393D47;
+  border-radius: 6px;
+  color: #F4F4F6;
+  font-family: 'Inter', -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 14px;
+  line-height: 22px;
+}
+
+.newsletter-input::placeholder {
+  color: #8C8D8B;
+}
+
+.newsletter-input:focus {
+  outline: none;
+  border-color: #636AE8;
+}
+
+.newsletter-btn {
+  padding: 9px 21px;
+  background: #636AE8;
+  border: none;
+  border-radius: 6px;
+  color: #FFF;
+  font-family: 'Inter', -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 22px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.newsletter-btn:hover {
+  background: #5558d9;
+}
+
+.footer-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 24px;
+  max-width: 1440px;
+  margin: 0 auto;
+}
+
+.language-selector {
+  flex-shrink: 0;
+}
+
+.language-btn {
+  padding: 7px 13px;
+  background: #282C34;
+  border: 1px solid #393D47;
+  border-radius: 6px;
+  color: #8C8D8B;
+  font-family: 'Inter', -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 22px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.language-btn:hover {
+  background: #393D47;
+  color: #F4F4F6;
+}
+
+.copyright {
+  color: #8C8D8B;
+  font-family: 'Inter', -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+  text-align: center;
+  flex: 1;
+}
+
+.social-links {
+  display: flex;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+.social-link {
+  color: #8C8D8B;
+  transition: color 0.2s;
+}
+
+.social-link:hover {
+  color: #F4F4F6;
+}
+
+.social-link svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .listing-container {
+    padding: 16px 24px;
+  }
+  
+  .content-grid {
+    grid-template-columns: 1fr 380px;
+    gap: 24px;
+  }
+  
+  .vehicle-title {
+    font-size: 40px;
+    line-height: 44px;
+  }
+  
+  .listings-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 1024px) {
+  .content-grid {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+  
+  .sidebar {
+    order: -1;
+  }
+  
+  .price-card {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 24px;
+  }
+  
+  .action-buttons {
+    flex-direction: row;
+    gap: 12px;
+  }
+  
+  .listings-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .listing-container {
+    padding: 12px 16px;
+  }
+  
+  .carousel-container {
+    height: 400px;
+  }
+  
+  .vehicle-title {
+    font-size: 32px;
+    line-height: 36px;
+  }
+  
+  .price {
+    font-size: 24px;
+    line-height: 28px;
+  }
+  
+  .details-card {
+    padding: 24px;
+  }
+  
+  .price-card {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+  
+  .action-buttons {
+    flex-direction: column;
+  }
+  
+  .newsletter-form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .footer-bottom {
+    flex-direction: column;
+    gap: 16px;
+    text-align: center;
+  }
+  
+  .listings-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .vehicle-title {
+    font-size: 24px;
+    line-height: 28px;
+  }
+  
+  .description-text {
+    font-size: 16px;
+    line-height: 24px;
+  }
+  
+  .seller-info {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .carousel-container {
+    height: 300px;
+  }
+}
