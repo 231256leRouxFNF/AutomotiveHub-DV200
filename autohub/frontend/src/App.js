@@ -5,6 +5,7 @@ import RegisterPage from './pages/RegisterPage';
 import VehicleManagement from './pages/VehicleManagement';
 import CommunityFeed from './pages/CommunityFeed';
 import ListingDetails from './pages/ListingDetails';
+import Marketplace from './pages/Marketplace';
 
 
 function App() {
