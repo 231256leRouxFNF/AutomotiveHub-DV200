@@ -68,6 +68,13 @@
   overflow: hidden;
   width: 350px;
   height: 406px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.featured-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 6px 6px 8px 0 #636AE8, 0 0 4px 0 rgba(23, 26, 31, 0.16), 0 0 2px 0 rgba(23, 26, 31, 0.1);
 }
 
 .featured-image {
