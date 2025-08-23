@@ -173,13 +173,21 @@ const Marketplace = () => {
           <h2 className="section-title">Featured Listings</h2>
           <div className="featured-grid">
             {featuredListings.map((listing) => (
-              <div key={listing.id} className="featured-card">
+              <div key={listing.id} className="featured-card" onClick={() => handleListingClick(listing.id)}>
                 <img src={listing.image} alt={listing.title} className="featured-image" />
                 <div className="featured-content">
                   <h3 className="featured-title">{listing.title}</h3>
                   <p className="featured-description">{listing.description}</p>
                   <div className="featured-price">{listing.price}</div>
-                  <button className="view-details-btn">View Details</button>
+                  <button
+                    className="view-details-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleViewDetails(listing.id);
+                    }}
+                  >
+                    View Details
+                  </button>
                 </div>
               </div>
             ))}
