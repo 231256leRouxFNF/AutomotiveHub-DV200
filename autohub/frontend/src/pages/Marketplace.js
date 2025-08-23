@@ -300,7 +300,11 @@ const Marketplace = () => {
           {/* Listings Grid */}
           <div className="listings-grid">
             {allListings.map((listing) => (
-              <div key={listing.id} className="listing-card">
+              <div
+                key={listing.id}
+                className="listing-card"
+                onClick={() => handleListingClick(listing.id)}
+              >
                 <img src={listing.image} alt={listing.title} className="listing-image" />
                 <div className="listing-content">
                   <h3 className="listing-title">{listing.title}</h3>
