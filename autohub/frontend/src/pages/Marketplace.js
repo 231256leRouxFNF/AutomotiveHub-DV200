@@ -151,6 +151,14 @@ const Marketplace = () => {
     setEmail('');
   };
 
+  const handleViewDetails = (listingId) => {
+    navigate(`/listing/${listingId}`);
+  };
+
+  const handleListingClick = (listingId) => {
+    navigate(`/listing/${listingId}`);
+  };
+
   return (
     <div className="marketplace">
       <Header />
