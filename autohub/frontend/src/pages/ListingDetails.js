@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import { useParams } from 'react-router-dom';
 import Header from '../components/Header';
 import './ListingDetails.css';
 
 const ListingDetails = () => {
+  const { id } = useParams();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   const vehicleImages = [
