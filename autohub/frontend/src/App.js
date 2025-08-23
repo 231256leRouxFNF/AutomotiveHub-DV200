@@ -18,6 +18,7 @@ function App() {
         <Route path="/garage" element={<VehicleManagement />} />
         <Route path="/vehicle-management" element={<VehicleManagement />} />
         <Route path="/community" element={<CommunityFeed />} />
+        <Route path="/marketplace" element={<Marketplace />} />
         <Route path="/listing/:id" element={<ListingDetails />} />
         <Route path="/listing-details" element={<ListingDetails />} />
         <Route path="/test" element={<div style={{color: 'white', padding: '20px'}}>App is working! 🚗</div>} />
