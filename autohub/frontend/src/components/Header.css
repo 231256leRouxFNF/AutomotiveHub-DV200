@@ -12,6 +12,22 @@
   position: relative;
 }
 
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+
+.logo-link {
+  display: flex;
+  align-items: center;
+}
+
+.logo-image {
+  height: 29px;
+  width: auto;
+}
+
 .header-nav {
   display: flex;
   gap: 24px;
@@ -36,6 +52,43 @@
 .nav-link.active {
   color: #636AE8;
   border-bottom: 2px solid #636AE8;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.header-icons {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.notification-icon,
+.settings-icon,
+.avatar {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  font-size: 16px;
+}
+
+.notification-icon:hover,
+.settings-icon:hover,
+.avatar:hover {
+  opacity: 0.7;
+}
+
+.avatar {
+  background: #D8CBF5;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 /* Responsive Design */
