@@ -4,6 +4,7 @@ import Header from '../components/Header';
 import './Marketplace.css';
 
 const Marketplace = () => {
+  const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedCondition, setSelectedCondition] = useState('');
   const [selectedMake, setSelectedMake] = useState('');
