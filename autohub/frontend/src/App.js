@@ -21,7 +21,23 @@ function App() {
         <Route path="/marketplace" element={<Marketplace />} />
         <Route path="/listing/:id" element={<ListingDetails />} />
         <Route path="/listing-details" element={<ListingDetails />} />
-        <Route path="/test" element={<div style={{color: 'white', padding: '20px'}}>App is working! 🚗</div>} />
+        <Route path="/profile" element={<UserProfile />} />
+        <Route path="/messages" element={<Messages />} />
+        <Route path="/notifications" element={<NotificationsCenter />} />
+        <Route path="/settings" element={<Settings />} />
+        <Route path="/help" element={<HelpCenter />} />
+        <Route path="/terms" element={<Terms />} />
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/sell/create" element={<CreateListingWizard />} />
+        <Route path="/sell/listings" element={<MyListings />} />
+        <Route path="/sell/dashboard" element={<SellerDashboard />} />
+        <Route path="/orders" element={<Orders />} />
+        <Route path="/cart" element={<Cart />} />
+        <Route path="/favorites" element={<Favorites />} />
+        <Route path="/compare" element={<Compare />} />
+        <Route path="/search" element={<SearchResults />} />
+        <Route path="/category/:slug" element={<CategoryPage />} />
+        <Route path="/admin" element={<AdminDashboard />} />
       </Routes>
     </Router>
   );
