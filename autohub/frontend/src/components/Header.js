@@ -73,9 +73,9 @@ const Header = () => {
       <div className="header-right">
         <SearchBox />
         <div className="header-icons">
-          <div className="notification-icon">🔔</div>
-          <div className="settings-icon">⚙️</div>
-          <div className="avatar">👤</div>
+          <Link to="/notifications" className="icon-link"><div className="notification-icon">🔔</div></Link>
+          <Link to="/settings" className="icon-link"><div className="settings-icon">⚙️</div></Link>
+          <Link to="/profile" className="icon-link"><div className="avatar">👤</div></Link>
         </div>
       </div>
     </header>
