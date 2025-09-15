@@ -6,6 +6,23 @@ import VehicleManagement from './pages/VehicleManagement';
 import CommunityFeed from './pages/CommunityFeed';
 import ListingDetails from './pages/ListingDetails';
 import Marketplace from './pages/Marketplace';
+import UserProfile from './pages/UserProfile';
+import Messages from './pages/Messages';
+import NotificationsCenter from './pages/NotificationsCenter';
+import Settings from './pages/Settings';
+import HelpCenter from './pages/HelpCenter';
+import Terms from './pages/Terms';
+import Privacy from './pages/Privacy';
+import CreateListingWizard from './pages/CreateListingWizard';
+import MyListings from './pages/MyListings';
+import SellerDashboard from './pages/SellerDashboard';
+import Orders from './pages/Orders';
+import Cart from './pages/Cart';
+import Favorites from './pages/Favorites';
+import Compare from './pages/Compare';
+import SearchResults from './pages/SearchResults';
+import CategoryPage from './pages/CategoryPage';
+import AdminDashboard from './pages/AdminDashboard';
 
 
 function App() {
