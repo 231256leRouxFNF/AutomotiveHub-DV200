@@ -24,56 +24,7 @@ const ListingDetails = () => {
     { label: 'Transmission', value: '6-Speed Manual' }
   ];
 
-  const relatedListings = [
-    {
-      id: 1,
-      title: '2022 Ford Mustang GT Premium',
-      price: 'R 684,083.41',
-      image: 'https://api.builder.io/api/v1/image/assets/TEMP/7e902366196dc376c554d9fd1c4530e5cc5496bf?width=648'
-    },
-    {
-      id: 2,
-      title: '2018 Porsche 911 Carrera S',
-      price: 'R 1,490,989.25',
-      image: 'https://api.builder.io/api/v1/image/assets/TEMP/bc68d6df271bd655640488454410ef69e5973e25?width=648'
-    },
-    {
-      id: 3,
-      title: '2021 BMW M3 Competition',
-      price: 'R 1,262,955.60',
-      image: 'https://api.builder.io/api/v1/image/assets/TEMP/8db647623abad45387f2bde24e27d3a876538ff1?width=648'
-    },
-    {
-      id: 4,
-      title: '2017 Nissan GT-R Black Edition',
-      price: 'R 1,666,399.75',
-      image: 'https://api.builder.io/api/v1/image/assets/TEMP/0bc760df717a3b9bc1a1c4791c126fe64d6fa1ce?width=648'
-    },
-    {
-      id: 5,
-      title: '1991 Mazda RX-7 FC3S',
-      price: 'R 491,149.40',
-      image: 'https://api.builder.io/api/v1/image/assets/TEMP/933dbdf32fa98d183ec6426dbe5d8c2c444018e0?width=648'
-    },
-    {
-      id: 6,
-      title: '2015 Audi RS7 Sportback',
-      price: 'R 2,017,220.75',
-      image: 'https://api.builder.io/api/v1/image/assets/TEMP/a841a44299d06b4d2d65a803783d5d6a1708e2aa?width=648'
-    },
-    {
-      id: 7,
-      title: '2020 Mercedes-AMG C63 S',
-      price: 'R 1,192,791.40',
-      image: 'https://api.builder.io/api/v1/image/assets/TEMP/834ab09c28b81defe0c15480861039ecc15477fc?width=648'
-    },
-    {
-      id: 8,
-      title: '2022 Subaru WRX STI Limited',
-      price: 'R 798,117.78',
-      image: 'https://api.builder.io/api/v1/image/assets/TEMP/ee1301d0040a67318e62fcff48fdb5dfef6aa75c?width=648'
-    }
-  ];
+  const relatedListings = [];
 
   const nextImage = () => {
     setCurrentImageIndex((prevIndex) => 
