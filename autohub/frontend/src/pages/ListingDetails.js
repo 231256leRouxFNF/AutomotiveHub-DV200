@@ -48,7 +48,6 @@ const ListingDetails = () => {
 
 
 
-  const relatedListings = [];
 
   const nextImage = () => {
     setCurrentImageIndex((prevIndex) => 
