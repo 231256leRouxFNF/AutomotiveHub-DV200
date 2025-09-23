@@ -1,13 +1,26 @@
 import React from 'react';
 import Header from '../components/Header';
+import axios from 'axios';
+import React, { useEffect, useState } from 'react';
 import Footer from '../components/Footer';
 import './PageLayout.css';
 
 const NotificationsCenter = () => {
-  const notifs = [
-    { id: 1, text: 'Your listing "Forged Alloy Racing Wheels" received a new offer.' },
-    { id: 2, text: 'Order #AHT-1042 has shipped.' },
-  ];
+  const [notifs, setNotifs] = useState([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const res = await axios.get('/api/notifications');
+        if (!cancelled) setNotifs(Array.isArray(res.data) ? res.data : []);
+      } catch (e) {
+        if (!cancelled) setNotifs([]);
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, []);
   return (
     <div className="page-wrapper">
       <Header />

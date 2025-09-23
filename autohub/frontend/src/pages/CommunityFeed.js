@@ -1,15 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import Header from '../components/Header';
 import './CommunityFeed.css';
 
 const CommunityFeed = () => {
   const [newPostContent, setNewPostContent] = useState('');
+  const [communityStats, setCommunityStats] = useState([]);
+  const [posts, setPosts] = useState([]);
 
-  const communityStats = [
-    { value: '15,000', label: 'Total Members', color: '#636AE8' },
-    { value: '2,345', label: 'Active Posts', color: '#E8618C' },
-    { value: '120', label: 'New Today', color: '#22C55E' }
-  ];
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const [p, s] = await Promise.all([
+          axios.get('/api/posts'),
+          axios.get('/api/community/stats')
+        ]);
+        if (!cancelled) {
+          setPosts(Array.isArray(p.data) ? p.data : []);
+          setCommunityStats(Array.isArray(s.data) ? s.data : []);
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setPosts([]);
+          setCommunityStats([]);
+        }
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, []);
+
 
   const sidebarLinks = [
     { label: 'All Discussions', icon: 'message-square', active: true },
@@ -20,64 +41,6 @@ const CommunityFeed = () => {
     { label: 'Member Spotlight', icon: 'award' }
   ];
 
-  const posts = [
-    {
-      id: 1,
-      author: 'Motor_Head_Max',
-      timestamp: '2 hours ago',
-      featured: true,
-      avatar: 'https://api.builder.io/api/v1/image/assets/TEMP/72cbf3c0c42c0443605173a161f0537fb6a8653d?width=96',
-      content: "Just finished installing the new turbos on my Supra! The power delivery is mind-blowing. Can't wait to hit the dyno next week! What's everyone else working on this weekend?",
-      image: 'https://api.builder.io/api/v1/image/assets/TEMP/a8ab63b3e24658e358bb0e54192bf73220bc1afa?width=1526',
-      likes: 45,
-      comments: 12,
-      liked: false
-    },
-    {
-      id: 2,
-      author: 'Rally_Master_Ron',
-      timestamp: 'yesterday',
-      avatar: 'https://api.builder.io/api/v1/image/assets/TEMP/b49d4f34b4bdbcdd5b0d53d07b39066c85fc6352?width=96',
-      content: "What a blast at the local autocross event! My Subaru WRX performed flawlessly. Managed to shave off 0.5 seconds from my previous best time! Any tips for improving cornering speed?",
-      image: 'https://api.builder.io/api/v1/image/assets/TEMP/c815fb2056cc744c5bf6f74bff4a6df07633d6d7?width=1526',
-      likes: 28,
-      comments: 8,
-      liked: true
-    },
-    {
-      id: 3,
-      author: 'Classic_Rides_Mia',
-      timestamp: '3 days ago',
-      avatar: 'https://api.builder.io/api/v1/image/assets/TEMP/68703b4401f6b2b6a3dff96b1bb41a9dbf54c23a?width=96',
-      content: "Restoring this vintage Ford Mustang Fastback. Found some original parts today! It's a slow process but incredibly rewarding. Any other classic car restorers out there?",
-      image: 'https://api.builder.io/api/v1/image/assets/TEMP/660f2c81dacabeec996246244fd788ae8a3e7983?width=1526',
-      likes: 67,
-      comments: 15,
-      liked: false
-    },
-    {
-      id: 4,
-      author: 'Drift_King_Hiro',
-      timestamp: '1 week ago',
-      avatar: 'https://api.builder.io/api/v1/image/assets/TEMP/324d8d018394e49f36721abab5ee9ee4d8e63b63?width=96',
-      content: "Practicing some tandem drifts with the crew tonight. Getting better at transitions! Always learning. Check out the drone footage from last session!",
-      image: 'https://api.builder.io/api/v1/image/assets/TEMP/38adb3ff8f8979e4cfa83447d28d57e81bf57ee3?width=1526',
-      likes: 89,
-      comments: 23,
-      liked: false
-    },
-    {
-      id: 5,
-      author: 'Custom_Paint_Kai',
-      timestamp: '2 weeks ago',
-      avatar: 'https://api.builder.io/api/v1/image/assets/TEMP/7e9f7140bbb1f583a82a3d425ee7a51eb46ca320?width=96',
-      content: "New custom paint job on a client's show car! This metallic flake really pops in the sun. What are your favorite custom paint colors?",
-      image: 'https://api.builder.io/api/v1/image/assets/TEMP/5012fb311996987b9f06662c8c3ac47a635439d2?width=1526',
-      likes: 156,
-      comments: 34,
-      liked: true
-    }
-  ];
 
   const handlePostSubmit = (e) => {
     e.preventDefault();

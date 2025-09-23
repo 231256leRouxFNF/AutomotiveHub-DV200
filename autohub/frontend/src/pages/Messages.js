@@ -1,13 +1,26 @@
 import React from 'react';
 import Header from '../components/Header';
+import axios from 'axios';
+import React, { useEffect, useState } from 'react';
 import Footer from '../components/Footer';
 import './PageLayout.css';
 
 const Messages = () => {
-  const threads = [
-    { id: 1, title: 'Inquiry about Brembo GT Brake Kit', unread: 2 },
-    { id: 2, title: 'Offer for Recaro Seats', unread: 0 },
-  ];
+  const [threads, setThreads] = useState([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const res = await axios.get('/api/messages');
+        if (!cancelled) setThreads(Array.isArray(res.data) ? res.data : []);
+      } catch (e) {
+        if (!cancelled) setThreads([]);
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, []);
   return (
     <div className="page-wrapper">
       <Header />
@@ -20,7 +33,7 @@ const Messages = () => {
               <div className="card" key={t.id}>
                 <strong>{t.title}</strong>
                 <div className="muted">{t.unread > 0 ? `${t.unread} new` : 'Up to date'}</div>
-                <button className="btn-primary" style={{marginTop:8}}>Open</button>
+                <button className="btn-primary mt-8">Open</button>
               </div>
             ))}
           </div>
