@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import './Marketplace.css';
@@ -13,123 +14,38 @@ const Marketplace = () => {
   const [sortBy, setSortBy] = useState('Newest');
   const [searchQuery, setSearchQuery] = useState('');
   const [email, setEmail] = useState('');
+  const [featuredListings, setFeaturedListings] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [allListings, setAllListings] = useState([]);
 
-  const featuredListings = [
-    {
-      id: 1,
-      title: "1969 Ford Mustang Fastback",
-      description: "Iconic classic muscle car, meticulously restored with a powerful V8 engine. A true head-turner.",
-      price: "R 1,315,578.75",
-      image: "https://api.builder.io/api/v1/image/assets/TEMP/a2438a74805fba7a607483bc46cbeecf6578bbcf?width=696"
-    },
-    {
-      id: 2,
-      title: "2020 Honda Civic Type R",
-      description: "This meticulously maintained 2020 Honda Civic Type R is a true enthusiast's dream.",
-      price: "R 745,494.63",
-      image: "https://api.builder.io/api/v1/image/assets/TEMP/27e559388f71c1aa8cfcf19e060631ffa3689cc3?width=696"
-    },
-    {
-      id: 3,
-      title: "Jeep Wrangler Rubicon Unlimited",
-      description: "Fully customized off-road beast with lifted suspension and new tires. Ready for any terrain.",
-      price: "R 857,757.35",
-      image: "https://api.builder.io/api/v1/image/assets/TEMP/2a8014ce65799f2f723256b3571371994a7cf7cc?width=696"
-    },
-    {
-      id: 4,
-      title: "Audi R8 V10 plus",
-      description: "Everyday supercar with a glorious V10 engine, combining luxury with thrilling performance.",
-      price: "R 1,719,022.90",
-      image: "https://api.builder.io/api/v1/image/assets/TEMP/3e1ff8f1c2f6b18f28350378dc4f94f1152db986?width=696"
-    }
-  ];
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const [f, c, a] = await Promise.all([
+          axios.get('/api/featured-listings'),
+          axios.get('/api/categories'),
+          axios.get('/api/listings')
+        ]);
+        if (!cancelled) {
+          setFeaturedListings(Array.isArray(f.data) ? f.data : []);
+          setCategories(Array.isArray(c.data) ? c.data : []);
+          setAllListings(Array.isArray(a.data) ? a.data : []);
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setFeaturedListings([]);
+          setCategories([]);
+          setAllListings([]);
+        }
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, []);
 
-  const categories = [
-    { name: "Sedans", icon: "🚗" },
-    { name: "SUVs", icon: "🚙" },
-    { name: "Coupes", icon: "🏍️" },
-    { name: "Trucks", icon: "🔧" },
-    { name: "Motorcycles", icon: "⚡" },
-    { name: "Performance Parts", icon: "📊" },
-    { name: "Exterior", icon: "✨" },
-    { name: "Interior", icon: "🏠" }
-  ];
 
-  const allListings = [
-    {
-      id: 5,
-      title: "Forged Alloy Racing Wheels (Set of 4)",
-      price: "R 49,114.94",
-      location: "Cape Town, South Africa",
-      condition: "New",
-      seller: "SpeedDemon Parts",
-      image: "https://api.builder.io/api/v1/image/assets/TEMP/c6803ffd25aa833ff156f53c947b3435c9106cb6?width=636"
-    },
-    {
-      id: 6,
-      title: "Recaro Sportster CS Seats (Pair)",
-      price: "R 26,311.58",
-      location: "Durban, South Africa",
-      condition: "Used - Excellent",
-      seller: "TrackDay Gear",
-      image: "https://api.builder.io/api/v1/image/assets/TEMP/77bf122c4137e3b6ed66babd2f3362ffa780c0f2?width=636"
-    },
-    {
-      id: 7,
-      title: "Garrett GT35R Turbo Kit",
-      price: "R 21,049.26",
-      location: "Pretoria, South Africa",
-      condition: "Used - Good",
-      seller: "BoostUp Performance",
-      image: "https://api.builder.io/api/v1/image/assets/TEMP/5479f548f5d8f2b9ad6823ae7c9286ec0427288e?width=636"
-    },
-    {
-      id: 8,
-      title: "Audi S5 OEM LED Headlights (Pair)",
-      price: "R 16,664.00",
-      location: "Pretoria, South Africa",
-      condition: "New",
-      seller: "LuxuryCar Parts",
-      image: "https://api.builder.io/api/v1/image/assets/TEMP/8c70d732d1ab48ec181ad180f9daaa67f7159a95?width=636"
-    },
-    {
-      id: 9,
-      title: "Borla Cat-Back Exhaust System",
-      price: "$780",
-      location: "Seattle, WA",
-      condition: "Used - Minor Scratches",
-      seller: "SoundWave Mods",
-      image: "https://api.builder.io/api/v1/image/assets/TEMP/8ecf352ee015093d6107b25192a6b5be76da9d58?width=636"
-    },
-    {
-      id: 10,
-      title: "Carbon Fiber Rear Spoiler",
-      price: "R 7,893.47",
-      location: "Western Cape, South Africa",
-      condition: "New",
-      seller: "AeroDynamics",
-      image: "https://api.builder.io/api/v1/image/assets/TEMP/4318eac3ca7400e24e5e0a159a9208d4345f1cdf?width=636"
-    },
-    {
-      id: 11,
-      title: "Brembo GT Brake Kit Front",
-      price: "R 56,131.36",
-      location: "Johannesburg, South Africa",
-      condition: "Used - Good",
-      seller: "StopFast Racing",
-      image: "https://api.builder.io/api/v1/image/assets/TEMP/3ceb5d517c507581cf2e6feada73a55c4e6ce092?width=636"
-    },
-    {
-      id: 12,
-      title: "Ohlins Road & Track Coilovers",
-      price: "R 36,836.21",
-      location: "Pretoria, South Africa",
-      condition: "New",
-      seller: "RideComfort Tuning",
-      image: "https://api.builder.io/api/v1/image/assets/TEMP/84f883de901f059f7d6933582a315a9c0a007fe8?width=636"
-    }
-  ];
+
 
   const handleApplyFilters = () => {
     // Filter logic would go here
