@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 const LoginSection = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [isRobot, setIsRobot] = useState(false);
   const [formData, setFormData] = useState({
-    email: '',
+    identifier: '',
     password: ''
   });
 
@@ -22,19 +23,32 @@ const LoginSection = () => {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!isRobot) {
       alert("Please confirm you're not a robot");
       return;
     }
 
-    console.log("Login attempt:", formData);
-    // TODO: Send login data to backend
+    try {
+      const res = await axios.post('/api/login', {
+        identifier: formData.identifier,
+        password: formData.password,
+      });
 
-    // Simulate successful login and redirect to vehicle management
-    alert("Login successful! Welcome to AutoHub.");
-    navigate("/vehicle-management");
+      if (res.data && res.data.success) {
+        if (res.data.token) {
+          localStorage.setItem('auth_token', res.data.token);
+        }
+        alert('Login successful! Welcome to AutoHub.');
+        navigate('/vehicle-management');
+      } else {
+        alert(res.data?.message || 'Login failed');
+      }
+    } catch (error) {
+      const msg = error.response?.data?.message || 'Invalid credentials or server unavailable';
+      alert(msg);
+    }
   };
 
   return (
@@ -73,11 +87,11 @@ const LoginSection = () => {
           <form className="login-form" onSubmit={handleSubmit}>
             <div className="input-group">
               <input
-                type="email"
-                name="email"
-                placeholder="johndoe@autohub.com"
+                type="text"
+                name="identifier"
+                placeholder="Email or username"
                 className="form-input"
-                value={formData.email}
+                value={formData.identifier}
                 onChange={handleChange}
                 required
               />
