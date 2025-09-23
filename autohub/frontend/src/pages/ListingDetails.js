@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { useParams } from 'react-router-dom';
 import Header from '../components/Header';
 import './ListingDetails.css';
@@ -6,23 +7,46 @@ import './ListingDetails.css';
 const ListingDetails = () => {
   const { id } = useParams();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [vehicleImages, setVehicleImages] = useState([]);
+  const [vehicleSpecs, setVehicleSpecs] = useState([]);
+  const [relatedListings, setRelatedListings] = useState([]);
+  const [details, setDetails] = useState({ title: '', price: '', description: '', tags: [], location: '' });
 
-  const vehicleImages = [
-    'https://api.builder.io/api/v1/image/assets/TEMP/28183c8d462e79174a8dfafa077305d7fd2e563e?width=2732',
-    'https://api.builder.io/api/v1/image/assets/TEMP/ad33659c33381eac40061641b81f19d65a13ad9f?width=2732',
-    'https://api.builder.io/api/v1/image/assets/TEMP/ad33659c33381eac40061641b81f19d65a13ad9f?width=2732',
-    'https://api.builder.io/api/v1/image/assets/TEMP/ad33659c33381eac40061641b81f19d65a13ad9f?width=2732',
-    'https://api.builder.io/api/v1/image/assets/TEMP/ad33659c33381eac40061641b81f19d65a13ad9f?width=2732'
-  ];
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const [d, r] = await Promise.all([
+          axios.get(`/api/listings/${id}`),
+          axios.get(`/api/listings/${id}/related`)
+        ]);
+        if (!cancelled) {
+          const info = d.data || {};
+          setDetails({
+            title: info.title || '',
+            price: info.price || '',
+            description: info.description || '',
+            tags: info.tags || [],
+            location: info.location || ''
+          });
+          setVehicleImages(Array.isArray(info.images) ? info.images : []);
+          setVehicleSpecs(Array.isArray(info.specs) ? info.specs : []);
+          setRelatedListings(Array.isArray(r.data) ? r.data : []);
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setVehicleImages([]);
+          setVehicleSpecs([]);
+          setRelatedListings([]);
+          setDetails({ title: '', price: '', description: '', tags: [], location: '' });
+        }
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, [id]);
 
-  const vehicleSpecs = [
-    { label: 'Make', value: 'Honda' },
-    { label: 'Model', value: 'Civic Type R' },
-    { label: 'Year', value: '2020' },
-    { label: 'Mileage', value: '25,000 km' },
-    { label: 'Engine', value: '2.0L Turbo' },
-    { label: 'Transmission', value: '6-Speed Manual' }
-  ];
+
 
   const relatedListings = [];
 
@@ -110,29 +134,17 @@ const ListingDetails = () => {
           {/* Left Column - Vehicle Details */}
           <div className="vehicle-details">
             <div className="details-card">
-              <h1 className="vehicle-title">
-                Custom 2020 Honda Civic Type R - Heavily Modified
-              </h1>
+              <h1 className="vehicle-title">{details.title}</h1>
               
-              <div className="price">R 745,494.63</div>
+              <div className="price">{details.price}</div>
               
               <div className="vehicle-tags">
-                <span className="tag">Used</span>
-                <span className="tag">Honda</span>
-                <span className="tag">2020</span>
+                {(details.tags || []).map((t, idx) => (<span key={idx} className="tag">{t}</span>))}
               </div>
               
               <div className="description-section">
                 <h2 className="section-title">Description</h2>
-                <p className="description-text">
-                  This meticulously maintained 2020 Honda Civic Type R is a true enthusiast's dream, 
-                  boasting an extensive list of high-performance modifications and a stunning exterior. 
-                  With only one owner and a clean title, this car has been babied and regularly serviced. 
-                  It's built for both track performance and daily driving comfort, delivering an 
-                  exhilarating experience every time. The engine has been professionally tuned and all 
-                  modifications were installed by certified technicians. Ready for its next adventure, 
-                  whether it's conquering winding roads or turning heads at car meets.
-                </p>
+                <p className="description-text">{details.description}</p>
               </div>
               
               <div className="seller-section">
@@ -162,12 +174,12 @@ const ListingDetails = () => {
           {/* Right Column - Price and Actions */}
           <div className="sidebar">
             <div className="price-card">
-              <div className="price-display">R 745,494.63</div>
+              <div className="price-display">{details.price}</div>
               <div className="location">
                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                   <path d="M15.803 8.05225C15.7318 6.61611 15.1305 5.2529 14.1089 4.23133C13.0874 3.20976 11.7242 2.60845 10.288 2.53729L10.0003 2.53C8.45938 2.53 6.9812 3.14175 5.89161 4.23133C4.80202 5.32092 4.19027 6.79908 4.19027 8.33999C4.19027 10.1322 5.20021 12.0643 6.51249 13.7885C7.78057 15.4545 9.23626 16.8029 10.0003 17.4659C10.7643 16.8029 12.2199 15.4545 13.488 13.7885C14.8003 12.0643 15.8103 10.1322 15.8103 8.33999L15.803 8.05225Z" fill="#8C8D8B"/>
                 </svg>
-                Cape Town, South Africa
+                {details.location}
               </div>
               
               <div className="action-buttons">
