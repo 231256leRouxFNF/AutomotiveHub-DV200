@@ -632,16 +632,20 @@
     grid-template-columns: 1fr;
     gap: 24px;
   }
-  
+
   .community-sidebar,
   .community-stats {
     position: static;
   }
-  
+
   .stats-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 16px;
+  }
+
+  .snapshots-grid {
+    grid-template-columns: repeat(3, 1fr);
   }
 }
 
@@ -650,41 +654,45 @@
     padding: 12px;
     gap: 16px;
   }
-  
+
   .new-post-container {
     padding: 16px;
   }
-  
+
   .post-card {
     padding: 16px;
   }
-  
+
   .newsletter-form {
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .footer-bottom {
     flex-direction: column;
     gap: 16px;
     text-align: center;
   }
-  
+
   .stats-grid {
     grid-template-columns: 1fr;
   }
-  
+
+  .snapshots-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
   .sidebar-nav {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 8px;
   }
-  
+
   .post-footer {
     flex-wrap: wrap;
     gap: 8px;
   }
-  
+
   .share-btn {
     margin-left: 0;
   }
