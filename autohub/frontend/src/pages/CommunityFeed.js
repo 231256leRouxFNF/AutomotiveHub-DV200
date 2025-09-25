@@ -7,23 +7,44 @@ const CommunityFeed = () => {
   const [newPostContent, setNewPostContent] = useState('');
   const [communityStats, setCommunityStats] = useState([]);
   const [posts, setPosts] = useState([]);
+  const [communitySnapshots, setCommunitySnapshots] = useState([]);
 
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
       try {
-        const [p, s] = await Promise.all([
+        const [p, s, snaps] = await Promise.all([
           axios.get('/api/posts'),
-          axios.get('/api/community/stats')
+          axios.get('/api/community/stats'),
+          axios.get('/api/community/snapshots').catch(() => ({ data: [] }))
         ]);
         if (!cancelled) {
-          setPosts(Array.isArray(p.data) ? p.data : []);
+          const postsData = Array.isArray(p.data) ? p.data : [];
+          setPosts(postsData);
           setCommunityStats(Array.isArray(s.data) ? s.data : []);
+
+          // Normalize snapshots: accept array of strings or objects with `image` field
+          let snapshots = Array.isArray(snaps.data) ? snaps.data : [];
+          snapshots = snapshots.map((item) => {
+            if (typeof item === 'string') return { id: item, image: item };
+            if (item && item.image) return { id: item.id || item.image, image: item.image, alt: item.alt };
+            return null;
+          }).filter(Boolean);
+
+          // Fallback to images from posts if API returns nothing
+          if (!snapshots.length) {
+            snapshots = postsData
+              .filter((post) => post && post.image)
+              .slice(0, 9)
+              .map((post) => ({ id: post.id, image: post.image, alt: post.content }));
+          }
+          setCommunitySnapshots(snapshots);
         }
       } catch (e) {
         if (!cancelled) {
           setPosts([]);
           setCommunityStats([]);
+          setCommunitySnapshots([]);
         }
       }
     };
@@ -229,6 +250,20 @@ const CommunityFeed = () => {
                   <div className="stat-label">{stat.label}</div>
                 </div>
               ))}
+            </div>
+          </div>
+
+          <div className="snapshots-section">
+            <h3 className="snapshots-title">Community Snapshots</h3>
+            <div className="snapshots-grid">
+              {communitySnapshots.map((snap) => (
+                <div key={snap.id} className="snapshot-item">
+                  <img src={snap.image} alt={snap.alt || 'Community snapshot'} />
+                </div>
+              ))}
+              {!communitySnapshots.length && (
+                <div className="no-snapshots">No snapshots yet.</div>
+              )}
             </div>
           </div>
         </aside>

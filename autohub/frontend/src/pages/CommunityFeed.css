@@ -421,6 +421,56 @@
   line-height: 20px;
 }
 
+/* Snapshots */
+.snapshots-section {
+  background: #19191F;
+  border: 1px solid #393D47;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 4px 4px 4px 0 #636AE8, 0 0 2px 0 rgba(23, 26, 31, 0.12), 0 0 1px 0 rgba(23, 26, 31, 0.07);
+  margin-top: 24px;
+}
+
+.snapshots-title {
+  color: #F4F4F6;
+  font-family: 'Archivo', -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 28px;
+  margin: 0 0 16px 0;
+}
+
+.snapshots-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.snapshot-item {
+  background: #000;
+  border: 1px solid #393D47;
+  border-radius: 8px;
+  overflow: hidden;
+  aspect-ratio: 1 / 1;
+}
+
+.snapshot-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.no-snapshots {
+  color: #8C8D8B;
+  font-family: 'Inter', -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 14px;
+  line-height: 20px;
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 8px 0;
+}
+
 /* Footer */
 .community-footer {
   background: #19191F;
@@ -582,16 +632,20 @@
     grid-template-columns: 1fr;
     gap: 24px;
   }
-  
+
   .community-sidebar,
   .community-stats {
     position: static;
   }
-  
+
   .stats-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 16px;
+  }
+
+  .snapshots-grid {
+    grid-template-columns: repeat(3, 1fr);
   }
 }
 
@@ -600,41 +654,45 @@
     padding: 12px;
     gap: 16px;
   }
-  
+
   .new-post-container {
     padding: 16px;
   }
-  
+
   .post-card {
     padding: 16px;
   }
-  
+
   .newsletter-form {
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .footer-bottom {
     flex-direction: column;
     gap: 16px;
     text-align: center;
   }
-  
+
   .stats-grid {
     grid-template-columns: 1fr;
   }
-  
+
+  .snapshots-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
   .sidebar-nav {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 8px;
   }
-  
+
   .post-footer {
     flex-wrap: wrap;
     gap: 8px;
   }
-  
+
   .share-btn {
     margin-left: 0;
   }
