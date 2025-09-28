@@ -19,6 +19,211 @@ app.get('/test-db', (req, res) => {
   });
 });
 
+// ============ AUTOHUB API ENDPOINTS ============
+
+// Get all users (admin only - add auth later)
+app.get('/api/users', (req, res) => {
+  const sql = 'SELECT id, username, email, role, created_at, last_login FROM users ORDER BY created_at DESC';
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error('Users query error:', err);
+      return res.status(500).json({ message: 'Failed to fetch users' });
+    }
+    res.json(results);
+  });
+});
+
+// Get user profile by ID
+app.get('/api/users/:id/profile', (req, res) => {
+  const userId = req.params.id;
+  const sql = `
+    SELECT u.id, u.username, u.email, u.created_at, 
+           p.display_name, p.avatar_url, p.bio, p.location
+    FROM users u 
+    LEFT JOIN profiles p ON u.id = p.user_id 
+    WHERE u.id = ?
+  `;
+  db.query(sql, [userId], (err, results) => {
+    if (err) {
+      console.error('User profile query error:', err);
+      return res.status(500).json({ message: 'Failed to fetch user profile' });
+    }
+    if (results.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.json(results[0]);
+  });
+});
+
+// Get all vehicles
+app.get('/api/vehicles', (req, res) => {
+  const sql = `
+    SELECT v.*, u.username as owner_username, p.display_name as owner_name
+    FROM vehicles v
+    JOIN users u ON v.user_id = u.id
+    LEFT JOIN profiles p ON u.id = p.user_id
+    ORDER BY v.created_at DESC
+  `;
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error('Vehicles query error:', err);
+      return res.status(500).json({ message: 'Failed to fetch vehicles' });
+    }
+    res.json(results);
+  });
+});
+
+// Get vehicle by ID with images and modifications
+app.get('/api/vehicles/:id', (req, res) => {
+  const vehicleId = req.params.id;
+  const vehicleSql = `
+    SELECT v.*, u.username as owner_username, p.display_name as owner_name
+    FROM vehicles v
+    JOIN users u ON v.user_id = u.id
+    LEFT JOIN profiles p ON u.id = p.user_id
+    WHERE v.id = ?
+  `;
+  
+  db.query(vehicleSql, [vehicleId], (err, vehicleResults) => {
+    if (err) {
+      console.error('Vehicle query error:', err);
+      return res.status(500).json({ message: 'Failed to fetch vehicle' });
+    }
+    if (vehicleResults.length === 0) {
+      return res.status(404).json({ message: 'Vehicle not found' });
+    }
+    
+    const vehicle = vehicleResults[0];
+    
+    // Get vehicle images
+    const imagesSql = 'SELECT * FROM vehicle_images WHERE vehicle_id = ? ORDER BY sort_order, id';
+    db.query(imagesSql, [vehicleId], (imgErr, imageResults) => {
+      if (imgErr) {
+        console.error('Vehicle images query error:', imgErr);
+        return res.status(500).json({ message: 'Failed to fetch vehicle images' });
+      }
+      
+      // Get vehicle modifications
+      const modsSql = 'SELECT * FROM modifications WHERE vehicle_id = ? ORDER BY installed_at DESC';
+      db.query(modsSql, [vehicleId], (modErr, modResults) => {
+        if (modErr) {
+          console.error('Vehicle modifications query error:', modErr);
+          return res.status(500).json({ message: 'Failed to fetch vehicle modifications' });
+        }
+        
+        res.json({
+          ...vehicle,
+          images: imageResults,
+          modifications: modResults
+        });
+      });
+    });
+  });
+});
+
+// Get all posts with user info and images
+app.get('/api/social/posts', (req, res) => {
+  const sql = `
+    SELECT p.*, u.username, pr.display_name, pr.avatar_url
+    FROM posts p
+    JOIN users u ON p.user_id = u.id
+    LEFT JOIN profiles pr ON u.id = pr.user_id
+    ORDER BY p.created_at DESC
+  `;
+  
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error('Posts query error:', err);
+      return res.status(500).json({ message: 'Failed to fetch posts' });
+    }
+    
+    // Get images and comments count for each post
+    const postPromises = results.map(post => {
+      return new Promise((resolve, reject) => {
+        const imagesSql = 'SELECT url FROM post_images WHERE post_id = ? ORDER BY sort_order';
+        const commentsSql = 'SELECT COUNT(*) as count FROM comments WHERE post_id = ?';
+        
+        db.query(imagesSql, [post.id], (imgErr, imageResults) => {
+          if (imgErr) return reject(imgErr);
+          
+          db.query(commentsSql, [post.id], (commentErr, commentResults) => {
+            if (commentErr) return reject(commentErr);
+            
+            resolve({
+              ...post,
+              images: imageResults.map(img => img.url),
+              comments_count: commentResults[0].count
+            });
+          });
+        });
+      });
+    });
+    
+    Promise.all(postPromises)
+      .then(postsWithDetails => res.json(postsWithDetails))
+      .catch(error => {
+        console.error('Posts details query error:', error);
+        res.status(500).json({ message: 'Failed to fetch post details' });
+      });
+  });
+});
+
+// Get comments for a post
+app.get('/api/posts/:id/comments', (req, res) => {
+  const postId = req.params.id;
+  const sql = `
+    SELECT c.*, u.username, p.display_name, p.avatar_url
+    FROM comments c
+    JOIN users u ON c.user_id = u.id
+    LEFT JOIN profiles p ON u.id = p.user_id
+    WHERE c.post_id = ?
+    ORDER BY c.created_at ASC
+  `;
+  
+  db.query(sql, [postId], (err, results) => {
+    if (err) {
+      console.error('Comments query error:', err);
+      return res.status(500).json({ message: 'Failed to fetch comments' });
+    }
+    res.json(results);
+  });
+});
+
+// Get user followers/following
+app.get('/api/users/:id/follows', (req, res) => {
+  const userId = req.params.id;
+  const type = req.query.type; // 'followers' or 'following'
+  
+  let sql;
+  if (type === 'followers') {
+    sql = `
+      SELECT u.id, u.username, p.display_name, p.avatar_url, f.created_at as followed_at
+      FROM follows f
+      JOIN users u ON f.follower_id = u.id
+      LEFT JOIN profiles p ON u.id = p.user_id
+      WHERE f.followee_id = ?
+      ORDER BY f.created_at DESC
+    `;
+  } else {
+    sql = `
+      SELECT u.id, u.username, p.display_name, p.avatar_url, f.created_at as followed_at
+      FROM follows f
+      JOIN users u ON f.followee_id = u.id
+      LEFT JOIN profiles p ON u.id = p.user_id
+      WHERE f.follower_id = ?
+      ORDER BY f.created_at DESC
+    `;
+  }
+  
+  db.query(sql, [userId], (err, results) => {
+    if (err) {
+      console.error('Follows query error:', err);
+      return res.status(500).json({ message: 'Failed to fetch follows' });
+    }
+    res.json(results);
+  });
+});
+
 // Login endpoint allowing username or email
 app.post('/api/login', (req, res) => {
   const { identifier, password } = req.body || {};

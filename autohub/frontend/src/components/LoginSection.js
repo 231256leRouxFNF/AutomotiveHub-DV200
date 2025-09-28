@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { authService } from '../services/api';
 
 const LoginSection = () => {
   const navigate = useNavigate();
@@ -31,22 +31,17 @@ const LoginSection = () => {
     }
 
     try {
-      const res = await axios.post('/api/login', {
-        identifier: formData.identifier,
-        password: formData.password,
-      });
-
-      if (res.data && res.data.success) {
-        if (res.data.token) {
-          localStorage.setItem('auth_token', res.data.token);
-        }
+      const result = await authService.login(formData.identifier, formData.password);
+      
+      if (result.success) {
         alert('Login successful! Welcome to AutoHub.');
         navigate('/vehicle-management');
       } else {
-        alert(res.data?.message || 'Login failed');
+        alert(result.message || 'Login failed');
       }
     } catch (error) {
-      const msg = error.response?.data?.message || 'Invalid credentials or server unavailable';
+      console.error('Login error:', error);
+      const msg = error.message || 'Invalid credentials or server unavailable';
       alert(msg);
     }
   };
