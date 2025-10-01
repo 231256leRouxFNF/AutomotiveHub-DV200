@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import StatCard from '../components/StatCard';
+import VehicleCard from '../components/VehicleCard';
+import { garageService } from '../services/api';
+import { authService } from '../services/api';
 import './VehicleManagement.css';
 
 const VehicleManagement = () => {
@@ -10,8 +13,49 @@ const VehicleManagement = () => {
     model: '',
     year: '',
     color: '',
-    description: ''
+    description: '',
+    imageUrl: ''
   });
+  
+  const [garageStats, setGarageStats] = useState({
+    totalVehicles: 0,
+    featured: 0,
+    upcomingEvents: 0
+  });
+  
+  const [vehicles, setVehicles] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+  
+  // Get current user on component mount
+  useEffect(() => {
+    const user = authService.getCurrentUser();
+    if (user) {
+      setCurrentUser(user);
+      loadGarageData(user.id);
+    } else {
+      console.warn('No user found, redirecting to login');
+      // In production, redirect to login
+    }
+  }, []);
+  
+  const loadGarageData = async (userId) => {
+    try {
+      const [stats, userVehicles] = await Promise.all([
+        garageService.getGarageStats(userId),
+        garageService.getUserVehicles(userId)
+      ]);
+      
+      setGarageStats(stats);
+      setVehicles(userVehicles);
+    } catch (error) {
+      console.error('Error loading garage data:', error);
+      // Set default values if API fails
+      setGarageStats({ totalVehicles: 0, featured: 0, upcomingEvents: 0 });
+      setVehicles([]);
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -20,11 +64,123 @@ const VehicleManagement = () => {
       [name]: value
     }));
   };
-
-  const handleSubmit = (e) => {
+  
+  // Drag and drop handlers
+  const handleDragOver = (e) => {
     e.preventDefault();
-    // TODO: Handle form submission to database
-    console.log('Vehicle data:', formData);
+    setIsDragOver(true);
+  };
+  
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  };
+  
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      const file = files[0];
+      if (file.type.startsWith('image/')) {
+        // For now, we'll use a placeholder URL
+        // In production, you'd upload the file to a server or cloud storage
+        const placeholderUrl = `https://via.placeholder.com/400x300/636AE8/ffffff?text=${encodeURIComponent(file.name)}`;
+        setFormData(prev => ({ ...prev, imageUrl: placeholderUrl }));
+        console.log('Image file dropped:', file.name);
+      } else {
+        alert('Please drop an image file.');
+      }
+    }
+  };
+  
+  const handleFileClick = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const placeholderUrl = `https://via.placeholder.com/400x300/636AE8/ffffff?text=${encodeURIComponent(file.name)}`;
+        setFormData(prev => ({ ...prev, imageUrl: placeholderUrl }));
+      }
+    };
+    input.click();
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!currentUser) {
+      alert('You must be logged in to add a vehicle.');
+      return;
+    }
+    
+    setIsLoading(true);
+    
+    try {
+      const result = await garageService.createVehicle({
+        userId: currentUser.id,
+        make: formData.make,
+        model: formData.model,
+        year: formData.year,
+        color: formData.color,
+        description: formData.description,
+        imageUrl: formData.imageUrl
+      });
+      
+      if (result.success) {
+        alert('Vehicle added successfully!');
+        // Reset form
+        setFormData({
+          make: '',
+          model: '',
+          year: '',
+          color: '',
+          description: '',
+          imageUrl: ''
+        });
+        // Reload garage data
+        loadGarageData(currentUser.id);
+      } else {
+        alert(result.message || 'Failed to add vehicle');
+      }
+    } catch (error) {
+      console.error('Error adding vehicle:', error);
+      alert('Failed to add vehicle. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  const handleEditVehicle = (vehicle) => {
+    // For now, just populate the form with vehicle data
+    setFormData({
+      make: vehicle.make,
+      model: vehicle.model,
+      year: vehicle.year.toString(),
+      color: vehicle.color,
+      description: vehicle.description || '',
+      imageUrl: vehicle.image_url || vehicle.primary_image || ''
+    });
+  };
+  
+  const handleDeleteVehicle = async (vehicle) => {
+    if (window.confirm(`Are you sure you want to delete ${vehicle.year} ${vehicle.make} ${vehicle.model}?`)) {
+      try {
+        const result = await garageService.deleteVehicle(vehicle.id);
+        if (result.success) {
+          alert('Vehicle deleted successfully!');
+          loadGarageData(currentUser.id);
+        } else {
+          alert(result.message || 'Failed to delete vehicle');
+        }
+      } catch (error) {
+        console.error('Error deleting vehicle:', error);
+        alert('Failed to delete vehicle. Please try again.');
+      }
+    }
   };
 
   return (
@@ -46,7 +202,7 @@ const VehicleManagement = () => {
                 <path d="M23.9997 22.6699C23.9997 21.9354 23.4042 21.3399 22.6697 21.3399C21.9351 21.3399 21.3397 21.9354 21.3397 22.6699C21.3397 23.4045 21.9351 23.9999 22.6697 23.9999C23.4042 23.9999 23.9997 23.4045 23.9997 22.6699ZM26.6597 22.6699C26.6597 24.8736 24.8734 26.6599 22.6697 26.6599C20.466 26.6599 18.6797 24.8736 18.6797 22.6699C18.6797 20.4663 20.466 18.6799 22.6697 18.6799C24.8734 18.6799 26.6597 20.4663 26.6597 22.6699Z" fill="#636AE8"/>
               </svg>
             }
-            number="8"
+            number={garageStats.totalVehicles.toString()}
             label="Total Vehicles"
           />
 
@@ -60,7 +216,7 @@ const VehicleManagement = () => {
                 <path d="M6.65992 22.6699C7.39445 22.6699 7.98992 23.2654 7.98992 23.9999C7.98992 24.7345 7.39445 25.3299 6.65992 25.3299H3.99992C3.26539 25.3299 2.66992 24.7345 2.66992 23.9999C2.66992 23.2654 3.26539 22.6699 3.99992 22.6699H6.65992Z" fill="#636AE8"/>
               </svg>
             }
-            number="2"
+            number={garageStats.featured.toString()}
             label="Featured"
           />
 
@@ -73,7 +229,7 @@ const VehicleManagement = () => {
                 <path d="M27.9702 12C28.7048 12 29.3002 12.5955 29.3002 13.33C29.3002 14.0646 28.7048 14.66 27.9702 14.66L4.0302 14.66C3.29566 14.66 2.7002 14.0646 2.7002 13.33C2.7002 12.5955 3.29566 12 4.0302 12L27.9702 12Z" fill="#636AE8"/>
               </svg>
             }
-            number="3"
+            number={garageStats.upcomingEvents.toString()}
             label="Upcoming Events"
           />
         </div>
@@ -89,13 +245,28 @@ const VehicleManagement = () => {
 
             <form onSubmit={handleSubmit} className="vehicle-form">
               {/* Upload Area */}
-              <div className="upload-area">
-                <svg className="upload-icon" width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M22 42L22 26C22 24.8954 22.8954 24 24 24C25.1046 24 26 24.8954 26 26L26 42C26 43.1046 25.1046 44 24 44C22.8954 44 22 43.1046 22 42Z" fill="#8C8D8B"/>
-                  <path d="M16.7396 4.05619C19.1598 3.86425 21.5931 4.22559 23.8529 5.11283C26.1125 6.00011 28.1415 7.39019 29.7845 9.17729C31.0845 10.5914 32.1113 12.2269 32.8295 13.9995L34.9995 13.9995L35.4409 14.0093C37.6451 14.0975 39.7767 14.8455 41.5541 16.1636C43.4495 17.5692 44.8415 19.5481 45.5267 21.8062C46.2119 24.0648 46.1521 26.4844 45.3569 28.7066C44.5615 30.9286 43.0733 32.837 41.1107 34.148L40.9349 34.2516C40.0395 34.7266 38.9125 34.4562 38.3373 33.5952C37.7237 32.6768 37.9715 31.4354 38.8901 30.8218L39.3431 30.4898C40.3679 29.6794 41.1485 28.596 41.5913 27.359C42.0973 25.945 42.1365 24.4054 41.7005 22.9682C41.2647 21.531 40.3777 20.2712 39.1713 19.3765C38.1159 18.5939 36.8641 18.1276 35.5619 18.023L34.9995 17.9995H31.4193C30.5355 17.9992 29.7563 17.4188 29.5033 16.5718C28.9825 14.8274 28.0713 13.2246 26.8393 11.8843C25.6069 10.5439 24.0849 9.50093 22.3901 8.83549C20.6953 8.17023 18.871 7.89859 17.056 8.04253C15.241 8.18655 13.4821 8.74137 11.9134 9.66557C10.3446 10.5898 9.007 11.8605 8.00134 13.3785C6.99594 14.8962 6.34816 16.6226 6.10876 18.4273C5.86934 20.2324 6.04528 22.0688 6.62048 23.7964C7.19568 25.5238 8.15554 27.0988 9.42906 28.4C10.2014 29.1894 10.189 30.4556 9.39976 31.228C8.6105 32.0006 7.3443 31.9858 6.57164 31.1968L5.95446 30.5288C4.56114 28.9334 3.49466 27.0756 2.8236 25.06C2.05668 22.7566 1.82474 20.3086 2.1439 17.9019C2.4631 15.4954 3.32664 13.1933 4.66734 11.1695C6.00824 9.14555 7.79238 7.45263 9.88414 6.22027C11.9756 4.98813 14.3198 4.24823 16.7396 4.05619Z" fill="#8C8D8B"/>
-                  <path d="M22.7381 24.4492C23.5237 23.8086 24.6817 23.8538 25.4139 24.586L33.4139 32.5859L33.5507 32.7383C34.1913 33.5238 34.1461 34.6818 33.4139 35.414C32.6817 36.1464 31.5237 36.1916 30.7381 35.5508L30.5859 35.414L23.9999 28.8281L17.4139 35.414C16.6329 36.1952 15.3668 36.1952 14.5858 35.414C13.8047 34.633 13.8047 33.3669 14.5858 32.5859L22.5859 24.586L22.7381 24.4492Z" fill="#8C8D8B"/>
-                </svg>
-                <p className="upload-text">Drag & drop your vehicle image here, or click to browse</p>
+              <div 
+                className={`upload-area ${isDragOver ? 'drag-over' : ''}`}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                onClick={handleFileClick}
+              >
+                {formData.imageUrl ? (
+                  <div className="image-preview">
+                    <img src={formData.imageUrl} alt="Vehicle Preview" style={{width: '100%', height: '120px', objectFit: 'cover', borderRadius: '4px'}} />
+                    <p className="upload-text" style={{marginTop: '8px', fontSize: '12px'}}>Click or drag to change image</p>
+                  </div>
+                ) : (
+                  <>
+                    <svg className="upload-icon" width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M22 42L22 26C22 24.8954 22.8954 24 24 24C25.1046 24 26 24.8954 26 26L26 42C26 43.1046 25.1046 44 24 44C22.8954 44 22 43.1046 22 42Z" fill="#8C8D8B"/>
+                      <path d="M16.7396 4.05619C19.1598 3.86425 21.5931 4.22559 23.8529 5.11283C26.1125 6.00011 28.1415 7.39019 29.7845 9.17729C31.0845 10.5914 32.1113 12.2269 32.8295 13.9995L34.9995 13.9995L35.4409 14.0093C37.6451 14.0975 39.7767 14.8455 41.5541 16.1636C43.4495 17.5692 44.8415 19.5481 45.5267 21.8062C46.2119 24.0648 46.1521 26.4844 45.3569 28.7066C44.5615 30.9286 43.0733 32.837 41.1107 34.148L40.9349 34.2516C40.0395 34.7266 38.9125 34.4562 38.3373 33.5952C37.7237 32.6768 37.9715 31.4354 38.8901 30.8218L39.3431 30.4898C40.3679 29.6794 41.1485 28.596 41.5913 27.359C42.0973 25.945 42.1365 24.4054 41.7005 22.9682C41.2647 21.531 40.3777 20.2712 39.1713 19.3765C38.1159 18.5939 36.8641 18.1276 35.5619 18.023L34.9995 17.9995H31.4193C30.5355 17.9992 29.7563 17.4188 29.5033 16.5718C28.9825 14.8274 28.0713 13.2246 26.8393 11.8843C25.6069 10.5439 24.0849 9.50093 22.3901 8.83549C20.6953 8.17023 18.871 7.89859 17.056 8.04253C15.241 8.18655 13.4821 8.74137 11.9134 9.66557C10.3446 10.5898 9.007 11.8605 8.00134 13.3785C6.99594 14.8962 6.34816 16.6226 6.10876 18.4273C5.86934 20.2324 6.04528 22.0688 6.62048 23.7964C7.19568 25.5238 8.15554 27.0988 9.42906 28.4C10.2014 29.1894 10.189 30.4556 9.39976 31.228C8.6105 32.0006 7.3443 31.9858 6.57164 31.1968L5.95446 30.5288C4.56114 28.9334 3.49466 27.0756 2.8236 25.06C2.05668 22.7566 1.82474 20.3086 2.1439 17.9019C2.4631 15.4954 3.32664 13.1933 4.66734 11.1695C6.00824 9.14555 7.79238 7.45263 9.88414 6.22027C11.9756 4.98813 14.3198 4.24823 16.7396 4.05619Z" fill="#8C8D8B"/>
+                      <path d="M22.7381 24.4492C23.5237 23.8086 24.6817 23.8538 25.4139 24.586L33.4139 32.5859L33.5507 32.7383C34.1913 33.5238 34.1461 34.6818 33.4139 35.414C32.6817 36.1464 31.5237 36.1916 30.7381 35.5508L30.5859 35.414L23.9999 28.8281L17.4139 35.414C16.6329 36.1952 15.3668 36.1952 14.5858 35.414C13.8047 34.633 13.8047 33.3669 14.5858 32.5859L22.5859 24.586L22.7381 24.4492Z" fill="#8C8D8B"/>
+                    </svg>
+                    <p className="upload-text">Drag & drop your vehicle image here, or click to browse</p>
+                  </>
+                )}
               </div>
 
               {/* Form Fields */}
@@ -171,22 +342,38 @@ const VehicleManagement = () => {
                 />
               </div>
 
-              <button type="submit" className="save-vehicle-btn">
-                <svg className="plus-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12.6896 7.33002C13.0597 7.33002 13.3596 7.62998 13.3596 8.00002C13.3596 8.37006 13.0597 8.67002 12.6896 8.67002L3.30965 8.67002C2.93962 8.67002 2.63965 8.37006 2.63965 8.00002C2.63965 7.62998 2.93962 7.33002 3.30965 7.33002L12.6896 7.33002Z" fill="white"/>
-                  <path d="M7.33008 12.69L7.33008 3.31001C7.33008 2.93999 7.63004 2.64001 8.00008 2.64001C8.37012 2.64001 8.67008 2.93999 8.67008 3.31001L8.67008 12.69C8.67008 13.0601 8.37012 13.36 8.00008 13.36C7.63004 13.36 7.33008 13.0601 7.33008 12.69Z" fill="white"/>
-                </svg>
-                Save New Vehicle
+              <button type="submit" className="save-vehicle-btn" disabled={isLoading}>
+                {isLoading ? (
+                  <div>Adding Vehicle...</div>
+                ) : (
+                  <>
+                    <svg className="plus-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M12.6896 7.33002C13.0597 7.33002 13.3596 7.62998 13.3596 8.00002C13.3596 8.37006 13.0597 8.67002 12.6896 8.67002L3.30965 8.67002C2.93962 8.67002 2.63965 8.37006 2.63965 8.00002C2.63965 7.62998 2.93962 7.33002 3.30965 7.33002L12.6896 7.33002Z" fill="white"/>
+                      <path d="M7.33008 12.69L7.33008 3.31001C7.33008 2.93999 7.63004 2.64001 8.00008 2.64001C8.37012 2.64001 8.67008 2.93999 8.67008 3.31001L8.67008 12.69C8.67008 13.0601 8.37012 13.36 8.00008 13.36C7.63004 13.36 7.33008 13.0601 7.33008 12.69Z" fill="white"/>
+                    </svg>
+                    Save New Vehicle
+                  </>
+                )}
               </button>
             </form>
           </div>
 
-          {/* Vehicle Grid Placeholder */}
+          {/* Vehicle Grid */}
           <div className="vehicles-grid">
-            {/* This is where vehicles from database will be displayed */}
-            <div className="vehicles-placeholder">
-              <p>Your vehicles will appear here once connected to the database.</p>
-            </div>
+            {vehicles.length > 0 ? (
+              vehicles.map(vehicle => (
+                <VehicleCard
+                  key={vehicle.id}
+                  vehicle={vehicle}
+                  onEdit={handleEditVehicle}
+                  onDelete={handleDeleteVehicle}
+                />
+              ))
+            ) : (
+              <div className="vehicles-placeholder">
+                <p>No vehicles in your garage yet. Add your first vehicle using the form!</p>
+              </div>
+            )}
           </div>
         </div>
       </main>

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { authService } from '../services/api';
 import "./RegisterForm.css";
 
 const RegisterForm = () => {
@@ -13,6 +14,7 @@ const RegisterForm = () => {
   });
 
   const [errors, setErrors] = useState({});
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -30,7 +32,7 @@ const RegisterForm = () => {
     return newErrors;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const validationErrors = validateForm();
     if (Object.keys(validationErrors).length > 0) {
@@ -39,18 +41,50 @@ const RegisterForm = () => {
     }
 
     setErrors({});
-    console.log("Form submitted:", formData);
-    // TODO: Send data to backend
-
-    // Simulate successful registration and redirect to login
-    alert("Registration successful! Please log in with your new account.");
-    navigate("/login");
+    setIsLoading(true);
+    
+    try {
+      const result = await authService.register(
+        formData.username,
+        formData.email,
+        formData.password
+      );
+      
+      if (result.success) {
+        alert('Registration successful! Welcome to AutoHub!');
+        // User is automatically logged in after registration
+        navigate('/vehicle-management');
+      } else {
+        setErrors({ general: result.message || 'Registration failed' });
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      const errorMessage = error.message || 'Registration failed. Please try again.';
+      setErrors({ general: errorMessage });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
     <div className="register-block">
       <h1>Create Your AutoHub Account</h1>
       <p>Join the ultimate community for car enthusiasts.</p>
+      
+      {errors.general && (
+        <div className="error-message" style={{ 
+          color: '#dc3545', 
+          backgroundColor: '#f8d7da', 
+          border: '1px solid #f5c6cb', 
+          borderRadius: '4px', 
+          padding: '12px', 
+          marginBottom: '16px',
+          fontSize: '14px'
+        }}>
+          {errors.general}
+        </div>
+      )}
+      
       <form className="register-form" onSubmit={handleSubmit}>
         <label>
           <p>Username</p>
@@ -118,8 +152,8 @@ const RegisterForm = () => {
           </span>
         </label>
 
-        <button type="submit" className="register-button">
-          Register Account
+        <button type="submit" className="register-button" disabled={isLoading}>
+          {isLoading ? 'Creating Account...' : 'Register Account'}
         </button>
 
         <p className="login-redirect">

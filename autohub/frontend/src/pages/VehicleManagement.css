@@ -100,6 +100,11 @@ html, body {
   border-color: #636AE8;
 }
 
+.upload-area.drag-over {
+  border-color: #636AE8;
+  background-color: rgba(99, 106, 232, 0.1);
+}
+
 .upload-icon {
   width: 48px;
   height: 48px;

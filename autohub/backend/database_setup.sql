@@ -149,3 +149,61 @@ CREATE TABLE IF NOT EXISTS seller_metrics (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+
+-- Vehicles table (user's personal vehicles in garage)
+CREATE TABLE IF NOT EXISTS vehicles (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    make VARCHAR(100) NOT NULL,
+    model VARCHAR(100) NOT NULL,
+    year YEAR NOT NULL,
+    color VARCHAR(50) NOT NULL,
+    description TEXT,
+    image_url VARCHAR(500),
+    is_featured BOOLEAN DEFAULT FALSE,
+    status ENUM('active', 'sold', 'maintenance', 'inactive') DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Vehicle images table
+CREATE TABLE IF NOT EXISTS vehicle_images (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    vehicle_id INT NOT NULL,
+    url VARCHAR(500) NOT NULL,
+    sort_order INT DEFAULT 0,
+    is_primary BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (vehicle_id) REFERENCES vehicles(id) ON DELETE CASCADE
+);
+
+-- Events table (admin-managed events)
+CREATE TABLE IF NOT EXISTS events (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    event_date DATE NOT NULL,
+    event_time TIME,
+    location VARCHAR(255),
+    image_url VARCHAR(500),
+    max_participants INT,
+    current_participants INT DEFAULT 0,
+    status ENUM('upcoming', 'ongoing', 'completed', 'cancelled') DEFAULT 'upcoming',
+    created_by INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+);
+
+-- Event participants table
+CREATE TABLE IF NOT EXISTS event_participants (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    event_id INT NOT NULL,
+    user_id INT NOT NULL,
+    status ENUM('registered', 'confirmed', 'cancelled') DEFAULT 'registered',
+    registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_participant (event_id, user_id)
+);

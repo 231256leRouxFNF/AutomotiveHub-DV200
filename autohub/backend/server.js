@@ -224,6 +224,102 @@ app.get('/api/users/:id/follows', (req, res) => {
   });
 });
 
+// User registration endpoint
+app.post('/api/register', async (req, res) => {
+  const { username, email, password } = req.body || {};
+  
+  // Validate input
+  if (!username || !email || !password) {
+    return res.status(400).json({ 
+      success: false, 
+      message: 'Username, email, and password are required' 
+    });
+  }
+  
+  // Validate email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ 
+      success: false, 
+      message: 'Please provide a valid email address' 
+    });
+  }
+  
+  // Validate password length
+  if (password.length < 6) {
+    return res.status(400).json({ 
+      success: false, 
+      message: 'Password must be at least 6 characters long' 
+    });
+  }
+  
+  try {
+    // Check if username or email already exists
+    const checkSql = 'SELECT id FROM users WHERE username = ? OR email = ? LIMIT 1';
+    const existingUser = await new Promise((resolve, reject) => {
+      db.query(checkSql, [username, email.toLowerCase()], (err, results) => {
+        if (err) reject(err);
+        else resolve(results);
+      });
+    });
+    
+    if (existingUser.length > 0) {
+      return res.status(409).json({ 
+        success: false, 
+        message: 'Username or email already exists' 
+      });
+    }
+    
+    // Hash password
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+    
+    // Insert new user
+    const insertSql = 'INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)';
+    const result = await new Promise((resolve, reject) => {
+      db.query(insertSql, [username, email.toLowerCase(), hashedPassword], (err, result) => {
+        if (err) reject(err);
+        else resolve(result);
+      });
+    });
+    
+    // Create JWT token for auto-login after registration
+    const payload = { 
+      id: result.insertId, 
+      username: username, 
+      email: email.toLowerCase() 
+    };
+    
+    let token = null;
+    try {
+      const secret = process.env.JWT_SECRET;
+      if (secret) {
+        token = jwt.sign(payload, secret, { expiresIn: '7d' });
+      }
+    } catch (e) {
+      console.warn('JWT signing skipped:', e.message);
+    }
+    
+    return res.status(201).json({
+      success: true,
+      message: 'Account created successfully!',
+      token: token,
+      user: { 
+        id: result.insertId, 
+        username: username, 
+        email: email.toLowerCase() 
+      }
+    });
+    
+  } catch (error) {
+    console.error('Registration error:', error);
+    return res.status(500).json({ 
+      success: false, 
+      message: 'Internal server error. Please try again later.' 
+    });
+  }
+});
+
 // Login endpoint allowing username or email
 app.post('/api/login', (req, res) => {
   const { identifier, password } = req.body || {};
@@ -484,6 +580,193 @@ app.get('/api/seller/metrics', (req, res) => {
     }
     res.json(rows || []);
   });
+});
+
+// ============ GARAGE API ENDPOINTS ============
+
+// Get garage statistics for a user
+app.get('/api/garage/stats/:userId', (req, res) => {
+  const userId = req.params.userId;
+  
+  // Get total vehicles count
+  const vehiclesQuery = 'SELECT COUNT(*) as count FROM vehicles WHERE user_id = ? AND status = "active"';
+  
+  // Get featured posts count (posts where user's vehicle is featured)
+  const featuredQuery = `
+    SELECT COUNT(DISTINCT p.id) as count 
+    FROM posts p 
+    JOIN vehicles v ON (p.content LIKE CONCAT('%', v.make, '%') OR p.content LIKE CONCAT('%', v.model, '%'))
+    WHERE v.user_id = ? AND p.featured = 1
+  `;
+  
+  // Get upcoming events count
+  const eventsQuery = 'SELECT COUNT(*) as count FROM events WHERE status = "upcoming" AND event_date >= CURDATE()';
+  
+  Promise.all([
+    new Promise((resolve, reject) => {
+      db.query(vehiclesQuery, [userId], (err, results) => {
+        if (err) reject(err);
+        else resolve(results[0]?.count || 0);
+      });
+    }),
+    new Promise((resolve, reject) => {
+      db.query(featuredQuery, [userId], (err, results) => {
+        if (err) reject(err);
+        else resolve(results[0]?.count || 0);
+      });
+    }),
+    new Promise((resolve, reject) => {
+      db.query(eventsQuery, [], (err, results) => {
+        if (err) reject(err);
+        else resolve(results[0]?.count || 0);
+      });
+    })
+  ])
+  .then(([totalVehicles, featuredCount, upcomingEvents]) => {
+    res.json({
+      totalVehicles,
+      featured: featuredCount,
+      upcomingEvents
+    });
+  })
+  .catch(error => {
+    console.error('Garage stats error:', error);
+    if (error.code === 'ER_NO_SUCH_TABLE') {
+      res.json({ totalVehicles: 0, featured: 0, upcomingEvents: 0 });
+    } else {
+      res.status(500).json({ message: 'Failed to fetch garage statistics' });
+    }
+  });
+});
+
+// Get user's vehicles
+app.get('/api/garage/vehicles/:userId', (req, res) => {
+  const userId = req.params.userId;
+  const sql = `
+    SELECT v.*, vi.url as primary_image
+    FROM vehicles v
+    LEFT JOIN vehicle_images vi ON v.id = vi.vehicle_id AND vi.is_primary = 1
+    WHERE v.user_id = ? AND v.status = 'active'
+    ORDER BY v.created_at DESC
+  `;
+  
+  db.query(sql, [userId], (err, results) => {
+    if (err) {
+      if (err.code === 'ER_NO_SUCH_TABLE') return res.json([]);
+      console.error('Get vehicles error:', err);
+      return res.status(500).json({ message: 'Failed to fetch vehicles' });
+    }
+    res.json(results || []);
+  });
+});
+
+// Create new vehicle
+app.post('/api/garage/vehicles', async (req, res) => {
+  const { userId, make, model, year, color, description, imageUrl } = req.body;
+  
+  if (!userId || !make || !model || !year || !color) {
+    return res.status(400).json({ 
+      success: false, 
+      message: 'User ID, make, model, year, and color are required' 
+    });
+  }
+  
+  try {
+    // Insert vehicle
+    const vehicleSql = 'INSERT INTO vehicles (user_id, make, model, year, color, description, image_url) VALUES (?, ?, ?, ?, ?, ?, ?)';
+    const vehicleResult = await new Promise((resolve, reject) => {
+      db.query(vehicleSql, [userId, make, model, year, color, description, imageUrl], (err, result) => {
+        if (err) reject(err);
+        else resolve(result);
+      });
+    });
+    
+    // If image provided, add to vehicle_images table
+    if (imageUrl) {
+      const imageSql = 'INSERT INTO vehicle_images (vehicle_id, url, is_primary) VALUES (?, ?, 1)';
+      await new Promise((resolve, reject) => {
+        db.query(imageSql, [vehicleResult.insertId, imageUrl], (err, result) => {
+          if (err) reject(err);
+          else resolve(result);
+        });
+      });
+    }
+    
+    res.status(201).json({
+      success: true,
+      message: 'Vehicle added successfully!',
+      vehicleId: vehicleResult.insertId
+    });
+    
+  } catch (error) {
+    console.error('Create vehicle error:', error);
+    if (error.code === 'ER_NO_SUCH_TABLE') {
+      res.status(503).json({ 
+        success: false, 
+        message: 'Database tables not ready. Please run database setup.' 
+      });
+    } else {
+      res.status(500).json({ 
+        success: false, 
+        message: 'Failed to add vehicle' 
+      });
+    }
+  }
+});
+
+// Update vehicle
+app.put('/api/garage/vehicles/:vehicleId', async (req, res) => {
+  const vehicleId = req.params.vehicleId;
+  const { make, model, year, color, description, imageUrl } = req.body;
+  
+  try {
+    const updateSql = 'UPDATE vehicles SET make = ?, model = ?, year = ?, color = ?, description = ?, image_url = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?';
+    await new Promise((resolve, reject) => {
+      db.query(updateSql, [make, model, year, color, description, imageUrl, vehicleId], (err, result) => {
+        if (err) reject(err);
+        else resolve(result);
+      });
+    });
+    
+    res.json({
+      success: true,
+      message: 'Vehicle updated successfully!'
+    });
+    
+  } catch (error) {
+    console.error('Update vehicle error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to update vehicle' 
+    });
+  }
+});
+
+// Delete vehicle
+app.delete('/api/garage/vehicles/:vehicleId', async (req, res) => {
+  const vehicleId = req.params.vehicleId;
+  
+  try {
+    const deleteSql = 'UPDATE vehicles SET status = "inactive" WHERE id = ?';
+    await new Promise((resolve, reject) => {
+      db.query(deleteSql, [vehicleId], (err, result) => {
+        if (err) reject(err);
+        else resolve(result);
+      });
+    });
+    
+    res.json({
+      success: true,
+      message: 'Vehicle deleted successfully!'
+    });
+    
+  } catch (error) {
+    console.error('Delete vehicle error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to delete vehicle' 
+    });
+  }
 });
 
 app.listen(5000, () => {

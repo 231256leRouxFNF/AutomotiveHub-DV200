@@ -53,6 +53,18 @@ export const authService = {
     }
   },
 
+  register: async (username, email, password) => {
+    try {
+      const response = await api.post('/api/register', { username, email, password });
+      if (response.data.token) {
+        localStorage.setItem('authToken', response.data.token);
+      }
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
   logout: () => {
     localStorage.removeItem('authToken');
     window.location.href = '/login';
@@ -137,6 +149,34 @@ export const socialService = {
 
   toggleReaction: async (postId, reactionType) => {
     const response = await api.post(`/api/posts/${postId}/reactions`, { type: reactionType });
+    return response.data;
+  }
+};
+
+// ============ GARAGE SERVICES ============
+export const garageService = {
+  getGarageStats: async (userId) => {
+    const response = await api.get(`/api/garage/stats/${userId}`);
+    return response.data;
+  },
+
+  getUserVehicles: async (userId) => {
+    const response = await api.get(`/api/garage/vehicles/${userId}`);
+    return response.data;
+  },
+
+  createVehicle: async (vehicleData) => {
+    const response = await api.post('/api/garage/vehicles', vehicleData);
+    return response.data;
+  },
+
+  updateVehicle: async (vehicleId, vehicleData) => {
+    const response = await api.put(`/api/garage/vehicles/${vehicleId}`, vehicleData);
+    return response.data;
+  },
+
+  deleteVehicle: async (vehicleId) => {
+    const response = await api.delete(`/api/garage/vehicles/${vehicleId}`);
     return response.data;
   }
 };
