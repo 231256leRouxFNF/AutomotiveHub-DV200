@@ -20,8 +20,54 @@ const CommunityFeed = () => {
         ]);
         if (!cancelled) {
           const postsData = Array.isArray(p.data) ? p.data : [];
-          setPosts(postsData);
-          setCommunityStats(Array.isArray(s.data) ? s.data : []);
+
+          // Fallback demo posts if API is empty
+          const fallbackPosts = [
+            {
+              id: 'demo-1',
+              author: 'Alex Carter',
+              avatar: 'https://i.pravatar.cc/96?img=12',
+              content: 'Just finished installing a new exhaust on my WRX. The sound is incredible! 🔧🔥',
+              image: 'https://images.unsplash.com/photo-1502877338535-766e1452684a?q=80&w=1200&auto=format&fit=crop',
+              likes: 128,
+              comments: 24,
+              featured: true,
+              timestamp: '2h ago'
+            },
+            {
+              id: 'demo-2',
+              author: 'Priya Singh',
+              avatar: 'https://i.pravatar.cc/96?img=32',
+              content: 'Detailing day! Any tips for keeping black paint swirl-free?',
+              image: 'https://images.unsplash.com/photo-1483721310020-03333e577078?q=80&w=1200&auto=format&fit=crop',
+              likes: 76,
+              comments: 11,
+              featured: false,
+              timestamp: '5h ago'
+            },
+            {
+              id: 'demo-3',
+              author: 'Marco Rossi',
+              avatar: 'https://i.pravatar.cc/96?img=15',
+              content: 'Spotted this classic 911 at the weekend meet. Absolute perfection.',
+              image: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=1200&auto=format&fit=crop',
+              likes: 211,
+              comments: 37,
+              featured: false,
+              timestamp: '1d ago'
+            }
+          ];
+
+          const normalizedPosts = postsData.length ? postsData : fallbackPosts;
+          setPosts(normalizedPosts);
+
+          const incomingStats = Array.isArray(s.data) ? s.data : [];
+          const fallbackStats = [
+            { value: '24.3k', label: 'Active Members', color: '#22C55E' },
+            { value: '182k', label: 'Total Posts', color: '#60A5FA' },
+            { value: '73', label: 'Upcoming Events', color: '#F59E0B' }
+          ];
+          setCommunityStats(incomingStats.length ? incomingStats : fallbackStats);
 
           // Normalize snapshots: accept array of strings or objects with `image` field
           let snapshots = Array.isArray(snaps.data) ? snaps.data : [];
@@ -33,10 +79,20 @@ const CommunityFeed = () => {
 
           // Fallback to images from posts if API returns nothing
           if (!snapshots.length) {
-            snapshots = postsData
+            const source = normalizedPosts
               .filter((post) => post && post.image)
               .slice(0, 9)
               .map((post) => ({ id: post.id, image: post.image, alt: post.content }));
+            snapshots = source;
+          }
+
+          // If still empty, provide static snapshots
+          if (!snapshots.length) {
+            snapshots = [
+              { id: 'snap-1', image: 'https://images.unsplash.com/photo-1511919884226-fd3cad34687c?q=80&w=1200&auto=format&fit=crop' },
+              { id: 'snap-2', image: 'https://images.unsplash.com/photo-1519580930-4f119914eec8?q=80&w=1200&auto=format&fit=crop' },
+              { id: 'snap-3', image: 'https://images.unsplash.com/photo-1503736334956-4c8f8e92946d?q=80&w=1200&auto=format&fit=crop' }
+            ];
           }
           setCommunitySnapshots(snapshots);
         }
