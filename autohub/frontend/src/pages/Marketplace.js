@@ -28,9 +28,67 @@ const Marketplace = () => {
           axios.get('/api/listings')
         ]);
         if (!cancelled) {
-          setFeaturedListings(Array.isArray(f.data) ? f.data : []);
-          setCategories(Array.isArray(c.data) ? c.data : []);
-          setAllListings(Array.isArray(a.data) ? a.data : []);
+          const incomingFeatured = Array.isArray(f.data) ? f.data : [];
+          const incomingCategories = Array.isArray(c.data) ? c.data : [];
+          const incomingListings = Array.isArray(a.data) ? a.data : [];
+
+          const fallbackFeatured = [
+            {
+              id: 'fl-1',
+              title: '2019 BMW M2 Competition',
+              description: 'Low miles, pristine condition, performance pack.',
+              price: '$52,900',
+              image: 'https://images.unsplash.com/photo-1555215695-3004980ad54e?q=80&w=1200&auto=format&fit=crop'
+            },
+            {
+              id: 'fl-2',
+              title: 'Toyota GR Yaris',
+              description: 'Stage 1 tune, forged wheels, immaculate.',
+              price: '$38,400',
+              image: 'https://images.unsplash.com/photo-1619523440439-89143c4eb1b5?q=80&w=1200&auto=format&fit=crop'
+            }
+          ];
+
+          const fallbackCategories = [
+            { name: 'cars', icon: '🚗' },
+            { name: 'parts', icon: '🔧' },
+            { name: 'accessories', icon: '🧰' },
+            { name: 'wheels', icon: '🛞' }
+          ];
+
+          const fallbackListings = [
+            {
+              id: 'al-1',
+              title: 'Audi S4 B9',
+              price: '$27,500',
+              location: 'San Diego, CA',
+              condition: 'Used - Excellent',
+              seller: 'alex_c',
+              image: 'https://images.unsplash.com/photo-1515923162063-5a5b89c57cde?q=80&w=1200&auto=format&fit=crop'
+            },
+            {
+              id: 'al-2',
+              title: 'HKS Blow Off Valve',
+              price: '$180',
+              location: 'Austin, TX',
+              condition: 'Used - Good',
+              seller: 'marco_r',
+              image: 'https://images.unsplash.com/photo-1571769199112-3a88f66f2827?q=80&w=1200&auto=format&fit=crop'
+            },
+            {
+              id: 'al-3',
+              title: 'Ford Mustang GT 5.0',
+              price: '$31,900',
+              location: 'Orlando, FL',
+              condition: 'Used - Excellent',
+              seller: 'priya_s',
+              image: 'https://images.unsplash.com/photo-1504215680853-026ed2a45def?q=80&w=1200&auto=format&fit=crop'
+            }
+          ];
+
+          setFeaturedListings(incomingFeatured.length ? incomingFeatured : fallbackFeatured);
+          setCategories(incomingCategories.length ? incomingCategories : fallbackCategories);
+          setAllListings(incomingListings.length ? incomingListings : fallbackListings);
         }
       } catch (e) {
         if (!cancelled) {
