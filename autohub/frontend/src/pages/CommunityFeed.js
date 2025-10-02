@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Header from '../components/Header';
+import communityData from '../data/community.json';
 import './CommunityFeed.css';
 
 const CommunityFeed = () => {
@@ -20,8 +21,14 @@ const CommunityFeed = () => {
         ]);
         if (!cancelled) {
           const postsData = Array.isArray(p.data) ? p.data : [];
-          setPosts(postsData);
-          setCommunityStats(Array.isArray(s.data) ? s.data : []);
+
+          // Use imported static dataset as fallback
+          const normalizedPosts = postsData.length ? postsData : (communityData.posts || []);
+          setPosts(normalizedPosts);
+
+          const incomingStats = Array.isArray(s.data) ? s.data : [];
+          const fallbackStats = communityData.stats || [];
+          setCommunityStats(incomingStats.length ? incomingStats : fallbackStats);
 
           // Normalize snapshots: accept array of strings or objects with `image` field
           let snapshots = Array.isArray(snaps.data) ? snaps.data : [];
@@ -33,10 +40,20 @@ const CommunityFeed = () => {
 
           // Fallback to images from posts if API returns nothing
           if (!snapshots.length) {
-            snapshots = postsData
+            const source = normalizedPosts
               .filter((post) => post && post.image)
               .slice(0, 9)
               .map((post) => ({ id: post.id, image: post.image, alt: post.content }));
+            snapshots = source;
+          }
+
+          // If still empty, provide static snapshots
+          if (!snapshots.length) {
+            snapshots = [
+              { id: 'snap-1', image: 'https://images.unsplash.com/photo-1511919884226-fd3cad34687c?q=80&w=1200&auto=format&fit=crop' },
+              { id: 'snap-2', image: 'https://images.unsplash.com/photo-1519580930-4f119914eec8?q=80&w=1200&auto=format&fit=crop' },
+              { id: 'snap-3', image: 'https://images.unsplash.com/photo-1503736334956-4c8f8e92946d?q=80&w=1200&auto=format&fit=crop' }
+            ];
           }
           setCommunitySnapshots(snapshots);
         }

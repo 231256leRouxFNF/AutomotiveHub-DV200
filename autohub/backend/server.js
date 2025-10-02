@@ -481,6 +481,45 @@ app.get('/api/posts', (req, res) => {
   });
 });
 
+// Create a new community post
+app.post('/api/posts', (req, res) => {
+  const { author, avatar_url, content, image_url } = req.body || {};
+
+  if (!content || !String(content).trim()) {
+    return res.status(400).json({ message: 'Content is required' });
+  }
+
+  const safeAuthor = (author && String(author).trim()) || 'Guest';
+  const safeAvatar = avatar_url ? String(avatar_url) : null;
+  const safeImage = image_url ? String(image_url) : null;
+  const timestamp = new Date().toLocaleString();
+
+  const sql = 'INSERT INTO posts (author, avatar_url, content, image_url, likes, comments, featured, timestamp) VALUES (?, ?, ?, ?, 0, 0, 0, ?)';
+  const params = [safeAuthor, safeAvatar, String(content).trim(), safeImage, timestamp];
+
+  db.query(sql, params, (err, result) => {
+    if (err) {
+      if (err.code === 'ER_NO_SUCH_TABLE') {
+        return res.status(503).json({ message: 'Posts table not ready. Please run database setup.' });
+      }
+      console.error('Create post error:', err);
+      return res.status(500).json({ message: 'Failed to create post' });
+    }
+
+    return res.status(201).json({
+      id: result.insertId,
+      author: safeAuthor,
+      avatar: safeAvatar,
+      content: String(content).trim(),
+      image: safeImage,
+      likes: 0,
+      comments: 0,
+      featured: false,
+      timestamp
+    });
+  });
+});
+
 // Community stats
 app.get('/api/community/stats', (req, res) => {
   const sql = `SELECT value, label, color FROM community_stats ORDER BY sort_order ASC`;

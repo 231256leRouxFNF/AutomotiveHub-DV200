@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
+import marketplaceData from '../data/marketplace.json';
 import './Marketplace.css';
 
 const Marketplace = () => {
@@ -28,9 +29,17 @@ const Marketplace = () => {
           axios.get('/api/listings')
         ]);
         if (!cancelled) {
-          setFeaturedListings(Array.isArray(f.data) ? f.data : []);
-          setCategories(Array.isArray(c.data) ? c.data : []);
-          setAllListings(Array.isArray(a.data) ? a.data : []);
+          const incomingFeatured = Array.isArray(f.data) ? f.data : [];
+          const incomingCategories = Array.isArray(c.data) ? c.data : [];
+          const incomingListings = Array.isArray(a.data) ? a.data : [];
+
+          const fallbackFeatured = (marketplaceData.featured || []);
+          const fallbackCategories = (marketplaceData.categories || []);
+          const fallbackListings = (marketplaceData.listings || []);
+
+          setFeaturedListings(incomingFeatured.length ? incomingFeatured : fallbackFeatured);
+          setCategories(incomingCategories.length ? incomingCategories : fallbackCategories);
+          setAllListings(incomingListings.length ? incomingListings : fallbackListings);
         }
       } catch (e) {
         if (!cancelled) {

@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS listings (
     price DECIMAL(10,2) NOT NULL,
     price_cents INT NOT NULL,
     location VARCHAR(100),
-    condition ENUM('new', 'used', 'refurbished') DEFAULT 'used',
+    `condition` ENUM('new', 'used', 'refurbished') DEFAULT 'used',
     make VARCHAR(50),
     model VARCHAR(50),
     year YEAR,

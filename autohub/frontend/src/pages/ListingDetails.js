@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useParams } from 'react-router-dom';
 import Header from '../components/Header';
+import listingStatic from '../data/listingDetails.json';
 import './ListingDetails.css';
 
 const ListingDetails = () => {
@@ -21,7 +22,10 @@ const ListingDetails = () => {
           axios.get(`/api/listings/${id}/related`)
         ]);
         if (!cancelled) {
-          const info = d.data || {};
+          const fallback = listingStatic.listing || {};
+          const infoRaw = d.data || {};
+          const info = (infoRaw && Object.keys(infoRaw).length) ? infoRaw : fallback;
+
           setDetails({
             title: info.title || '',
             price: info.price || '',
@@ -29,16 +33,19 @@ const ListingDetails = () => {
             tags: info.tags || [],
             location: info.location || ''
           });
-          setVehicleImages(Array.isArray(info.images) ? info.images : []);
-          setVehicleSpecs(Array.isArray(info.specs) ? info.specs : []);
-          setRelatedListings(Array.isArray(r.data) ? r.data : []);
+          setVehicleImages(Array.isArray(info.images) && info.images.length ? info.images : (fallback.images || []));
+          setVehicleSpecs(Array.isArray(info.specs) && info.specs.length ? info.specs : (fallback.specs || []));
+
+          const rData = Array.isArray(r.data) && r.data.length ? r.data : (listingStatic.related || []);
+          setRelatedListings(rData);
         }
       } catch (e) {
         if (!cancelled) {
-          setVehicleImages([]);
-          setVehicleSpecs([]);
-          setRelatedListings([]);
-          setDetails({ title: '', price: '', description: '', tags: [], location: '' });
+          const fb = listingStatic.listing || {};
+          setVehicleImages(fb.images || []);
+          setVehicleSpecs(fb.specs || []);
+          setRelatedListings(listingStatic.related || []);
+          setDetails({ title: fb.title || '', price: fb.price || '', description: fb.description || '', tags: fb.tags || [], location: fb.location || '' });
         }
       }
     };
