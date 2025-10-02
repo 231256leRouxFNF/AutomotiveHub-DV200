@@ -59,9 +59,15 @@ const CommunityFeed = () => {
         }
       } catch (e) {
         if (!cancelled) {
-          setPosts([]);
-          setCommunityStats([]);
-          setCommunitySnapshots([]);
+          const fbPosts = (communityData.posts || []);
+          setPosts(fbPosts);
+          const fbStats = (communityData.stats || []);
+          setCommunityStats(fbStats);
+          const snaps = fbPosts
+            .filter((post) => post && post.image)
+            .slice(0, 9)
+            .map((post) => ({ id: post.id, image: post.image, alt: post.content }));
+          setCommunitySnapshots(snaps);
         }
       }
     };
