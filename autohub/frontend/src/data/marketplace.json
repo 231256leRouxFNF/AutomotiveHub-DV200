@@ -1,0 +1,56 @@
+{
+  "featured": [
+    {
+      "id": "f1",
+      "title": "1969 Ford Mustang Fastback",
+      "description": "Iconic classic muscle car, meticulously restored with a powerful V8 engine. A true head-turner.",
+      "price": "R 1,315,578.75",
+      "image": "https://images.unsplash.com/photo-1519681393784-d120267933ba?q=80&w=1600&auto=format&fit=crop"
+    },
+    {
+      "id": "f2",
+      "title": "2020 Honda Civic Type R",
+      "description": "This meticulously maintained 2020 Honda Civic Type R is a true enthusiast's dream, boasting high-performance modifications.",
+      "price": "R 745,494.63",
+      "image": "https://images.unsplash.com/photo-1606665813985-1dbd8f7f6b31?q=80&w=1600&auto=format&fit=crop"
+    },
+    {
+      "id": "f3",
+      "title": "Jeep Wrangler Rubicon Unlimited",
+      "description": "Fully outfitted off-road beast. Ready for any adventure.",
+      "price": "R 857,757.35",
+      "image": "https://images.unsplash.com/photo-1519638399535-1b036603ac77?q=80&w=1600&auto=format&fit=crop"
+    },
+    {
+      "id": "f4",
+      "title": "Audi R8 V10 plus",
+      "description": "Every supercar detail engineered for maximum excitement.",
+      "price": "R 1,719,022.90",
+      "image": "https://images.unsplash.com/photo-1502877338535-766e1452684a?q=80&w=1600&auto=format&fit=crop"
+    }
+  ],
+  "categories": [
+    { "name": "Sedans", "icon": "🚗" },
+    { "name": "SUVs", "icon": "🚙" },
+    { "name": "Coupes", "icon": "🏎️" },
+    { "name": "Trucks", "icon": "🚚" },
+    { "name": "Motorcycles", "icon": "🏍️" },
+    { "name": "Performance Parts", "icon": "⚙️" },
+    { "name": "Exterior", "icon": "✨" },
+    { "name": "Interior", "icon": "🧼" }
+  ],
+  "listings": [
+    { "id": "l1", "title": "Forged Alloy Racing Wheels (Set of 4)", "price": "R 49,114.94", "location": "Cape Town, South Africa", "condition": "New", "seller": "SpeedDemon Parts", "image": "https://images.unsplash.com/photo-1517677103901-1ff54b679d83?q=80&w=1600&auto=format&fit=crop" },
+    { "id": "l2", "title": "Recaro Sportster CS Seats (Pair)", "price": "R 26,311.58", "location": "Durban, South Africa", "condition": "Used - Excellent", "seller": "Trackday Gear", "image": "https://images.unsplash.com/photo-1571607388263-1044a2cc6621?q=80&w=1600&auto=format&fit=crop" },
+    { "id": "l3", "title": "Garrett GT35R Turbo Kit", "price": "R 21,049.26", "location": "Pretoria, South Africa", "condition": "Used - Good", "seller": "BoostUp Performance", "image": "https://images.unsplash.com/photo-1586297135537-94bc9ba060aa?q=80&w=1600&auto=format&fit=crop" },
+    { "id": "l4", "title": "Audi S5 OEM LED Headlights (Pair)", "price": "R 16,664.00", "location": "Johannesburg, South Africa", "condition": "New", "seller": "LuxuryCar Parts", "image": "https://images.unsplash.com/photo-1523986371872-9d3ba2e2f642?q=80&w=1600&auto=format&fit=crop" },
+    { "id": "l5", "title": "Borla Cat-Back Exhaust System", "price": "$780", "location": "Seattle, WA", "condition": "Used - Minor Scratches", "seller": "Soundwave Mods", "image": "https://images.unsplash.com/photo-1592853625600-9536c07a9a29?q=80&w=1600&auto=format&fit=crop" },
+    { "id": "l6", "title": "Carbon Fiber Rear Spoiler", "price": "R 7,839.47", "location": "Western Cape, South Africa", "condition": "New", "seller": "Aerodynamics", "image": "https://images.unsplash.com/photo-1619767886558-efdc259cde1b?q=80&w=1600&auto=format&fit=crop" },
+    { "id": "l7", "title": "Brembo GT Brake Kit Front", "price": "R 56,131.36", "location": "Johannesburg, South Africa", "condition": "Used - Good", "seller": "StreetSpec Racing", "image": "https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=1600&auto=format&fit=crop" },
+    { "id": "l8", "title": "Ohlins Road & Track Coilovers", "price": "R 36,836.21", "location": "Pretoria, South Africa", "condition": "New", "seller": "RideComfort Tuning", "image": "https://images.unsplash.com/photo-1493238792000-8113da705763?q=80&w=1600&auto=format&fit=crop" },
+    { "id": "l9", "title": "MOMO Racing Steering Wheel", "price": "$300", "location": "Dallas, TX", "condition": "New", "seller": "GripEnhancers", "image": "https://images.unsplash.com/photo-1583121274602-3e2820c69888?q=80&w=1600&auto=format&fit=crop" },
+    { "id": "l10", "title": "Haltech Elite 2500 ECU", "price": "R 31,573.89", "location": "N/A", "condition": "New", "seller": "EngineLabs Tech", "image": "https://images.unsplash.com/photo-1465447142348-e9952c393450?q=80&w=1600&auto=format&fit=crop" },
+    { "id": "l11", "title": "BlackVue DR900X Plus Dashcam", "price": "R 6,139.37", "location": "Pretoria, South Africa", "condition": "New", "seller": "RoadGuard Safety", "image": "https://images.unsplash.com/photo-1562310500-1298e2ecb4de?q=80&w=1600&auto=format&fit=crop" },
+    { "id": "l12", "title": "JL Audio 12W6v3 Subwoofer", "price": "R 10,524.63", "location": "Western Cape, South Africa", "condition": "New", "seller": "Bassheads Audio", "image": "https://images.unsplash.com/photo-1512467651184-4542397173a0?q=80&w=1600&auto=format&fit=crop" }
+  ]
+}
