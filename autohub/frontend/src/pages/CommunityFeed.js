@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Header from '../components/Header';
+import communityData from '../data/community.json';
 import './CommunityFeed.css';
 
 const CommunityFeed = () => {
@@ -21,52 +22,12 @@ const CommunityFeed = () => {
         if (!cancelled) {
           const postsData = Array.isArray(p.data) ? p.data : [];
 
-          // Fallback demo posts if API is empty
-          const fallbackPosts = [
-            {
-              id: 'demo-1',
-              author: 'Alex Carter',
-              avatar: 'https://i.pravatar.cc/96?img=12',
-              content: 'Just finished installing a new exhaust on my WRX. The sound is incredible! 🔧🔥',
-              image: 'https://images.unsplash.com/photo-1502877338535-766e1452684a?q=80&w=1200&auto=format&fit=crop',
-              likes: 128,
-              comments: 24,
-              featured: true,
-              timestamp: '2h ago'
-            },
-            {
-              id: 'demo-2',
-              author: 'Priya Singh',
-              avatar: 'https://i.pravatar.cc/96?img=32',
-              content: 'Detailing day! Any tips for keeping black paint swirl-free?',
-              image: 'https://images.unsplash.com/photo-1483721310020-03333e577078?q=80&w=1200&auto=format&fit=crop',
-              likes: 76,
-              comments: 11,
-              featured: false,
-              timestamp: '5h ago'
-            },
-            {
-              id: 'demo-3',
-              author: 'Marco Rossi',
-              avatar: 'https://i.pravatar.cc/96?img=15',
-              content: 'Spotted this classic 911 at the weekend meet. Absolute perfection.',
-              image: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=1200&auto=format&fit=crop',
-              likes: 211,
-              comments: 37,
-              featured: false,
-              timestamp: '1d ago'
-            }
-          ];
-
-          const normalizedPosts = postsData.length ? postsData : fallbackPosts;
+          // Use imported static dataset as fallback
+          const normalizedPosts = postsData.length ? postsData : (communityData.posts || []);
           setPosts(normalizedPosts);
 
           const incomingStats = Array.isArray(s.data) ? s.data : [];
-          const fallbackStats = [
-            { value: '24.3k', label: 'Active Members', color: '#22C55E' },
-            { value: '182k', label: 'Total Posts', color: '#60A5FA' },
-            { value: '73', label: 'Upcoming Events', color: '#F59E0B' }
-          ];
+          const fallbackStats = communityData.stats || [];
           setCommunityStats(incomingStats.length ? incomingStats : fallbackStats);
 
           // Normalize snapshots: accept array of strings or objects with `image` field
