@@ -43,9 +43,9 @@ const Marketplace = () => {
         }
       } catch (e) {
         if (!cancelled) {
-          setFeaturedListings([]);
-          setCategories([]);
-          setAllListings([]);
+          setFeaturedListings((marketplaceData.featured || []));
+          setCategories((marketplaceData.categories || []));
+          setAllListings((marketplaceData.listings || []));
         }
       }
     };
