@@ -701,22 +701,49 @@ app.get('/api/garage/vehicles/:userId', (req, res) => {
 
 // Create new vehicle
 app.post('/api/garage/vehicles', async (req, res) => {
-  const { userId, make, model, year, color, description, imageUrl } = req.body;
+  const { userId, make, model, year, color, description, imageUrl } = req.body || {};
   
+  // Basic required fields
   if (!userId || !make || !model || !year || !color) {
     return res.status(400).json({ 
       success: false, 
       message: 'User ID, make, model, year, and color are required' 
     });
   }
-  
+
+  // Coerce and validate year
+  const yearNum = parseInt(year, 10);
+  const currentYear = new Date().getFullYear() + 1; // allow next model year
+  if (Number.isNaN(yearNum) || yearNum < 1886 || yearNum > currentYear) {
+    return res.status(400).json({
+      success: false,
+      message: 'Please provide a valid 4-digit year'
+    });
+  }
+
+  // Optional: guard lengths
+  if (imageUrl && imageUrl.length > 500) {
+    return res.status(400).json({ success: false, message: 'Image URL is too long (max 500 chars)' });
+  }
+
   try {
+    // Ensure user exists to avoid FK error (preflight check)
+    const userExists = await new Promise((resolve, reject) => {
+      db.query('SELECT id FROM users WHERE id = ? LIMIT 1', [userId], (err, rows) => {
+        if (err) return reject(err);
+        resolve(rows && rows.length > 0);
+      });
+    });
+    if (!userExists) {
+      return res.status(400).json({ success: false, message: 'Invalid userId: user does not exist' });
+    }
+
     // Insert vehicle
     const vehicleSql = 'INSERT INTO vehicles (user_id, make, model, year, color, description, image_url) VALUES (?, ?, ?, ?, ?, ?, ?)';
     const vehicleResult = await new Promise((resolve, reject) => {
-      db.query(vehicleSql, [userId, make, model, year, color, description, imageUrl], (err, result) => {
-        if (err) reject(err);
-        else resolve(result);
+      db.query(vehicleSql, [userId, make, model, yearNum, color, description, imageUrl || null], (err, result) => {
+        if (err) return reject(err);
+        resolve(result);
       });
     });
     
@@ -725,13 +752,13 @@ app.post('/api/garage/vehicles', async (req, res) => {
       const imageSql = 'INSERT INTO vehicle_images (vehicle_id, url, is_primary) VALUES (?, ?, 1)';
       await new Promise((resolve, reject) => {
         db.query(imageSql, [vehicleResult.insertId, imageUrl], (err, result) => {
-          if (err) reject(err);
-          else resolve(result);
+          if (err) return reject(err);
+          resolve(result);
         });
       });
     }
     
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       message: 'Vehicle added successfully!',
       vehicleId: vehicleResult.insertId
@@ -740,16 +767,24 @@ app.post('/api/garage/vehicles', async (req, res) => {
   } catch (error) {
     console.error('Create vehicle error:', error);
     if (error.code === 'ER_NO_SUCH_TABLE') {
-      res.status(503).json({ 
+      return res.status(503).json({ 
         success: false, 
         message: 'Database tables not ready. Please run database setup.' 
       });
-    } else {
-      res.status(500).json({ 
-        success: false, 
-        message: 'Failed to add vehicle' 
-      });
     }
+    if (error.code === 'ER_NO_REFERENCED_ROW_2' || error.code === 'ER_ROW_IS_REFERENCED') {
+      return res.status(400).json({ success: false, message: 'Invalid reference: ensure userId exists' });
+    }
+    if (error.code === 'ER_TRUNCATED_WRONG_VALUE' || error.code === 'ER_TRUNCATED_WRONG_VALUE_FOR_FIELD') {
+      return res.status(400).json({ success: false, message: 'Invalid field value (e.g., year)' });
+    }
+    if (error.code === 'ER_DATA_TOO_LONG') {
+      return res.status(400).json({ success: false, message: 'One of the fields is too long' });
+    }
+    return res.status(500).json({ 
+      success: false, 
+      message: 'Failed to add vehicle' 
+    });
   }
 });
 
