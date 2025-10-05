@@ -5,6 +5,25 @@ import Header from '../components/Header';
 import marketplaceData from '../data/marketplace.json';
 import './Marketplace.css';
 
+// Local marketplace images
+import Top1 from '../assets/Marketplace-page/Top-Section-1.jpg';
+import Top2 from '../assets/Marketplace-page/Top-Section-2.jpg';
+import Top3 from '../assets/Marketplace-page/Top-Section-3.jpg';
+import Top4 from '../assets/Marketplace-page/Top-Section-4.jpg';
+
+import Img1 from '../assets/Marketplace-page/Image-1.jpg';
+import Img2 from '../assets/Marketplace-page/Image-2.jpg';
+import Img3 from '../assets/Marketplace-page/Image-3.jpg';
+import Img4 from '../assets/Marketplace-page/Image-4.jpg';
+import Img5 from '../assets/Marketplace-page/Image-5.jpg';
+import Img6 from '../assets/Marketplace-page/Image-6.jpg';
+import Img7 from '../assets/Marketplace-page/Image-7.jpg';
+import Img8 from '../assets/Marketplace-page/Image-8.jpg';
+import Img9 from '../assets/Marketplace-page/Image-9.jpg';
+import Img10 from '../assets/Marketplace-page/Image-10.jpg';
+import Img11 from '../assets/Marketplace-page/Image-11.jpg';
+import Img12 from '../assets/Marketplace-page/Image-12.jpg';
+
 const Marketplace = () => {
   const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -37,15 +56,38 @@ const Marketplace = () => {
           const fallbackCategories = (marketplaceData.categories || []);
           const fallbackListings = (marketplaceData.listings || []);
 
-          setFeaturedListings(incomingFeatured.length ? incomingFeatured : fallbackFeatured);
+          const featuredImages = [Top1, Top2, Top3, Top4];
+          const listingImages = [Img1, Img2, Img3, Img4, Img5, Img6, Img7, Img8, Img9, Img10, Img11, Img12];
+
+          const featuredToUse = (incomingFeatured.length ? incomingFeatured : fallbackFeatured).map((item, idx) => ({
+            ...item,
+            image: featuredImages[idx % featuredImages.length]
+          }));
+
+          const listingsToUse = (incomingListings.length ? incomingListings : fallbackListings).map((item, idx) => ({
+            ...item,
+            image: listingImages[idx % listingImages.length]
+          }));
+
+          setFeaturedListings(featuredToUse);
           setCategories(incomingCategories.length ? incomingCategories : fallbackCategories);
-          setAllListings(incomingListings.length ? incomingListings : fallbackListings);
+          setAllListings(listingsToUse);
         }
       } catch (e) {
         if (!cancelled) {
-          setFeaturedListings((marketplaceData.featured || []));
+          const featuredImages = [Top1, Top2, Top3, Top4];
+          const listingImages = [Img1, Img2, Img3, Img4, Img5, Img6, Img7, Img8, Img9, Img10, Img11, Img12];
+          const fallbackFeatured = (marketplaceData.featured || []).map((item, idx) => ({
+            ...item,
+            image: featuredImages[idx % featuredImages.length]
+          }));
+          const fallbackListings = (marketplaceData.listings || []).map((item, idx) => ({
+            ...item,
+            image: listingImages[idx % listingImages.length]
+          }));
+          setFeaturedListings(fallbackFeatured);
           setCategories((marketplaceData.categories || []));
-          setAllListings((marketplaceData.listings || []));
+          setAllListings(fallbackListings);
         }
       }
     };

@@ -48,8 +48,15 @@ const VehicleManagement = () => {
         garageService.getUserVehicles(userId)
       ]);
       
-      setGarageStats(stats);
-      setVehicles(userVehicles);
+      // Normalize stats to ensure required fields exist
+      const normalizedStats = {
+        totalVehicles: Number((stats && (stats.totalVehicles ?? stats.total_vehicles)) ?? 0),
+        featured: Number((stats && (stats.featured ?? stats.featured_count)) ?? 0),
+        upcomingEvents: Number((stats && (stats.upcomingEvents ?? stats.upcoming_events)) ?? 0)
+      };
+
+      setGarageStats(normalizedStats);
+      setVehicles(Array.isArray(userVehicles) ? userVehicles : []);
     } catch (error) {
       console.error('Error loading garage data:', error);
       // Set default values if API fails
@@ -206,7 +213,7 @@ const VehicleManagement = () => {
                 <path d="M23.9997 22.6699C23.9997 21.9354 23.4042 21.3399 22.6697 21.3399C21.9351 21.3399 21.3397 21.9354 21.3397 22.6699C21.3397 23.4045 21.9351 23.9999 22.6697 23.9999C23.4042 23.9999 23.9997 23.4045 23.9997 22.6699ZM26.6597 22.6699C26.6597 24.8736 24.8734 26.6599 22.6697 26.6599C20.466 26.6599 18.6797 24.8736 18.6797 22.6699C18.6797 20.4663 20.466 18.6799 22.6697 18.6799C24.8734 18.6799 26.6597 20.4663 26.6597 22.6699Z" fill="#636AE8"/>
               </svg>
             }
-            number={garageStats.totalVehicles.toString()}
+            number={String(garageStats.totalVehicles ?? 0)}
             label="Total Vehicles"
           />
 
@@ -220,7 +227,7 @@ const VehicleManagement = () => {
                 <path d="M6.65992 22.6699C7.39445 22.6699 7.98992 23.2654 7.98992 23.9999C7.98992 24.7345 7.39445 25.3299 6.65992 25.3299H3.99992C3.26539 25.3299 2.66992 24.7345 2.66992 23.9999C2.66992 23.2654 3.26539 22.6699 3.99992 22.6699H6.65992Z" fill="#636AE8"/>
               </svg>
             }
-            number={garageStats.featured.toString()}
+            number={String(garageStats.featured ?? 0)}
             label="Featured"
           />
 
@@ -233,7 +240,7 @@ const VehicleManagement = () => {
                 <path d="M27.9702 12C28.7048 12 29.3002 12.5955 29.3002 13.33C29.3002 14.0646 28.7048 14.66 27.9702 14.66L4.0302 14.66C3.29566 14.66 2.7002 14.0646 2.7002 13.33C2.7002 12.5955 3.29566 12 4.0302 12L27.9702 12Z" fill="#636AE8"/>
               </svg>
             }
-            number={garageStats.upcomingEvents.toString()}
+            number={String(garageStats.upcomingEvents ?? 0)}
             label="Upcoming Events"
           />
         </div>

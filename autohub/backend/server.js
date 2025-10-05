@@ -337,21 +337,24 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
-// Login endpoint allowing username or email
+// Login endpoint allowing username or email (case-insensitive)
 app.post('/api/login', (req, res) => {
   const { identifier, password } = req.body || {};
-  if (!identifier || !password) {
+  const ident = (identifier ?? '').toString().trim();
+  if (!ident || !password) {
     return res.status(400).json({ success: false, message: 'Identifier and password are required' });
   }
 
   const sql = `
     SELECT id, username, email, password_hash
     FROM users
-    WHERE username = ? OR email = ?
+    WHERE LOWER(username) = ? OR LOWER(email) = ?
     LIMIT 1
   `;
 
-  db.query(sql, [identifier, identifier.toLowerCase ? identifier.toLowerCase() : identifier], async (err, results) => {
+  const identLower = ident.toLowerCase();
+
+  db.query(sql, [identLower, identLower], async (err, results) => {
     if (err) {
       console.error('Login query error:', err);
       return res.status(500).json({ success: false, message: 'Internal server error' });
@@ -647,7 +650,7 @@ app.get('/api/garage/stats/:userId', (req, res) => {
     `
     SELECT 
       COUNT(*) AS totalVehicles,
-      SUM(CASE WHEN v.featured = 1 THEN 1 ELSE 0 END) AS featured
+      SUM(CASE WHEN v.is_featured = 1 THEN 1 ELSE 0 END) AS featured
     FROM vehicles v
     WHERE v.user_id = ?
     `,
@@ -690,9 +693,11 @@ app.get('/api/garage/vehicles/:userId', (req, res) => {
 
 // Create new vehicle (with image upload support)
 app.post('/api/garage/vehicles', upload.array('images'), async (req, res) => {
-  const { user_id, make, model, year, color, description } = req.body || {};
+  const body = req.body || {};
+  const userId = body.user_id ?? body.userId;
+  const { make, model, year, color, description, imageUrl } = body;
   // Basic required fields
-  if (!user_id || !make || !model || !year || !color) {
+  if (!userId || !make || !model || !year || !color) {
     return res.status(400).json({ 
       success: false, 
       message: 'User ID, make, model, year, and color are required' 
@@ -712,7 +717,7 @@ app.post('/api/garage/vehicles', upload.array('images'), async (req, res) => {
   try {
     // Ensure user exists to avoid FK error (preflight check)
     const userExists = await new Promise((resolve, reject) => {
-      db.query('SELECT id FROM users WHERE id = ? LIMIT 1', [user_id], (err, rows) => {
+      db.query('SELECT id FROM users WHERE id = ? LIMIT 1', [userId], (err, rows) => {
         if (err) return reject(err);
         resolve(rows && rows.length > 0);
       });
@@ -724,14 +729,15 @@ app.post('/api/garage/vehicles', upload.array('images'), async (req, res) => {
     // Insert vehicle (no image_url, handled in images table)
     const vehicleSql = 'INSERT INTO vehicles (user_id, make, model, year, color, description) VALUES (?, ?, ?, ?, ?, ?)';
     const vehicleResult = await new Promise((resolve, reject) => {
-      db.query(vehicleSql, [user_id, make, model, yearNum, color, description], (err, result) => {
+      db.query(vehicleSql, [userId, make, model, yearNum, color, description], (err, result) => {
         if (err) return reject(err);
         resolve(result);
       });
     });
     const vehicleId = vehicleResult.insertId;
 
-    // Save uploaded images to vehicle_images table
+    // Save uploaded images to vehicle_images table (uploaded files)
+    let primaryImageSet = false;
     if (req.files && req.files.length > 0) {
       for (let i = 0; i < req.files.length; i++) {
         const file = req.files[i];
@@ -746,7 +752,22 @@ app.post('/api/garage/vehicles', upload.array('images'), async (req, res) => {
             }
           );
         });
+        if (i === 0) primaryImageSet = true;
       }
+    }
+
+    // If an imageUrl was provided in the body (URL), upsert as primary when no files uploaded
+    if (imageUrl && !primaryImageSet) {
+      await new Promise((resolve, reject) => {
+        db.query(
+          'INSERT INTO vehicle_images (vehicle_id, url, is_primary, sort_order) VALUES (?, ?, 1, 0)',
+          [vehicleId, imageUrl],
+          (err, result) => {
+            if (err) return reject(err);
+            resolve(result);
+          }
+        );
+      });
     }
 
     return res.status(201).json({
@@ -782,22 +803,63 @@ app.post('/api/garage/vehicles', upload.array('images'), async (req, res) => {
 // Update vehicle
 app.put('/api/garage/vehicles/:vehicleId', async (req, res) => {
   const vehicleId = req.params.vehicleId;
-  const { make, model, year, color, description, imageUrl } = req.body;
-  
+  const { make, model, year, color, description, imageUrl } = req.body || {};
+
+  // Coerce and validate year when provided
+  let yearNum = null;
+  if (year !== undefined) {
+    const parsed = parseInt(year, 10);
+    const currentYear = new Date().getFullYear() + 1;
+    if (Number.isNaN(parsed) || parsed < 1886 || parsed > currentYear) {
+      return res.status(400).json({ success: false, message: 'Please provide a valid 4-digit year' });
+    }
+    yearNum = parsed;
+  }
+
   try {
-    const updateSql = 'UPDATE vehicles SET make = ?, model = ?, year = ?, color = ?, description = ?, image_url = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?';
+    // Update core fields (no image_url or updated_at column)
+    const updateSql = 'UPDATE vehicles SET make = ?, model = ?, year = ?, color = ?, description = ? WHERE id = ?';
     await new Promise((resolve, reject) => {
-      db.query(updateSql, [make, model, year, color, description, imageUrl, vehicleId], (err, result) => {
-        if (err) reject(err);
-        else resolve(result);
+      db.query(updateSql, [make, model, yearNum, color, description, vehicleId], (err, result) => {
+        if (err) return reject(err);
+        resolve(result);
       });
     });
-    
+
+    // Upsert primary image if imageUrl provided
+    if (imageUrl) {
+      const selectImgSql = 'SELECT id FROM vehicle_images WHERE vehicle_id = ? AND is_primary = 1 LIMIT 1';
+      const existing = await new Promise((resolve, reject) => {
+        db.query(selectImgSql, [vehicleId], (err, rows) => {
+          if (err) return reject(err);
+          resolve(rows && rows[0]);
+        });
+      });
+
+      if (existing) {
+        const updateImgSql = 'UPDATE vehicle_images SET url = ? WHERE id = ?';
+        await new Promise((resolve, reject) => {
+          db.query(updateImgSql, [imageUrl, existing.id], (err, result) => {
+            if (err) return reject(err);
+            resolve(result);
+          });
+        });
+      } else {
+        const insertImgSql = 'INSERT INTO vehicle_images (vehicle_id, url, is_primary) VALUES (?, ?, 1)';
+        await new Promise((resolve, reject) => {
+          db.query(insertImgSql, [vehicleId, imageUrl], (err, result) => {
+            if (err) return reject(err);
+            resolve(result);
+          });
+        });
+      }
+    }
+
     res.json({
       success: true,
       message: 'Vehicle updated successfully!'
     });
-    
+
   } catch (error) {
     console.error('Update vehicle error:', error);
     res.status(500).json({ 
@@ -812,11 +874,12 @@ app.delete('/api/garage/vehicles/:vehicleId', async (req, res) => {
   const vehicleId = req.params.vehicleId;
   
   try {
-    const deleteSql = 'UPDATE vehicles SET status = "inactive" WHERE id = ?';
+    // Hard delete vehicle; vehicle_images will cascade delete
+    const deleteSql = 'DELETE FROM vehicles WHERE id = ? LIMIT 1';
     await new Promise((resolve, reject) => {
       db.query(deleteSql, [vehicleId], (err, result) => {
-        if (err) reject(err);
-        else resolve(result);
+        if (err) return reject(err);
+        resolve(result);
       });
     });
     
