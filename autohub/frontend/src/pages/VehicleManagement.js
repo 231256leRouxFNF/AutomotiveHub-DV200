@@ -27,6 +27,7 @@ const VehicleManagement = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
+  const [imageFile, setImageFile] = useState(null);
   
   // Get current user on component mount
   useEffect(() => {
@@ -79,16 +80,13 @@ const VehicleManagement = () => {
   const handleDrop = (e) => {
     e.preventDefault();
     setIsDragOver(false);
-    
+
     const files = e.dataTransfer.files;
     if (files.length > 0) {
       const file = files[0];
       if (file.type.startsWith('image/')) {
-        // For now, we'll use a placeholder URL
-        // In production, you'd upload the file to a server or cloud storage
-        const placeholderUrl = `https://via.placeholder.com/400x300/636AE8/ffffff?text=${encodeURIComponent(file.name)}`;
-        setFormData(prev => ({ ...prev, imageUrl: placeholderUrl }));
-        console.log('Image file dropped:', file.name);
+        setImageFile(file);
+        setFormData(prev => ({ ...prev, imageUrl: URL.createObjectURL(file) }));
       } else {
         alert('Please drop an image file.');
       }
@@ -102,8 +100,8 @@ const VehicleManagement = () => {
     input.onchange = (e) => {
       const file = e.target.files[0];
       if (file) {
-        const placeholderUrl = `https://via.placeholder.com/400x300/636AE8/ffffff?text=${encodeURIComponent(file.name)}`;
-        setFormData(prev => ({ ...prev, imageUrl: placeholderUrl }));
+        setImageFile(file);
+        setFormData(prev => ({ ...prev, imageUrl: URL.createObjectURL(file) }));
       }
     };
     input.click();
@@ -111,28 +109,34 @@ const VehicleManagement = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!currentUser) {
       alert('You must be logged in to add a vehicle.');
       return;
     }
-    
+
     setIsLoading(true);
-    
+
     try {
-      const result = await garageService.createVehicle({
-        userId: currentUser.id,
-        make: formData.make,
-        model: formData.model,
-        year: formData.year,
-        color: formData.color,
-        description: formData.description,
-        imageUrl: formData.imageUrl
+      const form = new FormData();
+      form.append('user_id', currentUser.id);
+      form.append('make', formData.make);
+      form.append('model', formData.model);
+      form.append('year', formData.year);
+      form.append('color', formData.color);
+      form.append('description', formData.description);
+      if (imageFile) {
+        form.append('images', imageFile);
+      }
+
+      const response = await fetch('http://localhost:5000/api/garage/vehicles', {
+        method: 'POST',
+        body: form,
       });
-      
+      const result = await response.json();
+
       if (result.success) {
         alert('Vehicle added successfully!');
-        // Reset form
         setFormData({
           make: '',
           model: '',
@@ -141,7 +145,7 @@ const VehicleManagement = () => {
           description: '',
           imageUrl: ''
         });
-        // Reload garage data
+        setImageFile(null);
         loadGarageData(currentUser.id);
       } else {
         alert(result.message || 'Failed to add vehicle');

@@ -3,10 +3,27 @@ const db = require('./config/db');
 const cors = require('cors');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const multer = require('multer');
+const path = require('path');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// Serve uploaded images statically
+app.use('/uploads', express.static('uploads'));
+
+// Multer setup for file uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/'); // Make sure this folder exists
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  }
+});
+const upload = multer({ storage: storage });
 
 app.get('/', (req, res) => {
   res.send('API is working');
@@ -626,85 +643,56 @@ app.get('/api/seller/metrics', (req, res) => {
 // Get garage statistics for a user
 app.get('/api/garage/stats/:userId', (req, res) => {
   const userId = req.params.userId;
-  
-  // Get total vehicles count
-  const vehiclesQuery = 'SELECT COUNT(*) as count FROM vehicles WHERE user_id = ? AND status = "active"';
-  
-  // Get featured posts count (posts where user's vehicle is featured)
-  const featuredQuery = `
-    SELECT COUNT(DISTINCT p.id) as count 
-    FROM posts p 
-    JOIN vehicles v ON (p.content LIKE CONCAT('%', v.make, '%') OR p.content LIKE CONCAT('%', v.model, '%'))
-    WHERE v.user_id = ? AND p.featured = 1
-  `;
-  
-  // Get upcoming events count
-  const eventsQuery = 'SELECT COUNT(*) as count FROM events WHERE status = "upcoming" AND event_date >= CURDATE()';
-  
-  Promise.all([
-    new Promise((resolve, reject) => {
-      db.query(vehiclesQuery, [userId], (err, results) => {
-        if (err) reject(err);
-        else resolve(results[0]?.count || 0);
-      });
-    }),
-    new Promise((resolve, reject) => {
-      db.query(featuredQuery, [userId], (err, results) => {
-        if (err) reject(err);
-        else resolve(results[0]?.count || 0);
-      });
-    }),
-    new Promise((resolve, reject) => {
-      db.query(eventsQuery, [], (err, results) => {
-        if (err) reject(err);
-        else resolve(results[0]?.count || 0);
-      });
-    })
-  ])
-  .then(([totalVehicles, featuredCount, upcomingEvents]) => {
-    res.json({
-      totalVehicles,
-      featured: featuredCount,
-      upcomingEvents
-    });
-  })
-  .catch(error => {
-    console.error('Garage stats error:', error);
-    if (error.code === 'ER_NO_SUCH_TABLE') {
-      res.json({ totalVehicles: 0, featured: 0, upcomingEvents: 0 });
-    } else {
-      res.status(500).json({ message: 'Failed to fetch garage statistics' });
+  db.query(
+    `
+    SELECT 
+      COUNT(*) AS totalVehicles,
+      SUM(CASE WHEN v.featured = 1 THEN 1 ELSE 0 END) AS featured
+    FROM vehicles v
+    WHERE v.user_id = ?
+    `,
+    [userId],
+    (err, results) => {
+      if (err) {
+        console.error('Error fetching garage stats:', err);
+        return res.status(500).json({ message: 'Failed to fetch garage statistics' });
+      }
+      res.json(results[0]);
     }
-  });
+  );
 });
 
 // Get user's vehicles
 app.get('/api/garage/vehicles/:userId', (req, res) => {
   const userId = req.params.userId;
-  const sql = `
-    SELECT v.*, vi.url as primary_image
-    FROM vehicles v
-    LEFT JOIN vehicle_images vi ON v.id = vi.vehicle_id AND vi.is_primary = 1
-    WHERE v.user_id = ? AND v.status = 'active'
-    ORDER BY v.created_at DESC
-  `;
-  
-  db.query(sql, [userId], (err, results) => {
-    if (err) {
-      if (err.code === 'ER_NO_SUCH_TABLE') return res.json([]);
-      console.error('Get vehicles error:', err);
-      return res.status(500).json({ message: 'Failed to fetch vehicles' });
-    }
-    res.json(results || []);
-  });
+  try {
+    // Get vehicles for the user
+    db.query(
+      `SELECT v.*, vi.url AS image_url
+       FROM vehicles v
+       LEFT JOIN vehicle_images vi ON v.id = vi.vehicle_id AND vi.is_primary = 1
+       WHERE v.user_id = ?`,
+      [userId],
+      (err, vehicles) => {
+        if (err) {
+          console.error('Error fetching vehicles:', err);
+          return res.status(500).json({ success: false, message: 'Failed to fetch vehicles' });
+        }
+        // Optionally, fetch all images for each vehicle if you want a gallery
+        res.json(vehicles);
+      }
+    );
+  } catch (error) {
+    console.error('Error fetching vehicles:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch vehicles' });
+  }
 });
 
-// Create new vehicle
-app.post('/api/garage/vehicles', async (req, res) => {
-  const { userId, make, model, year, color, description, imageUrl } = req.body || {};
-  
+// Create new vehicle (with image upload support)
+app.post('/api/garage/vehicles', upload.array('images'), async (req, res) => {
+  const { user_id, make, model, year, color, description } = req.body || {};
   // Basic required fields
-  if (!userId || !make || !model || !year || !color) {
+  if (!user_id || !make || !model || !year || !color) {
     return res.status(400).json({ 
       success: false, 
       message: 'User ID, make, model, year, and color are required' 
@@ -713,7 +701,7 @@ app.post('/api/garage/vehicles', async (req, res) => {
 
   // Coerce and validate year
   const yearNum = parseInt(year, 10);
-  const currentYear = new Date().getFullYear() + 1; // allow next model year
+  const currentYear = new Date().getFullYear() + 1;
   if (Number.isNaN(yearNum) || yearNum < 1886 || yearNum > currentYear) {
     return res.status(400).json({
       success: false,
@@ -721,15 +709,10 @@ app.post('/api/garage/vehicles', async (req, res) => {
     });
   }
 
-  // Optional: guard lengths
-  if (imageUrl && imageUrl.length > 500) {
-    return res.status(400).json({ success: false, message: 'Image URL is too long (max 500 chars)' });
-  }
-
   try {
     // Ensure user exists to avoid FK error (preflight check)
     const userExists = await new Promise((resolve, reject) => {
-      db.query('SELECT id FROM users WHERE id = ? LIMIT 1', [userId], (err, rows) => {
+      db.query('SELECT id FROM users WHERE id = ? LIMIT 1', [user_id], (err, rows) => {
         if (err) return reject(err);
         resolve(rows && rows.length > 0);
       });
@@ -738,32 +721,40 @@ app.post('/api/garage/vehicles', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Invalid userId: user does not exist' });
     }
 
-    // Insert vehicle
-    const vehicleSql = 'INSERT INTO vehicles (user_id, make, model, year, color, description, image_url) VALUES (?, ?, ?, ?, ?, ?, ?)';
+    // Insert vehicle (no image_url, handled in images table)
+    const vehicleSql = 'INSERT INTO vehicles (user_id, make, model, year, color, description) VALUES (?, ?, ?, ?, ?, ?)';
     const vehicleResult = await new Promise((resolve, reject) => {
-      db.query(vehicleSql, [userId, make, model, yearNum, color, description, imageUrl || null], (err, result) => {
+      db.query(vehicleSql, [user_id, make, model, yearNum, color, description], (err, result) => {
         if (err) return reject(err);
         resolve(result);
       });
     });
-    
-    // If image provided, add to vehicle_images table
-    if (imageUrl) {
-      const imageSql = 'INSERT INTO vehicle_images (vehicle_id, url, is_primary) VALUES (?, ?, 1)';
-      await new Promise((resolve, reject) => {
-        db.query(imageSql, [vehicleResult.insertId, imageUrl], (err, result) => {
-          if (err) return reject(err);
-          resolve(result);
+    const vehicleId = vehicleResult.insertId;
+
+    // Save uploaded images to vehicle_images table
+    if (req.files && req.files.length > 0) {
+      for (let i = 0; i < req.files.length; i++) {
+        const file = req.files[i];
+        const imageUrl = `/uploads/${file.filename}`;
+        await new Promise((resolve, reject) => {
+          db.query(
+            'INSERT INTO vehicle_images (vehicle_id, url, is_primary, sort_order) VALUES (?, ?, ?, ?)',
+            [vehicleId, imageUrl, i === 0 ? 1 : 0, i],
+            (err, result) => {
+              if (err) return reject(err);
+              resolve(result);
+            }
+          );
         });
-      });
+      }
     }
-    
+
     return res.status(201).json({
       success: true,
       message: 'Vehicle added successfully!',
-      vehicleId: vehicleResult.insertId
+      vehicleId: vehicleId
     });
-    
+
   } catch (error) {
     console.error('Create vehicle error:', error);
     if (error.code === 'ER_NO_SUCH_TABLE') {
