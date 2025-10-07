@@ -1,4 +1,5 @@
 import React from 'react';
+import api from '../services/api';
 import './VehicleCard.css';
 
 const VehicleCard = ({ vehicle, onEdit, onDelete }) => {
@@ -6,11 +7,35 @@ const VehicleCard = ({ vehicle, onEdit, onDelete }) => {
     e.target.src = 'https://via.placeholder.com/300x200/393D47/8C8D8B?text=No+Image';
   };
 
+  const resolveImageSrc = () => {
+    const candidate = (
+      vehicle.primary_image ||
+      vehicle.image_url ||
+      vehicle.imageUrl ||
+      vehicle.image ||
+      (Array.isArray(vehicle.images) && vehicle.images[0]) ||
+      vehicle.image_path ||
+      vehicle.imagePath ||
+      ''
+    );
+
+    if (!candidate) return 'https://via.placeholder.com/300x200/393D47/8C8D8B?text=No+Image';
+
+    const src = String(candidate);
+    if (src.startsWith('http://') || src.startsWith('https://') || src.startsWith('data:')) {
+      return src;
+    }
+    // Prepend API base URL for server-relative paths like /uploads/...
+    const base = api?.defaults?.baseURL || '';
+    if (src.startsWith('/')) return `${base}${src}`;
+    return src;
+  };
+
   return (
     <div className="vehicle-card">
       <div className="vehicle-image-container">
         <img
-          src={vehicle.primary_image || vehicle.image_url || 'https://via.placeholder.com/300x200/393D47/8C8D8B?text=No+Image'}
+          src={resolveImageSrc()}
           alt={`${vehicle.make} ${vehicle.model}`}
           className="vehicle-image"
           onError={handleImageError}

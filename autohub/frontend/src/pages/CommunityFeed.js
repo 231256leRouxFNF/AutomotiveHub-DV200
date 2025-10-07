@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { socialService, authService } from '../services/api';
 import Header from '../components/Header';
 import communityData from '../data/community.json';
 import './CommunityFeed.css';
@@ -9,22 +10,81 @@ const CommunityFeed = () => {
   const [communityStats, setCommunityStats] = useState([]);
   const [posts, setPosts] = useState([]);
   const [communitySnapshots, setCommunitySnapshots] = useState([]);
+  const [editingPostId, setEditingPostId] = useState(null);
+  const [editContent, setEditContent] = useState('');
+  const [commentDrafts, setCommentDrafts] = useState({});
+  const currentUser = authService.getCurrentUser?.();
+  const [showMediaInput, setShowMediaInput] = useState(false);
+  const [newPostImageUrl, setNewPostImageUrl] = useState('');
+  // Per-device owner key for author controls when not authenticated
+  const OWNER_KEY_STORAGE = 'autohub_owner_key';
+  const HIDDEN_POSTS_STORAGE = 'autohub_hidden_posts';
+  const getOwnerKey = () => {
+    try {
+      let k = localStorage.getItem(OWNER_KEY_STORAGE);
+      if (!k) {
+        k = `owner-${Math.random().toString(36).slice(2)}-${Date.now()}`;
+        localStorage.setItem(OWNER_KEY_STORAGE, k);
+      }
+      return k;
+    } catch {
+      return undefined;
+    }
+  };
+  const ownerKey = getOwnerKey();
+
+  // Hidden posts (for locally hiding server posts the user "deleted")
+  const loadHiddenIds = () => {
+    try {
+      const raw = localStorage.getItem(HIDDEN_POSTS_STORAGE);
+      const arr = raw ? JSON.parse(raw) : [];
+      return Array.isArray(arr) ? arr : [];
+    } catch {
+      return [];
+    }
+  };
+  const saveHiddenIds = (arr) => {
+    try { localStorage.setItem(HIDDEN_POSTS_STORAGE, JSON.stringify(arr || [])); } catch {}
+  };
+
+  // Local persistence for user-created posts
+  const LOCAL_POSTS_KEY = 'autohub_user_posts';
+  const loadLocalPosts = () => {
+    try {
+      const raw = localStorage.getItem(LOCAL_POSTS_KEY);
+      const arr = raw ? JSON.parse(raw) : [];
+      return Array.isArray(arr) ? arr : [];
+    } catch {
+      return [];
+    }
+  };
+  const saveLocalPosts = (arr) => {
+    try { localStorage.setItem(LOCAL_POSTS_KEY, JSON.stringify(arr || [])); } catch {}
+  };
 
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
       try {
         const [p, s, snaps] = await Promise.all([
-          axios.get('/api/posts'),
+          // Prefer socialService to fetch shared posts; fall back to legacy endpoint
+          socialService.getAllPosts().catch(() => axios.get('/api/posts')),
           axios.get('/api/community/stats'),
           axios.get('/api/community/snapshots').catch(() => ({ data: [] }))
         ]);
         if (!cancelled) {
-          const postsData = Array.isArray(p.data) ? p.data : [];
+          const postsData = Array.isArray(p?.data ?? p) ? (p?.data ?? p) : [];
 
           // Use imported static dataset as fallback
-          const normalizedPosts = postsData.length ? postsData : (communityData.posts || []);
-          setPosts(normalizedPosts);
+          const remoteRaw = postsData.length ? postsData : (communityData.posts || []);
+          const hidden = new Set(loadHiddenIds());
+          const remote = remoteRaw.filter((r) => r && !hidden.has(r.id));
+          // Merge with locally created posts (show local first)
+          const locals = loadLocalPosts();
+          // de-dupe by id, preferring local
+          const seen = new Set(locals.map((x) => x.id));
+          const merged = [...locals, ...remote.filter((r) => r && !seen.has(r.id))];
+          setPosts(merged);
 
           const incomingStats = Array.isArray(s.data) ? s.data : [];
           const fallbackStats = communityData.stats || [];
@@ -40,7 +100,7 @@ const CommunityFeed = () => {
 
           // Fallback to images from posts if API returns nothing
           if (!snapshots.length) {
-            const source = normalizedPosts
+            const source = merged
               .filter((post) => post && post.image)
               .slice(0, 9)
               .map((post) => ({ id: post.id, image: post.image, alt: post.content }));
@@ -59,11 +119,17 @@ const CommunityFeed = () => {
         }
       } catch (e) {
         if (!cancelled) {
-          const fbPosts = (communityData.posts || []);
-          setPosts(fbPosts);
+          const fbAll = (communityData.posts || []);
+          const hidden = new Set(loadHiddenIds());
+          const fbPosts = fbAll.filter((r) => r && !hidden.has(r.id));
+          // Merge local posts with static fallback on error
+          const locals = loadLocalPosts();
+          const seen = new Set(locals.map((x) => x.id));
+          const merged = [...locals, ...fbPosts.filter((r) => r && !seen.has(r.id))];
+          setPosts(merged);
           const fbStats = (communityData.stats || []);
           setCommunityStats(fbStats);
-          const snaps = fbPosts
+          const snaps = merged
             .filter((post) => post && post.image)
             .slice(0, 9)
             .map((post) => ({ id: post.id, image: post.image, alt: post.content }));
@@ -86,18 +152,139 @@ const CommunityFeed = () => {
   ];
 
 
-  const handlePostSubmit = (e) => {
+  const handlePostSubmit = async (e) => {
     e.preventDefault();
-    if (newPostContent.trim()) {
-      // Handle post submission logic here
-      console.log('New post:', newPostContent);
+    const content = newPostContent.trim();
+    if (!content) return;
+
+    // Build a local optimistic post
+    const currentUser = authService.getCurrentUser?.();
+    const tempId = `temp-${Date.now()}`;
+    const optimisticPost = {
+      id: tempId,
+      author: currentUser?.username || 'You',
+      avatar: currentUser?.avatar || 'https://i.pravatar.cc/96?img=1',
+      content,
+      image: newPostImageUrl?.trim() || null,
+      likes: 0,
+      comments: 0,
+      featured: false,
+      timestamp: 'Just now',
+      liked: false,
+      userId: currentUser?.id,
+      isLocal: true,
+      ownerKey
+    };
+
+    // Optimistically insert at the top and clear input
+    setPosts((prev) => [optimisticPost, ...prev]);
       setNewPostContent('');
+    setNewPostImageUrl('');
+    setShowMediaInput(false);
+    // Persist to local storage immediately for refresh survival
+    const existingLocal = loadLocalPosts();
+    saveLocalPosts([optimisticPost, ...existingLocal]);
+
+    // Try to persist to API (non-blocking UI)
+    try {
+      const payload = { content };
+      if (optimisticPost.image) payload.image = optimisticPost.image;
+      const saved = await socialService.createPost(payload);
+      if (saved && saved.id) {
+        setPosts((prev) => prev.map((p) => (p.id === tempId ? { ...p, id: saved.id, isLocal: false } : p)));
+        // Update local storage id
+        const locals = loadLocalPosts();
+        const updatedLocals = locals.map((p) => (p.id === tempId ? { ...p, id: saved.id, isLocal: false } : p));
+        saveLocalPosts(updatedLocals);
+      }
+    } catch (err) {
+      console.error('Failed to save post, keeping local only:', err);
+      // Optionally, you could show a toast here
     }
   };
 
-  const handleLike = (postId) => {
-    // Handle like logic here
-    console.log('Liked post:', postId);
+  const handleLike = async (postId) => {
+    // Optimistic like toggle
+    setPosts((prev) => prev.map((p) => {
+      if (p.id !== postId) return p;
+      const wasLiked = !!p.liked;
+      const nextLikes = (p.likes || 0) + (wasLiked ? -1 : 1);
+      return { ...p, liked: !wasLiked, likes: Math.max(0, nextLikes) };
+    }));
+
+    try {
+      await socialService.toggleLike(postId);
+    } catch (e) {
+      // Revert on error
+      setPosts((prev) => prev.map((p) => {
+        if (p.id !== postId) return p;
+        const wasLiked = !!p.liked;
+        const nextLikes = (p.likes || 0) + (wasLiked ? -1 : 1);
+        return { ...p, liked: !wasLiked, likes: Math.max(0, nextLikes) };
+      }));
+    }
+  };
+
+  const handleAddComment = async (postId, content) => {
+    const text = (content || '').trim();
+    if (!text) return;
+
+    // Optimistic comment count bump
+    setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, comments: (p.comments || 0) + 1 } : p));
+    try {
+      await socialService.createComment(postId, text);
+    } catch (e) {
+      // Revert on error
+      setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, comments: Math.max(0, (p.comments || 1) - 1) } : p));
+    }
+  };
+
+  const handleEditPost = async (postId, newContent) => {
+    const content = (newContent || '').trim();
+    if (!content) return;
+    const original = posts.find((p) => p.id === postId);
+    if (!original) return;
+
+    // Optimistic update
+    setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, content } : p));
+    // Update local storage copy if exists
+    const localsBefore = loadLocalPosts();
+    if (localsBefore.find((p) => p.id === postId)) {
+      saveLocalPosts(localsBefore.map((p) => p.id === postId ? { ...p, content } : p));
+    }
+    try {
+      await socialService.updatePost(postId, { content });
+    } catch (e) {
+      // Revert on error
+      setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, content: original.content } : p));
+      // Revert local storage
+      const locals = loadLocalPosts();
+      if (locals.find((p) => p.id === postId)) {
+        saveLocalPosts(locals.map((p) => p.id === postId ? { ...p, content: original.content } : p));
+      }
+    }
+  };
+
+  const handleDeletePost = async (postId) => {
+    // Optimistic removal from UI
+    setPosts((prev) => prev.filter((p) => p.id !== postId));
+    // Update local posts storage (for locally created posts)
+    const localsBefore = loadLocalPosts();
+    if (localsBefore.length) {
+      saveLocalPosts(localsBefore.filter((p) => p.id !== postId));
+    }
+    // Record hidden id so merged remote posts are filtered out even after refresh
+    const hidden = loadHiddenIds();
+    if (!hidden.includes(postId)) {
+      hidden.push(postId);
+      saveHiddenIds(hidden);
+    }
+    // Best-effort server delete; do not revert UI on failure
+    try {
+      await socialService.deletePost(postId);
+    } catch (e) {
+      // ignore
+    }
   };
 
   const renderIcon = (iconName) => {
@@ -173,8 +360,17 @@ const CommunityFeed = () => {
                 placeholder="Start a new discussion or share an update..."
                 className="new-post-input"
               />
+              {showMediaInput && (
+                <input
+                  type="url"
+                  className="new-post-input"
+                  placeholder="Paste image URL (optional)"
+                  value={newPostImageUrl}
+                  onChange={(e) => setNewPostImageUrl(e.target.value)}
+                />
+              )}
               <div className="post-actions">
-                <button type="button" className="add-media-btn">
+                <button type="button" className="add-media-btn" onClick={() => setShowMediaInput((v) => !v)}>
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                     <path d="M14.6802 2.65991C15.0503 2.65991 15.3502 2.95988 15.3502 3.32991C15.3502 3.69994 15.0503 3.99991 14.6802 3.99991L10.6602 3.99991C10.2902 3.99991 9.99023 3.69994 9.99023 3.32991C9.99023 2.95988 10.2902 2.65991 10.6602 2.65991L14.6802 2.65991Z" fill="#8C8D8B"/>
                     <path d="M12 5.3399L12 1.3199C12 0.949875 12.3 0.649902 12.67 0.649902C13.04 0.649902 13.34 0.949875 13.34 1.3199L13.34 5.3399C13.34 5.70993 13.04 6.0099 12.67 6.0099C12.3 6.0099 12 5.70993 12 5.3399Z" fill="#8C8D8B"/>
@@ -225,7 +421,37 @@ const CommunityFeed = () => {
                 )}
 
                 <div className="post-content">
+                  {editingPostId === post.id ? (
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        handleEditPost(post.id, editContent);
+                        setEditingPostId(null);
+                        setEditContent('');
+                      }}
+                    >
+                      <textarea
+                        className="new-post-input"
+                        value={editContent}
+                        onChange={(e) => setEditContent(e.target.value)}
+                        rows={3}
+                      />
+                      <div className="post-actions">
+                        <button
+                          type="button"
+                          className="add-media-btn"
+                          onClick={() => { setEditingPostId(null); setEditContent(''); }}
+                        >
+                          Cancel
+                        </button>
+                        <button type="submit" className="post-btn" disabled={!editContent.trim()}>
+                          Save
+                        </button>
+                      </div>
+                    </form>
+                  ) : (
                   <p>{post.content}</p>
+                  )}
                 </div>
 
                 <footer className="post-footer">
@@ -254,7 +480,53 @@ const CommunityFeed = () => {
                     </svg>
                     Share
                   </button>
+
+                  {(
+                    (currentUser && (currentUser.username === post.author || currentUser.id === post.userId)) ||
+                    (!!ownerKey && post.ownerKey === ownerKey)
+                  ) && (
+                    <>
+                      <button
+                        className="post-action-btn"
+                        onClick={() => { setEditingPostId(post.id); setEditContent(post.content || ''); }}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        className="post-action-btn"
+                        onClick={() => handleDeletePost(post.id)}
+                      >
+                        Delete
+                      </button>
+                    </>
+                  )}
                 </footer>
+
+                {/* Comment box */}
+                <div className="post-content">
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      const text = commentDrafts[post.id] || '';
+                      handleAddComment(post.id, text);
+                      setCommentDrafts((prev) => ({ ...prev, [post.id]: '' }));
+                    }}
+                  >
+                    <textarea
+                      className="new-post-input"
+                      placeholder="Write a comment..."
+                      value={commentDrafts[post.id] || ''}
+                      onChange={(e) => setCommentDrafts((prev) => ({ ...prev, [post.id]: e.target.value }))}
+                      rows={2}
+                    />
+                    <div className="post-actions">
+                      <span />
+                      <button type="submit" className="post-btn" disabled={!((commentDrafts[post.id] || '').trim())}>
+                        Comment
+                      </button>
+                    </div>
+                  </form>
+                </div>
               </article>
             ))}
           </div>
@@ -317,21 +589,21 @@ const CommunityFeed = () => {
           </div>
           <div className="copyright">© 2025 AutoHub.</div>
           <div className="social-links">
-            <a href="#" className="social-link">
+            <button type="button" className="social-link" aria-label="Social link 1">
               <svg width="20" height="21" viewBox="0 0 20 21" fill="none">
                 <path d="M10.8354 6.71572C10.8354 6.27546 11.0104 5.85336 11.3217 5.54205C11.633 5.23074 12.0552 5.05572 12.4954 5.05572H14.1554V3.39572L12.4954 3.39572C11.6148 3.39572 10.7707 3.74575 10.1481 4.36838C9.5254 4.99099 9.17539 5.8352 9.17539 6.71572L9.17539 9.20572C9.17539 9.66413 8.8038 10.0357 8.34539 10.0357H6.68539L6.68539 11.6957H8.34539C8.8038 11.6957 9.17539 12.0673 9.17539 12.5257V18.3357H10.8354V12.5257C10.8354 12.0673 11.207 11.6957 11.6654 11.6957H13.5077L13.9227 10.0357H11.6654C11.207 10.0357 10.8354 9.66413 10.8354 9.20572L10.8354 6.71572Z" fill="#8C8D8B"/>
               </svg>
-            </a>
-            <a href="#" className="social-link">
+            </button>
+            <button type="button" className="social-link" aria-label="Social link 2">
               <svg width="20" height="21" viewBox="0 0 20 21" fill="none">
                 <path d="M11.3073 3.88858C12.7325 3.14606 14.5918 3.19233 16.0684 4.35627C16.1406 4.33884 16.2242 4.31668 16.3181 4.28494C16.5489 4.20693 16.7971 4.09856 17.0322 3.98342C17.2653 3.86928 17.4739 3.75414 17.6247 3.6673C17.6997 3.6241 17.7595 3.58793 17.7998 3.56355C17.8199 3.55138 17.8355 3.54197 17.8452 3.536C17.8498 3.53314 17.8529 3.53074 17.8549 3.52952H17.8565C18.1531 3.34219 18.536 3.36097 18.8121 3.57733C19.0535 3.76661 19.1678 4.07089 19.1185 4.36681L19.087 4.49325V4.49487L19.0861 4.4965C19.0855 4.49812 19.0845 4.50053 19.0836 4.50298C19.082 4.50786 19.08 4.51442 19.0772 4.52244C19.0715 4.5387 19.0639 4.5614 19.0537 4.58971C19.0332 4.64655 19.0027 4.72711 18.9637 4.82558C18.886 5.02202 18.7707 5.2943 18.6192 5.60289C18.3695 6.11157 18.0011 6.75457 17.5153 7.32287C18.5858 15.9751 9.18505 22.2331 1.60666 17.6046L1.24111 17.3728C0.930071 17.1667 0.795473 16.7776 0.911213 16.4229C1.02704 16.0685 1.3647 15.8347 1.73716 15.8514C2.86664 15.9028 3.98438 15.6682 4.94692 15.1868C1.32718 13.1896 -0.265272 8.46517 1.80038 4.66428L1.85469 4.57755C1.99223 4.38529 2.20719 4.25914 2.44558 4.23469C2.71798 4.20689 2.98684 4.31583 3.16373 4.52487C4.63177 6.25965 6.81661 7.34994 9.07989 7.52794C9.08902 5.87388 10.0199 4.55939 11.3073 3.88858Z" fill="#8C8D8B"/>
               </svg>
-            </a>
-            <a href="#" className="social-link">
+            </button>
+            <button type="button" className="social-link" aria-label="Social link 3">
               <svg width="20" height="21" viewBox="0 0 20 21" fill="none">
                 <path d="M17.4701 6.71572C17.4701 4.88213 15.9837 3.39572 14.1501 3.39572L5.85012 3.39572C4.01653 3.39572 2.53012 4.88213 2.53012 6.71572L2.53012 15.0157C2.53012 16.8493 4.01653 18.3357 5.85012 18.3357L14.1501 18.3357C15.9837 18.3357 17.4701 16.8493 17.4701 15.0157L17.4701 6.71572Z" fill="#8C8D8B"/>
               </svg>
-            </a>
+            </button>
           </div>
         </div>
       </footer>

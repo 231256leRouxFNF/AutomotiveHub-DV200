@@ -41,14 +41,15 @@ html, body {
 /* Content Grid */
 .content-grid {
   display: grid;
-  grid-template-columns: 308px 1fr;
+  grid-template-columns: 300px minmax(0, 1fr);
   gap: 24px;
   align-items: start;
 }
 
 /* Add Vehicle Card */
 .add-vehicle-card {
-  width: 308px;
+  width: 100%;
+  max-width: 300px;
   border-radius: 8px;
   border: 1px solid #393D47;
   background: #19191F;

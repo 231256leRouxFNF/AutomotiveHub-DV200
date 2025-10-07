@@ -142,6 +142,16 @@ export const socialService = {
     return response.data;
   },
 
+  updatePost: async (postId, updates) => {
+    const response = await api.put(`/api/social/posts/${postId}`, updates);
+    return response.data;
+  },
+
+  deletePost: async (postId) => {
+    const response = await api.delete(`/api/social/posts/${postId}`);
+    return response.data;
+  },
+
   createComment: async (postId, content) => {
     const response = await api.post(`/api/posts/${postId}/comments`, { content });
     return response.data;
@@ -150,6 +160,11 @@ export const socialService = {
   toggleReaction: async (postId, reactionType) => {
     const response = await api.post(`/api/posts/${postId}/reactions`, { type: reactionType });
     return response.data;
+  },
+
+  toggleLike: async (postId) => {
+    // Bridge to existing reactions endpoint
+    return await socialService.toggleReaction(postId, 'like');
   }
 };
 
