@@ -110,7 +110,7 @@
 /* Content Grid */
 .content-grid {
   display: grid;
-  grid-template-columns: 1fr 438px;
+  /* grid-template-columns: 1fr 438px; */
   gap: 32px;
   margin-bottom: 48px;
 }
