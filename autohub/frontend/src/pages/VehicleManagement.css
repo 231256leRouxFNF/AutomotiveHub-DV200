@@ -41,9 +41,10 @@ html, body {
 /* Content Grid */
 .content-grid {
   display: grid;
-  grid-template-columns: 300px minmax(0, 1fr);
-  gap: 16px;
+  grid-template-columns: minmax(280px, 300px) repeat(3, minmax(280px, 1fr));
+  gap: 20px;
   align-items: self-start;
+  margin: 2.5% 2.5% 0 2.5%;
 }
 
 /* Add Vehicle Card */
@@ -59,6 +60,7 @@ html, body {
   position: sticky;
   top: 96px;
   height: fit-content;
+  grid-column: 1; /* Explicitly place in first column */
 }
 
 .add-vehicle-title {
@@ -219,9 +221,10 @@ html, body {
 /* Vehicles Grid (auto-fits up to three columns, thinner min width) */
 .vehicles-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(3, 1fr); /* Explicitly set 3 columns */
+  gap: 10%;
   align-items: start;
+  grid-column: 2 / span 3; /* Start at second column and span three */
 }
 
 .vehicles-placeholder {
@@ -250,6 +253,11 @@ html, body {
     max-width: 300px;
     margin: 0;
     top: 80px;
+    grid-column: auto; /* Reset for smaller screens */
+  }
+  
+  .vehicles-grid { /* Added for 1200px breakpoint */
+    grid-template-columns: repeat(2, 1fr); /* Two columns for vehicles at this breakpoint */
   }
 }
 
@@ -263,10 +271,12 @@ html, body {
     position: static;
     max-width: 500px;
     margin: 0 auto;
+    grid-column: auto; /* Reset for smaller screens */
   }
   
   .vehicles-grid {
     grid-template-columns: 1fr;
+    grid-column: auto; /* Reset for smaller screens */
   }
 }
 

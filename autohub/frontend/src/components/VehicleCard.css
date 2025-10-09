@@ -16,7 +16,7 @@
 .vehicle-image-container {
   position: relative;
   width: 100%;
-  height: 200px;
+  height: 275px;
   overflow: hidden;
 }
 
@@ -76,7 +76,7 @@
 }
 
 .vehicle-info {
-  padding: 20px;
+  padding: 25px;
 }
 
 .vehicle-title {
