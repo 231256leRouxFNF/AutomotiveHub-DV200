@@ -296,5 +296,18 @@ html, body {
   .upload-area {
     padding: 24px;
   }
-  
+
+}
+
+/* Preview area styles extracted from inline */
+.preview-image {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.preview-caption {
+  margin-top: 8px;
+  font-size: 12px;
 }
