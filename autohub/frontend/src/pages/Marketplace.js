@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import marketplaceData from '../data/marketplace.json';
+import { listingService } from '../services/api'; // Import listingService
 import './Marketplace.css';
 
 // Local marketplace images
@@ -45,12 +46,12 @@ const Marketplace = () => {
         const [f, c, a] = await Promise.all([
           axios.get('/api/featured-listings'),
           axios.get('/api/categories'),
-          axios.get('/api/listings')
+          listingService.getAllListings() // Use new listing service
         ]);
         if (!cancelled) {
           const incomingFeatured = Array.isArray(f.data) ? f.data : [];
           const incomingCategories = Array.isArray(c.data) ? c.data : [];
-          const incomingListings = Array.isArray(a.data) ? a.data : [];
+          const incomingListings = Array.isArray(a) ? a : []; // `a` is already data from service
 
           const fallbackFeatured = (marketplaceData.featured || []);
           const fallbackCategories = (marketplaceData.categories || []);
@@ -61,12 +62,17 @@ const Marketplace = () => {
 
           const featuredToUse = (incomingFeatured.length ? incomingFeatured : fallbackFeatured).map((item, idx) => ({
             ...item,
-            image: featuredImages[idx % featuredImages.length]
+            image: item.image || featuredImages[idx % featuredImages.length] // Use existing image if available
           }));
 
           const listingsToUse = (incomingListings.length ? incomingListings : fallbackListings).map((item, idx) => ({
             ...item,
-            image: listingImages[idx % listingImages.length]
+            // Parse imageUrls if it's a JSON string, and use the first URL or a fallback image
+            image: (item.imageUrls && JSON.parse(item.imageUrls)[0]) || listingImages[idx % listingImages.length],
+            price: parseFloat(item.price).toFixed(2), // Format price
+            location: item.location || 'Unknown',
+            condition: item.condition || 'N/A',
+            seller: item.owner_username || 'Anonymous' // Assuming owner_username is available from backend
           }));
 
           setFeaturedListings(featuredToUse);
@@ -75,6 +81,7 @@ const Marketplace = () => {
         }
       } catch (e) {
         if (!cancelled) {
+          console.error("Error loading marketplace data:", e);
           const featuredImages = [Top1, Top2, Top3, Top4];
           const listingImages = [Img1, Img2, Img3, Img4, Img5, Img6, Img7, Img8, Img9, Img10, Img11, Img12];
           const fallbackFeatured = (marketplaceData.featured || []).map((item, idx) => ({
@@ -275,11 +282,11 @@ const Marketplace = () => {
                 <img src={listing.image} alt={listing.title} className="listing-image" />
                 <div className="listing-content">
                   <h3 className="listing-title">{listing.title}</h3>
-                  <div className="listing-price">{listing.price}</div>
+                  <div className="listing-price">R {listing.price}</div>
                   <div className="listing-info">
                     <div className="listing-location">📍 {listing.location}</div>
                     <div className="listing-condition">🏷️ {listing.condition}</div>
-                    <div className="listing-seller">👤 {listing.seller}</div>
+                    {/* <div className="listing-seller">👤 {listing.seller}</div> */}
                   </div>
                 </div>
               </div>

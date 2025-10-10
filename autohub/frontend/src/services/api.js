@@ -165,6 +165,15 @@ export const socialService = {
   toggleLike: async (postId) => {
     // Bridge to existing reactions endpoint
     return await socialService.toggleReaction(postId, 'like');
+  },
+
+  getPostsByUserId: async (userId) => {
+    try {
+      const response = await api.get(`/api/social/posts/user/${userId}`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
   }
 };
 
@@ -211,6 +220,215 @@ export const generalService = {
     const response = await api.get('/');
     return response.data;
   }
+};
+
+// ============ LISTING SERVICES ============
+export const listingService = {
+  createListing: async (listingData) => {
+    try {
+      const formData = new FormData();
+      for (const key in listingData) {
+        if (key === 'images') {
+          listingData.images.forEach(image => formData.append('images', image));
+        } else if (key === 'imageUrls') {
+          // If imageUrls is an array, stringify it for FormData
+          formData.append(key, JSON.stringify(listingData[key]));
+        } else {
+          formData.append(key, listingData[key]);
+        }
+      }
+      const response = await api.post('/api/listings', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
+  getListingById: async (id) => {
+    try {
+      const response = await api.get(`/api/listings/${id}`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
+  updateListing: async (id, listingData) => {
+    try {
+      const response = await api.put(`/api/listings/${id}`, listingData);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
+  deleteListing: async (id) => {
+    try {
+      const response = await api.delete(`/api/listings/${id}`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
+  getListingsByUserId: async (userId) => {
+    try {
+      const response = await api.get(`/api/listings/user/${userId}`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  }
+};
+
+// ============ EVENT SERVICES ============
+export const eventService = {
+  createEvent: async (eventData) => {
+    try {
+      const response = await api.post('/api/events', eventData);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
+  getAllEvents: async () => {
+    try {
+      const response = await api.get('/api/events');
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
+  getEventById: async (id) => {
+    try {
+      const response = await api.get(`/api/events/${id}`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
+  updateEvent: async (id, eventData) => {
+    try {
+      const response = await api.put(`/api/events/${id}`, eventData);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
+  deleteEvent: async (id) => {
+    try {
+      const response = await api.delete(`/api/events/${id}`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
+  getEventsByUserId: async (userId) => {
+    try {
+      const response = await api.get(`/api/events/user/${userId}`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  }
+};
+
+// ============ NOTIFICATION SERVICES ============
+export const notificationService = {
+  getNotifications: async (userId) => {
+    try {
+      const response = await api.get(`/api/notifications?userId=${userId}`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
+  getUnreadCount: async (userId) => {
+    try {
+      const response = await api.get(`/api/notifications/unread-count?userId=${userId}`);
+      return response.data.count;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
+  markAsRead: async (notificationId) => {
+    try {
+      const response = await api.put(`/api/notifications/${notificationId}/read`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
+  deleteNotification: async (notificationId) => {
+    try {
+      const response = await api.delete(`/api/notifications/${notificationId}`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+};
+
+// ============ FOLLOW SERVICES ============
+export const followService = {
+  followUser: async (followeeId) => {
+    try {
+      // Assuming followerId is handled by backend auth middleware (req.userId)
+      const response = await api.post('/api/follows/follow', { followeeId });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
+  unfollowUser: async (followeeId) => {
+    try {
+      const response = await api.post('/api/follows/unfollow', { followeeId });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
+  isFollowing: async (followeeId) => {
+    try {
+      // Assuming followerId is handled by backend auth middleware (req.userId)
+      const response = await api.get(`/api/follows/${followeeId}/status`);
+      return response.data.isFollowing;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
+  getFollowers: async (userId) => {
+    try {
+      const response = await api.get(`/api/follows/${userId}/followers`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
+  getFollowing: async (userId) => {
+    try {
+      const response = await api.get(`/api/follows/${userId}/following`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
 };
 
 // Export default api instance for custom requests

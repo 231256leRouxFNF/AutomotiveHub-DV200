@@ -5,10 +5,23 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const path = require('path');
+const Notification = require('./models/Notification'); // Import Notification model
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// Import routes
+const listingRoutes = require('./routes/listingRoutes');
+const eventRoutes = require('./routes/eventRoutes');
+const notificationRoutes = require('./routes/notificationRoutes'); // Import notification routes
+const followRoutes = require('./routes/followRoutes'); // Import follow routes
+
+// Use routes
+app.use('/api/listings', listingRoutes);
+app.use('/api/events', eventRoutes);
+app.use('/api/notifications', notificationRoutes); // Use notification routes
+app.use('/api/follows', followRoutes); // Use follow routes
 
 // Serve uploaded images statically
 app.use('/uploads', express.static('uploads'));
@@ -181,6 +194,54 @@ app.get('/api/social/posts', (req, res) => {
       .catch(error => {
         console.error('Posts details query error:', error);
         res.status(500).json({ message: 'Failed to fetch post details' });
+      });
+  });
+});
+
+// Get all posts by a specific user ID with user info and images
+app.get('/api/social/posts/user/:userId', (req, res) => {
+  const { userId } = req.params;
+  const sql = `
+    SELECT p.*, u.username, pr.display_name, pr.avatar_url
+    FROM posts p
+    JOIN users u ON p.user_id = u.id
+    LEFT JOIN profiles pr ON u.id = pr.user_id
+    WHERE p.user_id = ?
+    ORDER BY p.created_at DESC
+  `;
+  
+  db.query(sql, [userId], (err, results) => {
+    if (err) {
+      console.error('User posts query error:', err);
+      return res.status(500).json({ message: 'Failed to fetch user posts' });
+    }
+    
+    const postPromises = results.map(post => {
+      return new Promise((resolve, reject) => {
+        const imagesSql = 'SELECT url FROM post_images WHERE post_id = ? ORDER BY sort_order';
+        const commentsSql = 'SELECT COUNT(*) as count FROM comments WHERE post_id = ?';
+        
+        db.query(imagesSql, [post.id], (imgErr, imageResults) => {
+          if (imgErr) return reject(imgErr);
+          
+          db.query(commentsSql, [post.id], (commentErr, commentResults) => {
+            if (commentErr) return reject(commentErr);
+            
+            resolve({
+              ...post,
+              images: imageResults.map(img => img.url),
+              comments_count: commentResults[0].count
+            });
+          });
+        });
+      });
+    });
+    
+    Promise.all(postPromises)
+      .then(postsWithDetails => res.json(postsWithDetails))
+      .catch(error => {
+        console.error('User posts details query error:', error);
+        res.status(500).json({ message: 'Failed to fetch user post details' });
       });
   });
 });
@@ -503,7 +564,7 @@ app.get('/api/posts', (req, res) => {
 
 // Create a new community post
 app.post('/api/posts', (req, res) => {
-  const { author, avatar_url, content, image_url } = req.body || {};
+  const { author, avatar_url, content, image_url, userId: postUserId } = req.body || {};
 
   if (!content || !String(content).trim()) {
     return res.status(400).json({ message: 'Content is required' });
@@ -513,9 +574,14 @@ app.post('/api/posts', (req, res) => {
   const safeAvatar = avatar_url ? String(avatar_url) : null;
   const safeImage = image_url ? String(image_url) : null;
   const timestamp = new Date().toLocaleString();
+  const userId = postUserId; // Assuming userId is passed from frontend or determined by auth middleware
 
-  const sql = 'INSERT INTO posts (author, avatar_url, content, image_url, likes, comments, featured, timestamp) VALUES (?, ?, ?, ?, 0, 0, 0, ?)';
-  const params = [safeAuthor, safeAvatar, String(content).trim(), safeImage, timestamp];
+  // Regex to find mentions like @username
+  const mentionRegex = /@(\w+)/g;
+  const mentions = [...content.matchAll(mentionRegex)].map(match => match[1]);
+
+  const sql = 'INSERT INTO posts (user_id, author, avatar_url, content, image_url, likes, comments, featured, timestamp) VALUES (?, ?, ?, ?, ?, 0, 0, 0, ?)';
+  const params = [userId, safeAuthor, safeAvatar, String(content).trim(), safeImage, timestamp];
 
   db.query(sql, params, (err, result) => {
     if (err) {
@@ -526,8 +592,41 @@ app.post('/api/posts', (req, res) => {
       return res.status(500).json({ message: 'Failed to create post' });
     }
 
+    const newPostId = result.insertId;
+
+    // Handle mentions: find mentioned users and create notifications
+    if (mentions.length > 0) {
+      const uniqueMentions = [...new Set(mentions)];
+      const findUsersSql = 'SELECT id FROM users WHERE username IN (?)';
+      db.query(findUsersSql, [uniqueMentions], (userErr, users) => {
+        if (userErr) {
+          console.error('Error finding mentioned users:', userErr);
+          // Continue without sending notifications if there's an error
+          return;
+        }
+
+        users.forEach(mentionedUser => {
+          // Ensure the user is not tagging themselves
+          if (mentionedUser.id !== userId) {
+            const notificationData = {
+              userId: mentionedUser.id,
+              type: 'mention',
+              message: `@${safeAuthor} mentioned you in a post: "${String(content).trim().substring(0, 50)}..."`,
+              link: `/community/post/${newPostId}`,
+              isRead: 0,
+            };
+            Notification.create(notificationData, (notifErr) => {
+              if (notifErr) {
+                console.error('Error creating mention notification:', notifErr);
+              }
+            });
+          }
+        });
+      });
+    }
+
     return res.status(201).json({
-      id: result.insertId,
+      id: newPostId,
       author: safeAuthor,
       avatar: safeAvatar,
       content: String(content).trim(),
@@ -538,6 +637,92 @@ app.post('/api/posts', (req, res) => {
       timestamp
     });
   });
+});
+
+// Create a new comment for a post
+app.post('/api/posts/:id/comments', async (req, res) => {
+  const postId = req.params.id;
+  const { userId, content } = req.body;
+
+  if (!userId || !content || !String(content).trim()) {
+    return res.status(400).json({ message: 'User ID and content are required' });
+  }
+
+  try {
+    // Check if post exists
+    const postExists = await new Promise((resolve, reject) => {
+      db.query('SELECT id FROM posts WHERE id = ?', [postId], (err, results) => {
+        if (err) return reject(err);
+        resolve(results.length > 0);
+      });
+    });
+
+    if (!postExists) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
+
+    // Insert new comment
+    const insertCommentSql = 'INSERT INTO comments (post_id, user_id, content) VALUES (?, ?, ?)';
+    const commentResult = await new Promise((resolve, reject) => {
+      db.query(insertCommentSql, [postId, userId, String(content).trim()], (err, result) => {
+        if (err) return reject(err);
+        resolve(result);
+      });
+    });
+
+    const newCommentId = commentResult.insertId;
+
+    // Update comments count on the post
+    db.query('UPDATE posts SET comments = comments + 1 WHERE id = ?', [postId], (err) => {
+      if (err) console.error('Error updating post comment count:', err);
+    });
+
+    // Handle mentions in the comment
+    const mentionRegex = /@(\w+)/g;
+    const mentions = [...content.matchAll(mentionRegex)].map(match => match[1]);
+
+    if (mentions.length > 0) {
+      const uniqueMentions = [...new Set(mentions)];
+      const findUsersSql = 'SELECT id FROM users WHERE username IN (?)';
+
+      db.query(findUsersSql, [uniqueMentions], (userErr, users) => {
+        if (userErr) {
+          console.error('Error finding mentioned users in comment:', userErr);
+          return;
+        }
+
+        users.forEach(mentionedUser => {
+          // Ensure the user is not tagging themselves
+          if (mentionedUser.id !== userId) {
+            const notificationData = {
+              userId: mentionedUser.id,
+              type: 'comment_mention',
+              message: `@${userId} mentioned you in a comment on a post: "${String(content).trim().substring(0, 50)}..."`,
+              link: `/community/post/${postId}/comment/${newCommentId}`,
+              isRead: 0,
+            };
+            Notification.create(notificationData, (notifErr) => {
+              if (notifErr) {
+                console.error('Error creating comment mention notification:', notifErr);
+              }
+            });
+          }
+        });
+      });
+    }
+
+    res.status(201).json({
+      id: newCommentId,
+      postId: postId,
+      userId: userId,
+      content: String(content).trim(),
+      created_at: new Date().toISOString(),
+    });
+
+  } catch (error) {
+    console.error('Create comment error:', error);
+    res.status(500).json({ message: 'Failed to create comment' });
+  }
 });
 
 // Community stats

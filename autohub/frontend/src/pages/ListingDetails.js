@@ -2,59 +2,66 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useParams } from 'react-router-dom';
 import Header from '../components/Header';
+import Footer from '../components/Footer'; // Import Footer component
 import listingStatic from '../data/listingDetails.json';
+import { listingService, userService } from '../services/api'; // Import listingService and userService
 import './ListingDetails.css';
 
 const ListingDetails = () => {
   const { id } = useParams();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [listing, setListing] = useState(null); // Changed from 'details' to 'listing'
   const [vehicleImages, setVehicleImages] = useState([]);
   const [vehicleSpecs, setVehicleSpecs] = useState([]);
   const [relatedListings, setRelatedListings] = useState([]);
-  const [details, setDetails] = useState({ title: '', price: '', description: '', tags: [], location: '' });
+  const [sellerProfile, setSellerProfile] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
-    const load = async () => {
+    const loadListingDetails = async () => {
       try {
-        const [d, r] = await Promise.all([
-          axios.get(`/api/listings/${id}`),
+        const [listingResponse, relatedResponse] = await Promise.all([
+          listingService.getListingById(id), // Use the new listing service
           axios.get(`/api/listings/${id}/related`)
         ]);
+
         if (!cancelled) {
-          const fallback = listingStatic.listing || {};
-          const infoRaw = d.data || {};
-          const info = (infoRaw && Object.keys(infoRaw).length) ? infoRaw : fallback;
+          const fetchedListing = listingResponse || {};
+          setListing(fetchedListing);
 
-          setDetails({
-            title: info.title || '',
-            price: info.price || '',
-            description: info.description || '',
-            tags: info.tags || [],
-            location: info.location || ''
-          });
-          setVehicleImages(Array.isArray(info.images) && info.images.length ? info.images : (fallback.images || []));
-          setVehicleSpecs(Array.isArray(info.specs) && info.specs.length ? info.specs : (fallback.specs || []));
+          // Parse images from imageUrls (JSON string) or use fallback
+          const images = (fetchedListing.imageUrls && JSON.parse(fetchedListing.imageUrls)) || [];
+          setVehicleImages(images.length ? images : (listingStatic.listing.images || []));
+          
+          setVehicleSpecs(Array.isArray(fetchedListing.specs) && fetchedListing.specs.length ? fetchedListing.specs : (listingStatic.listing.specs || []));
 
-          const rData = Array.isArray(r.data) && r.data.length ? r.data : (listingStatic.related || []);
+          const rData = Array.isArray(relatedResponse.data) && relatedResponse.data.length ? relatedResponse.data : (listingStatic.related || []);
           setRelatedListings(rData);
+
+          // Fetch seller profile if userId is available
+          if (fetchedListing.userId) {
+            const profile = await userService.getUserProfile(fetchedListing.userId);
+            setSellerProfile(profile);
+          }
         }
       } catch (e) {
         if (!cancelled) {
-          const fb = listingStatic.listing || {};
-          setVehicleImages(fb.images || []);
-          setVehicleSpecs(fb.specs || []);
+          console.error("Error loading listing details:", e);
+          const fallback = listingStatic.listing || {};
+          setVehicleImages(fallback.images || []);
+          setVehicleSpecs(fallback.specs || []);
           setRelatedListings(listingStatic.related || []);
-          setDetails({ title: fb.title || '', price: fb.price || '', description: fb.description || '', tags: fb.tags || [], location: fb.location || '' });
+          setListing({ title: fallback.title || '', price: fallback.price || '', description: fallback.description || '', tags: fallback.tags || [], location: fallback.location || '' });
         }
       }
     };
-    load();
+    loadListingDetails();
     return () => { cancelled = true; };
   }, [id]);
 
-
-
+  if (!listing) {
+    return <div className="page-wrapper"><Header /><main className="page-container"><p>Loading listing details...</p></main><Footer /></div>;
+  }
 
   const nextImage = () => {
     setCurrentImageIndex((prevIndex) => 
@@ -117,7 +124,7 @@ const ListingDetails = () => {
             
             <button className="carousel-btn next-btn" onClick={nextImage}>
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M12.6906 7.32996C13.0607 7.32996 13.3606 7.62992 13.3606 7.99996C13.3606 8.37 13.0607 8.66996 12.6906 8.66996L3.31063 8.66996C2.9406 8.66996 2.64062 8.37 2.64062 7.99996C2.64062 7.62992 2.9406 7.32996 3.31063 7.32996L12.6906 7.32996Z" fill="white"/>
+                <path d="M12.6906 7.32996C13.0607 7.32996 13.3606 7.62992 13.3606 7.99996C13.3606 8.37 13.0607 8.66996 12.6906 8.66996L3.31063 8.66996C2.94060 8.66996 2.64062 8.37 2.64062 7.99996C2.64062 7.62992 2.94060 7.32996 3.31063 7.32996L12.6906 7.32996Z" fill="white"/>
                 <path d="M7.51263 2.83627C7.75792 2.59097 8.14585 2.57583 8.40903 2.79047L8.46008 2.83627L13.1501 7.52629C13.4117 7.78793 13.4117 8.21204 13.1501 8.47367L8.46008 13.1637C8.19844 13.4254 7.77427 13.4254 7.51263 13.1637C7.251 12.902 7.251 12.4779 7.51263 12.2163L11.7289 7.99998L7.51263 3.78369L7.46687 3.73266C7.2522 3.4695 7.26735 3.08157 7.51263 2.83627Z" fill="white"/>
               </svg>
             </button>
@@ -140,17 +147,22 @@ const ListingDetails = () => {
           {/* Left Column - Vehicle Details */}
           <div className="vehicle-details">
             <div className="details-card">
-              <h1 className="vehicle-title">{details.title}</h1>
+              <h1 className="vehicle-title">{listing.title}</h1>
               
-              <div className="price">{details.price}</div>
+              <div className="price">R {parseFloat(listing.price).toFixed(2)}</div>
               
               <div className="vehicle-tags">
-                {(details.tags || []).map((t, idx) => (<span key={idx} className="tag">{t}</span>))}
+                {listing.category && <span className="tag">{listing.category}</span>}
+                {listing.condition && <span className="tag">{listing.condition}</span>}
+                {listing.make && <span className="tag">{listing.make}</span>}
+                {listing.model && <span className="tag">{listing.model}</span>}
+                {listing.year && <span className="tag">{listing.year}</span>}
+                {listing.mileage && <span className="tag">{listing.mileage} km</span>}
               </div>
               
               <div className="description-section">
                 <h2 className="section-title">Description</h2>
-                <p className="description-text">{details.description}</p>
+                <p className="description-text">{listing.description}</p>
               </div>
               
               <div className="seller-section">
@@ -158,18 +170,18 @@ const ListingDetails = () => {
                 <div className="seller-info">
                   <div className="seller-avatar">
                     <img 
-                      src="https://api.builder.io/api/v1/image/assets/TEMP/ae31b99bc64c2e0d9f45b42a9c12fe20b5d30086?width=128" 
+                      src={sellerProfile?.avatar_url || "https://api.builder.io/api/v1/image/assets/TEMP/ae31b99bc64c2e0d9f45b42a9c12fe20b5d30086?width=128"} 
                       alt="Seller" 
                     />
                   </div>
                   <div className="seller-details">
-                    <h3 className="seller-name">Kelvin "Gearhead" de Koker</h3>
-                    <p className="seller-join-date">Joined: January 2023</p>
+                    <h3 className="seller-name">{sellerProfile?.display_name || listing.seller_username || 'N/A'}</h3>
+                    <p className="seller-join-date">Joined: {sellerProfile?.created_at ? new Date(sellerProfile.created_at).toLocaleDateString() : 'N/A'}</p>
                     <div className="seller-location">
                       <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                         <path d="M12.6838 6.42773C12.6264 5.26844 12.141 4.16801 11.3164 3.34337C10.4917 2.51873 9.39132 2.03333 8.23202 1.97589L7.99973 1.97C6.75587 1.97 5.56264 2.46383 4.68309 3.34337C3.80355 4.22292 3.30973 5.41614 3.30973 6.66001C3.30973 8.10674 4.12498 9.66636 5.18429 11.0582C6.20792 12.403 7.38299 13.4915 7.99973 14.0267C8.61646 13.4915 9.79151 12.403 10.8151 11.0582C11.8745 9.66636 12.6897 8.10674 12.6897 6.66001L12.6838 6.42773Z" fill="#8C8D8B"/>
                       </svg>
-                      Cape Town, South Africa
+                      {sellerProfile?.location || listing.location || 'N/A'}
                     </div>
                   </div>
                 </div>
@@ -180,12 +192,12 @@ const ListingDetails = () => {
           {/* Right Column - Price and Actions */}
           <div className="sidebar">
             <div className="price-card">
-              <div className="price-display">{details.price}</div>
+              <div className="price-display">R {parseFloat(listing.price).toFixed(2)}</div>
               <div className="location">
                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                   <path d="M15.803 8.05225C15.7318 6.61611 15.1305 5.2529 14.1089 4.23133C13.0874 3.20976 11.7242 2.60845 10.288 2.53729L10.0003 2.53C8.45938 2.53 6.9812 3.14175 5.89161 4.23133C4.80202 5.32092 4.19027 6.79908 4.19027 8.33999C4.19027 10.1322 5.20021 12.0643 6.51249 13.7885C7.78057 15.4545 9.23626 16.8029 10.0003 17.4659C10.7643 16.8029 12.2199 15.4545 13.488 13.7885C14.8003 12.0643 15.8103 10.1322 15.8103 8.33999L15.803 8.05225Z" fill="#8C8D8B"/>
                 </svg>
-                {details.location}
+                {listing.location}
               </div>
               
               <div className="action-buttons">
@@ -215,6 +227,13 @@ const ListingDetails = () => {
             <div className="specs-card">
               <h3 className="specs-title">Specifications</h3>
               <div className="specs-table">
+                {/* Always display these specs if available, even if fetchedListing.specs is empty */}
+                {listing.make && <div className="spec-row"><div className="spec-label">Make</div><div className="spec-value">{listing.make}</div></div>}
+                {listing.model && <div className="spec-row"><div className="spec-label">Model</div><div className="spec-value">{listing.model}</div></div>}
+                {listing.year && <div className="spec-row"><div className="spec-label">Year</div><div className="spec-value">{listing.year}</div></div>}
+                {listing.condition && <div className="spec-row"><div className="spec-label">Condition</div><div className="spec-value">{listing.condition}</div></div>}
+                {listing.mileage && <div className="spec-row"><div className="spec-label">Mileage</div><div className="spec-value">{listing.mileage} km</div></div>}
+                {/* Map other specs from vehicleSpecs array */}
                 {vehicleSpecs.map((spec, index) => (
                   <div key={index} className="spec-row">
                     <div className="spec-label">{spec.label}</div>
@@ -258,7 +277,7 @@ const ListingDetails = () => {
           <form className="newsletter-form">
             <div className="newsletter-input-group">
               <svg className="mail-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M14.3401 4.09469C14.6522 3.89603 15.0665 3.9881 15.2652 4.30014C15.4639 4.61222 15.3718 5.02655 15.0598 5.22532L9.03572 9.06211C9.02808 9.06694 9.02058 9.07196 9.0128 9.07652C8.74447 9.23236 8.44391 9.32375 8.13537 9.34412L8.00325 9.34807C7.64868 9.34807 7.30022 9.25454 6.99362 9.07652C6.98585 9.07196 6.97775 9.067 6.97011 9.06211L0.940094 5.22532L0.884477 5.1854C0.61785 4.97508 0.548403 4.59282 0.734645 4.30014C0.920932 4.0075 1.29684 3.90816 1.60028 4.06067L1.65982 4.09469L7.67019 7.9197C7.77149 7.97772 7.88647 8.00807 8.00325 8.00807L8.09088 8.00277C8.17664 7.99145 8.25939 7.96284 8.33496 7.9197L14.3401 4.09469Z" fill="#8C8D8B"/>
+                <path d="M14.3401 4.09469C14.6522 3.89603 15.0665 3.9881 15.2652 4.30014C15.4639 4.61222 15.3718 5.02655 15.0598 5.22532L9.03572 9.06211C9.02808 9.06694 9.02058 9.07196 9.01280 9.07652C8.74447 9.23236 8.44391 9.32375 8.13537 9.34412L8.00325 9.34807C7.64868 9.34807 7.30022 9.25454 6.99362 9.07652C6.98585 9.07196 6.97775 9.067 6.97011 9.06211L0.940094 5.22532L0.884477 5.1854C0.61785 4.97508 0.548403 4.59282 0.734645 4.30014C0.920932 4.0075 1.29684 3.90816 1.60028 4.06067L1.65982 4.09469L7.67019 7.9197C7.77149 7.97772 7.88647 8.00807 8.00325 8.00807L8.09088 8.00277C8.17664 7.99145 8.25939 7.96284 8.33496 7.9197L14.3401 4.09469Z" fill="#8C8D8B"/>
               </svg>
               <input 
                 type="email" 
@@ -278,12 +297,12 @@ const ListingDetails = () => {
           <div className="social-links">
             <a href="#" className="social-link">
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <path d="M10.8354 5.85C10.8354 5.40974 11.0104 4.98763 11.3217 4.67633C11.633 4.36502 12.0552 4.19 12.4954 4.19H14.1554V2.53L12.4954 2.53C11.6148 2.53 10.7707 2.88003 10.1481 3.50266C9.5254 4.12527 9.17539 4.96947 9.17539 5.85L9.17539 8.33999C9.17539 8.7984 8.8038 9.17 8.34539 9.17H6.68539L6.68539 10.83H8.34539C8.8038 10.83 9.17539 11.2016 9.17539 11.66V17.47H10.8354V11.66C10.8354 11.2016 11.207 10.83 11.6654 10.83H13.5077L13.9227 9.17H11.6654C11.207 9.17 10.8354 8.7984 10.8354 8.33999L10.8354 5.85Z" fill="#8C8D8B"/>
+                <path d="M10.8354 5.85C10.8354 5.40974 11.0104 4.98763 11.3217 4.67633C11.633 4.36502 12.0552 4.19 12.4954 4.19H14.1554V2.53L12.4954 2.53C11.6148 2.53 10.7707 2.88003 10.1481 3.50266C9.52540 4.12527 9.17539 4.96947 9.17539 5.85L9.17539 8.33999C9.17539 8.7984 8.80380 9.17 8.34539 9.17H6.68539L6.68539 10.83H8.34539C8.80380 10.83 9.17539 11.2016 9.17539 11.66V17.47H10.8354V11.66C10.8354 11.2016 11.2070 10.83 11.6654 10.83H13.5077L13.9227 9.17H11.6654C11.2070 9.17 10.8354 8.7984 10.8354 8.33999L10.8354 5.85Z" fill="#8C8D8B"/>
               </svg>
             </a>
             <a href="#" className="social-link">
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <path d="M11.3083 3.02292C12.7334 2.2804 14.5927 2.32667 16.0694 3.49061C16.1416 3.47318 16.2252 3.45102 16.319 3.41928C16.5499 3.34127 16.798 3.2329 17.0332 3.11776C17.2662 3.00362 17.4749 2.88848 17.6256 2.80164C17.7007 2.75843 17.7605 2.72227 17.8008 2.69789C17.8208 2.68572 17.8365 2.67631 17.8462 2.67034C17.8507 2.66748 17.8539 2.66508 17.8559 2.66386H17.8575C18.1541 2.47652 18.537 2.49531 18.8131 2.71167C19.0545 2.90095 19.1688 3.20523 19.1195 3.50115L19.0879 3.62759V3.62921L19.0871 3.63084C19.0865 3.63246 19.0855 3.63486 19.0846 3.63732C19.0829 3.6422 19.081 3.64876 19.0781 3.65678C19.0725 3.67304 19.0649 3.69574 19.0546 3.72405C19.0341 3.78089 19.0037 3.86145 18.9647 3.95992C18.887 4.15636 18.7717 4.42863 18.6202 4.73723C18.3705 5.24591 18.0021 5.88891 17.5162 6.45721C18.5868 15.1094 9.18603 21.3675 1.60764 16.739L1.24208 16.5071C0.931048 16.3011 0.79645 15.9119 0.91219 15.5572C1.02802 15.2028 1.36568 14.9691 1.73814 14.9858C2.86761 15.0371 3.98536 14.8026 4.9479 14.3212C1.32816 12.3239 -0.264295 7.59951 1.80136 3.79861L1.85567 3.71189C1.99321 3.51963 2.20817 3.39348 2.44655 3.36903C2.71896 3.34123 2.98782 3.45016 3.1647 3.65921C4.63275 5.39399 6.81758 6.48428 9.08087 6.66228C9.09 5.00821 10.0208 3.69373 11.3083 3.02292Z" fill="#8C8D8B"/>
+                <path d="M11.3083 3.02292C12.7334 2.2804 14.5927 2.32667 16.0694 3.49061C16.1416 3.47318 16.2252 3.45102 16.319 3.41928C16.5499 3.34127 16.7980 3.2329 17.0332 3.11776C17.2662 3.00362 17.4749 2.88848 17.6256 2.80164C17.7007 2.75843 17.7605 2.72227 17.8008 2.69789C17.8208 2.68572 17.8365 2.67631 17.8462 2.67034C17.8507 2.66748 17.8539 2.66508 17.8559 2.66386H17.8575C18.1541 2.47652 18.5370 2.49531 18.8131 2.71167C19.0545 2.90095 19.1688 3.20523 19.1195 3.50115L19.0879 3.62759V3.62921L19.0871 3.63084C19.0865 3.63246 19.0855 3.63486 19.0846 3.63732C19.0829 3.6422 19.0810 3.64876 19.0781 3.65678C19.0725 3.67304 19.0649 3.69574 19.0546 3.72405C19.0341 3.78089 19.0037 3.86145 18.9647 3.95992C18.8870 4.15636 18.7717 4.42863 18.6202 4.73723C18.3705 5.24591 18.0021 5.88891 17.5162 6.45721C18.5868 15.1094 9.18603 21.3675 1.60764 16.739L1.24208 16.5071C0.931048 16.3011 0.796450 15.9119 0.912190 15.5572C1.02802 15.2028 1.36568 14.9691 1.73814 14.9858C2.86761 15.0371 3.98536 14.8026 4.94790 14.3212C1.32816 12.3239 -0.264295 7.59951 1.80136 3.79861L1.85567 3.71189C1.99321 3.51963 2.20817 3.39348 2.44655 3.36903C2.71896 3.34123 2.98782 3.45016 3.16470 3.65921C4.63275 5.39399 6.81758 6.48428 9.08087 6.66228C9.09000 5.00821 10.0208 3.69373 11.3083 3.02292Z" fill="#8C8D8B"/>
               </svg>
             </a>
             <a href="#" className="social-link">

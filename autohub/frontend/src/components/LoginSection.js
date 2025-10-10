@@ -35,7 +35,7 @@ const LoginSection = () => {
       
       if (result.success) {
         alert('Login successful! Welcome to AutoHub.');
-        navigate('/vehicle-management');
+        navigate('/community'); // Redirect to community feed after successful login
       } else {
         alert(result.message || 'Login failed');
       }
