@@ -5,6 +5,7 @@ import Footer from '../components/Footer';
 import './PageLayout.css';
 import './UserProfile.css'; // Import the new CSS file
 import { userService, authService, followService, socialService, listingService } from '../services/api';
+import FollowListModal from '../components/FollowListModal'; // Import the new modal component
 
 const UserProfile = () => {
   const { id } = useParams(); // Get user ID from URL parameters
@@ -15,6 +16,8 @@ const UserProfile = () => {
   const [followingCount, setFollowingCount] = useState(0);
   const [userPosts, setUserPosts] = useState([]); // New state for user's posts
   const [userListings, setUserListings] = useState([]); // New state for user's listings
+  const [showFollowModal, setShowFollowModal] = useState(false); // State to control modal visibility
+  const [modalType, setModalType] = useState(''); // State to control modal content ('followers' or 'following')
   const currentUser = authService.getCurrentUser();
   const isOwner = currentUser && parseInt(currentUser.id) === parseInt(id);
 
@@ -54,6 +57,33 @@ const UserProfile = () => {
     fetchProfileData();
   }, [id, currentUser, isFollowing]); // Re-run effect if id, currentUser, or isFollowing changes
 
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!currentUser || !currentUser.id) {
+      alert('Please log in to upload a profile photo.');
+      navigate('/login');
+      return;
+    }
+
+    try {
+      const response = await userService.uploadProfileAvatar(currentUser.id, file);
+      if (response.success) {
+        setProfile(prevProfile => ({
+          ...prevProfile,
+          avatar_url: response.avatar_url,
+        }));
+        alert('Profile photo updated successfully!');
+      } else {
+        alert(response.message || 'Failed to update profile photo.');
+      }
+    } catch (error) {
+      console.error('Error uploading profile avatar:', error);
+      alert(error.message || 'Failed to upload profile photo.');
+    }
+  };
+
   const handleFollowToggle = async () => {
     if (!currentUser) {
       alert('Please log in to follow users.');
@@ -77,6 +107,16 @@ const UserProfile = () => {
     }
   };
 
+  const openFollowModal = (type) => {
+    setModalType(type);
+    setShowFollowModal(true);
+  };
+
+  const closeFollowModal = () => {
+    setShowFollowModal(false);
+    setModalType('');
+  };
+
   if (!profile) {
     return (
       <div className="page-wrapper">
@@ -95,7 +135,21 @@ const UserProfile = () => {
       <Header />
       <main className="page-container">
         <div className="profile-header">
-          <img src={profile.avatar_url || 'https://i.pravatar.cc/150'} alt="Profile Avatar" className="profile-avatar" />
+          <div className="profile-avatar-container">
+            <img src={profile.avatar_url || 'https://i.pravatar.cc/150'} alt="Profile Avatar" className="profile-avatar" />
+            {isOwner && (
+              <label htmlFor="avatar-upload" className="avatar-upload-btn" title="Change profile photo">
+                <input
+                  type="file"
+                  id="avatar-upload"
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  onChange={handleAvatarChange}
+                />
+                <span>✏️</span>
+              </label>
+            )}
+          </div>
           <div className="profile-info">
             <h1 className="profile-display-name">{profile.display_name || profile.username}</h1>
             <p className="profile-username">@{profile.username}</p>
@@ -105,8 +159,8 @@ const UserProfile = () => {
               <span>Joined: {new Date(profile.created_at).toLocaleDateString()}</span>
             </div>
             <div className="profile-stats">
-              <span><strong>{followersCount}</strong> Followers</span>
-              <span><strong>{followingCount}</strong> Following</span>
+              <span onClick={() => openFollowModal('followers')} className="clickable-stat"><strong>{followersCount}</strong> Followers</span>
+              <span onClick={() => openFollowModal('following')} className="clickable-stat"><strong>{followingCount}</strong> Following</span>
             </div>
             <div className="profile-actions">
               {!isOwner && currentUser && (
@@ -163,6 +217,13 @@ const UserProfile = () => {
         </section>
       </main>
       <Footer />
+      {showFollowModal && (
+        <FollowListModal
+          userId={id}
+          type={modalType}
+          onClose={closeFollowModal}
+        />
+      )}
     </div>
   );
 };

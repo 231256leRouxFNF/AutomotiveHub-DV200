@@ -38,8 +38,44 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
+// Multer configuration for profile image uploads
+const profileStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/profiles/'); // Directory to save profile images
+  },
+  filename: (req, file, cb) => {
+    // Use user ID to name the profile image, ensuring uniqueness and easy retrieval
+    const userId = req.params.id; // Get userId from request parameters
+    if (!userId) {
+      return cb(new Error('User ID is required for profile image upload'));
+    }
+    const fileExtension = path.extname(file.originalname);
+    cb(null, `profile-${userId}${fileExtension}`);
+  },
+});
+const uploadProfile = multer({ storage: profileStorage });
+
 app.get('/', (req, res) => {
   res.send('API is working');
+});
+
+// Endpoint to upload/update user profile photo
+app.post('/api/users/:id/profile/avatar', uploadProfile.single('avatar'), (req, res) => {
+  const userId = req.params.id;
+  const avatarUrl = `/uploads/profiles/${req.file.filename}`;
+
+  // Update the profiles table with the new avatar_url
+  const sql = 'UPDATE profiles SET avatar_url = ? WHERE user_id = ?';
+  db.query(sql, [avatarUrl, userId], (err, result) => {
+    if (err) {
+      console.error('Error updating profile avatar:', err);
+      return res.status(500).json({ success: false, message: 'Failed to update profile avatar' });
+    }
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ success: false, message: 'User profile not found' });
+    }
+    res.status(200).json({ success: true, message: 'Profile avatar updated successfully', avatar_url: avatarUrl });
+  });
 });
 
 app.get('/test-db', (req, res) => {
@@ -547,6 +583,68 @@ app.get('/api/listings/:id/related', (req, res) => {
     }
     res.json(rows || []);
   });
+});
+
+// Unified search endpoint for listings and events
+app.get('/api/search', async (req, res) => {
+  const { q, category, location } = req.query;
+  const searchTerm = `%${q || ''}%`;
+
+  try {
+    // Search listings
+    let listingsSql = `
+      SELECT id, title, description, price, location, 'listing' as type, imageUrls
+      FROM listings
+      WHERE (title LIKE ? OR description LIKE ? OR location LIKE ?)
+    `;
+    const listingsParams = [searchTerm, searchTerm, searchTerm];
+
+    if (category) {
+      listingsSql += ' AND category = ?';
+      listingsParams.push(category);
+    }
+    if (location) {
+      listingsSql += ' AND location LIKE ?';
+      listingsParams.push(`%${location}%`);
+    }
+
+    const listingsPromise = new Promise((resolve, reject) => {
+      db.query(listingsSql, listingsParams, (err, results) => {
+        if (err) reject(err);
+        else resolve(results);
+      });
+    });
+
+    // Search events
+    let eventsSql = `
+      SELECT id, title, description, date as timestamp, location, 'event' as type, imageUrl as imageUrls
+      FROM events
+      WHERE (title LIKE ? OR description LIKE ? OR location LIKE ?)
+    `;
+    const eventsParams = [searchTerm, searchTerm, searchTerm];
+
+    // For simplicity, let's assume events might also have categories or we can map them
+    // For now, no category filter for events unless explicitly added to events table
+    if (location) {
+      eventsSql += ' AND location LIKE ?';
+      eventsParams.push(`%${location}%`);
+    }
+
+    const eventsPromise = new Promise((resolve, reject) => {
+      db.query(eventsSql, eventsParams, (err, results) => {
+        if (err) reject(err);
+        else resolve(results);
+      });
+    });
+
+    const [listings, events] = await Promise.all([listingsPromise, eventsPromise]);
+
+    res.json({ listings: listings || [], events: events || [] });
+
+  } catch (error) {
+    console.error('Unified search error:', error);
+    res.status(500).json({ message: 'Failed to perform search' });
+  }
 });
 
 // Community posts

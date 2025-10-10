@@ -1,20 +1,19 @@
 import React, { useState } from 'react';
 import './SearchBox.css';
+import { useNavigate } from 'react-router-dom';
 
-const SearchBox = ({ placeholder = "Search for cars, parts, or users...", onSearch }) => {
+const SearchBox = ({ placeholder = "Search for cars, parts, or users..." }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const navigate = useNavigate();
 
   const handleInputChange = (e) => {
     setSearchTerm(e.target.value);
-    if (onSearch) {
-      onSearch(e.target.value);
-    }
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (onSearch) {
-      onSearch(searchTerm);
+    if (searchTerm.trim()) {
+      navigate(`/search?q=${encodeURIComponent(searchTerm.trim())}`);
     }
   };
 

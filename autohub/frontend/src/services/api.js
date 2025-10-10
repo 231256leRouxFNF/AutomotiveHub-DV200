@@ -104,7 +104,22 @@ export const userService = {
   getUserFollows: async (userId, type = 'following') => {
     const response = await api.get(`/api/users/${userId}/follows?type=${type}`);
     return response.data;
-  }
+  },
+
+  uploadProfileAvatar: async (userId, avatarFile) => {
+    try {
+      const formData = new FormData();
+      formData.append('avatar', avatarFile);
+      const response = await api.post(`/api/users/${userId}/profile/avatar`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
 };
 
 // ============ VEHICLE SERVICES ============
@@ -219,7 +234,21 @@ export const generalService = {
   getApiStatus: async () => {
     const response = await api.get('/');
     return response.data;
-  }
+  },
+
+  searchAll: async (query, category, location) => {
+    try {
+      const params = new URLSearchParams();
+      if (query) params.append('q', query);
+      if (category) params.append('category', category);
+      if (location) params.append('location', location);
+
+      const response = await api.get(`/api/search?${params.toString()}`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
 };
 
 // ============ LISTING SERVICES ============

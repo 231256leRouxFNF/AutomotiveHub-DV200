@@ -25,7 +25,6 @@ import CategoryPage from './pages/CategoryPage';
 import AdminDashboard from './pages/AdminDashboard';
 import CreateEventWizard from './pages/CreateEventWizard'; // Import the new component
 import MyEvents from './pages/MyEvents'; // Import the new MyEvents component
-import AboutUs from './pages/AboutUs'; // Import the new AboutUs component
 import { authService } from './services/api'; // Import authService
 
 const AuthWrapper = ({ children }) => {
@@ -44,7 +43,6 @@ function App() {
         {/* Public Routes */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/RegistrationPage" element={<RegisterPage />} />
-        <Route path="/about-us" element={<AboutUs />} /> {/* New route for About Us page */}
         {/* Default route for authenticated users or redirect to login */}
         <Route path="/" element={
           <AuthWrapper>
@@ -72,7 +70,7 @@ function App() {
         <Route path="/privacy" element={<AuthWrapper><Privacy /></AuthWrapper>} />
         <Route path="/sell/create" element={<AuthWrapper><CreateListingWizard /></AuthWrapper>} />
         <Route path="/sell/listings" element={<AuthWrapper><MyListings /></AuthWrapper>} />
-        <Route path="/sell/events" element={<AuthWrapper><MyEvents /></AuthWrapper>} />
+        <Route path="/sell/events" element={<AuthWrapper><MyEvents /></AuthWrapper>} /> {/* New route for My Events */}
         <Route path="/sell/dashboard" element={<AuthWrapper><SellerDashboard /></AuthWrapper>} />
         <Route path="/orders" element={<AuthWrapper><Orders /></AuthWrapper>} />
         <Route path="/cart" element={<AuthWrapper><Cart /></AuthWrapper>} />

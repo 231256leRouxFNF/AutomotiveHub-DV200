@@ -87,7 +87,6 @@ const Header = () => {
               <Link to="/help" className="dropdown-item">Help Center</Link>
               <Link to="/terms" className="dropdown-item">Terms</Link>
               <Link to="/privacy" className="dropdown-item">Privacy</Link>
-              <Link to="/about-us" className="dropdown-item">About Us</Link>
               <Link to="/admin" className="dropdown-item">Admin</Link>
             </div>
           </div>
