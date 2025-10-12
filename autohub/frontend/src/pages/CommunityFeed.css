@@ -803,3 +803,24 @@
     align-self: flex-start;
   }
 }
+
+.community-members-section {
+  margin-top: 30px;
+  padding: 20px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.community-members-title {
+  font-size: 1.2em;
+  color: #333;
+  margin-bottom: 15px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 10px;
+}
+
+.community-members-list {
+  display: grid;
+  gap: 15px;
+}

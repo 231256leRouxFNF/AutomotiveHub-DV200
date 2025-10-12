@@ -6,6 +6,7 @@ const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const path = require('path');
 const Notification = require('./models/Notification'); // Import Notification model
+const auth = require('./middleware/auth'); // Import auth middleware
 
 const app = express();
 app.use(cors());
@@ -100,25 +101,120 @@ app.get('/api/users', (req, res) => {
 });
 
 // Get user profile by ID
-app.get('/api/users/:id/profile', (req, res) => {
+app.get('/api/users/:id/profile', auth, async (req, res) => {
   const userId = req.params.id;
-  const sql = `
-    SELECT u.id, u.username, u.email, u.created_at, 
-           p.display_name, p.avatar_url, p.bio, p.location
-    FROM users u 
-    LEFT JOIN profiles p ON u.id = p.user_id 
-    WHERE u.id = ?
-  `;
-  db.query(sql, [userId], (err, results) => {
-    if (err) {
-      console.error('User profile query error:', err);
-      return res.status(500).json({ message: 'Failed to fetch user profile' });
-    }
-    if (results.length === 0) {
+  const requestingUserId = req.userId; // Assuming auth middleware provides this
+
+  try {
+    const profileSql = `
+      SELECT u.id, u.username, u.email, u.created_at, 
+             p.display_name, p.avatar_url, p.bio, p.location
+      FROM users u 
+      LEFT JOIN profiles p ON u.id = p.user_id 
+      WHERE u.id = ?
+    `;
+    const [profileResults] = await db.promise().query(profileSql, [userId]);
+
+    if (profileResults.length === 0) {
       return res.status(404).json({ message: 'User not found' });
     }
-    res.json(results[0]);
-  });
+
+    const profile = profileResults[0];
+
+    // Get follower count
+    const followersCountSql = 'SELECT COUNT(*) as count FROM follows WHERE followee_id = ?';
+    const [followersCountResults] = await db.promise().query(followersCountSql, [userId]);
+    profile.followersCount = followersCountResults[0].count;
+
+    // Get following count
+    const followingCountSql = 'SELECT COUNT(*) as count FROM follows WHERE follower_id = ?';
+    const [followingCountResults] = await db.promise().query(followingCountSql, [userId]);
+    profile.followingCount = followingCountResults[0].count;
+
+    // Check if requesting user is following this profile
+    if (requestingUserId) {
+      const isFollowingSql = 'SELECT COUNT(*) as count FROM follows WHERE follower_id = ? AND followee_id = ?';
+      const [isFollowingResults] = await db.promise().query(isFollowingSql, [requestingUserId, userId]);
+      profile.isFollowing = isFollowingResults[0].count > 0;
+
+      // Get mutual followers
+      const mutualsSql = `
+        SELECT u.id, u.username, p.display_name, p.avatar_url
+        FROM follows AS f1
+        JOIN follows AS f2 ON f1.follower_id = f2.follower_id
+        JOIN users AS u ON f1.follower_id = u.id
+        LEFT JOIN profiles AS p ON u.id = p.user_id
+        WHERE f1.followee_id = ? AND f2.followee_id = ? AND f1.follower_id != ?
+      `;
+      const [mutualsResults] = await db.promise().query(mutualsSql, [userId, requestingUserId, requestingUserId]);
+      profile.mutualFollowers = mutualsResults;
+    } else {
+      profile.isFollowing = false;
+      profile.mutualFollowers = [];
+    }
+    
+    res.json(profile);
+  } catch (err) {
+    console.error('User profile query error:', err);
+    res.status(500).json({ message: 'Failed to fetch user profile' });
+  }
+});
+
+// Get all users with profile information (for community feed)
+app.get('/api/community/users', auth, async (req, res) => {
+  const requestingUserId = req.userId;
+  try {
+    const usersSql = `
+      SELECT u.id, u.username, p.display_name, p.avatar_url, p.bio, p.location
+      FROM users u
+      LEFT JOIN profiles p ON u.id = p.user_id
+      WHERE u.id != ?  -- Exclude the requesting user from the list
+    `;
+    const [users] = await db.promise().query(usersSql, [requestingUserId || 0]); // Use 0 if no requesting user
+
+    // For each user, fetch follower/following counts and mutuals if authenticated
+    const usersWithDetails = await Promise.all(users.map(async (user) => {
+      const userProfile = { ...user };
+
+      // Get follower count
+      const followersCountSql = 'SELECT COUNT(*) as count FROM follows WHERE followee_id = ?';
+      const [followersCountResults] = await db.promise().query(followersCountSql, [user.id]);
+      userProfile.followersCount = followersCountResults[0].count;
+
+      // Get following count
+      const followingCountSql = 'SELECT COUNT(*) as count FROM follows WHERE follower_id = ?';
+      const [followingCountResults] = await db.promise().query(followingCountSql, [user.id]);
+      userProfile.followingCount = followingCountResults[0].count;
+
+      if (requestingUserId) {
+        // Check if requesting user is following this profile
+        const isFollowingSql = 'SELECT COUNT(*) as count FROM follows WHERE follower_id = ? AND followee_id = ?';
+        const [isFollowingResults] = await db.promise().query(isFollowingSql, [requestingUserId, user.id]);
+        userProfile.isFollowing = isFollowingResults[0].count > 0;
+
+        // Get mutual followers
+        const mutualsSql = `
+          SELECT u2.id, u2.username, p2.display_name, p2.avatar_url
+          FROM follows AS f1
+          JOIN follows AS f2 ON f1.follower_id = f2.follower_id
+          JOIN users AS u2 ON f1.follower_id = u2.id
+          LEFT JOIN profiles AS p2 ON u2.id = p2.user_id
+          WHERE f1.followee_id = ? AND f2.followee_id = ? AND f1.follower_id != ?
+        `;
+        const [mutualsResults] = await db.promise().query(mutualsSql, [user.id, requestingUserId, requestingUserId]);
+        userProfile.mutualFollowers = mutualsResults;
+      } else {
+        userProfile.isFollowing = false;
+        userProfile.mutualFollowers = [];
+      }
+      return userProfile;
+    }));
+
+    res.json(usersWithDetails);
+  } catch (err) {
+    console.error('Community users query error:', err);
+    res.status(500).json({ message: 'Failed to fetch community users' });
+  }
 });
 
 // Get all vehicles

@@ -29,6 +29,7 @@ import { authService } from './services/api'; // Import authService
 
 const AuthWrapper = ({ children }) => {
   const currentUser = authService.getCurrentUser();
+  console.log('AuthWrapper - currentUser:', currentUser);
   if (!currentUser) {
     // Redirect to login page if not authenticated
     return <Navigate to="/login" replace />;
@@ -43,24 +44,18 @@ function App() {
         {/* Public Routes */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/RegistrationPage" element={<RegisterPage />} />
-        {/* Default route for authenticated users or redirect to login */}
-        <Route path="/" element={
-          <AuthWrapper>
-            <CommunityFeed />
-          </AuthWrapper>
-        } />
-        <Route path="/community" element={
-          <AuthWrapper>
-            <CommunityFeed />
-          </AuthWrapper>
-        } />
+        <Route path="/" element={<CommunityFeed />} />
+        <Route path="/community" element={<CommunityFeed />} />
+        <Route path="/marketplace" element={<Marketplace />} /> {/* Make Marketplace public */}
+        <Route path="/listing/:id" element={<ListingDetails />} /> {/* Make Listing Details public */}
+        <Route path="/listing-details" element={<ListingDetails />} /> {/* Make Listing Details public */}
 
         {/* Protected Routes (requires authentication) */}
         <Route path="/garage" element={<AuthWrapper><VehicleManagement /></AuthWrapper>} />
         <Route path="/vehicle-management" element={<AuthWrapper><VehicleManagement /></AuthWrapper>} />
-        <Route path="/marketplace" element={<AuthWrapper><Marketplace /></AuthWrapper>} />
-        <Route path="/listing/:id" element={<AuthWrapper><ListingDetails /></AuthWrapper>} />
-        <Route path="/listing-details" element={<AuthWrapper><ListingDetails /></AuthWrapper>} />
+        {/* <Route path="/marketplace" element={<AuthWrapper><Marketplace /></AuthWrapper>} /> */}
+        {/* <Route path="/listing/:id" element={<AuthWrapper><ListingDetails /></AuthWrapper>} /> */}
+        {/* <Route path="/listing-details" element={<AuthWrapper><ListingDetails /></AuthWrapper>} /> */}
         <Route path="/profile" element={<AuthWrapper><UserProfile /></AuthWrapper>} />
         <Route path="/messages" element={<AuthWrapper><Messages /></AuthWrapper>} />
         <Route path="/notifications" element={<AuthWrapper><NotificationsCenter /></AuthWrapper>} />

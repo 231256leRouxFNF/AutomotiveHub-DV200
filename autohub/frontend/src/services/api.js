@@ -75,8 +75,15 @@ export const authService = {
     if (!token) return null;
     
     try {
+      const tokenParts = token.split('.');
+      if (tokenParts.length !== 3) {
+        console.error('Invalid token format: expected 3 parts separated by dots.');
+        return null;
+      }
       // Decode JWT token to get user info
-      const payload = JSON.parse(atob(token.split('.')[1]));
+      const payload = JSON.parse(atob(tokenParts[1]));
+      // Add the token to the payload for easier access if needed
+      payload.token = token;
       return payload;
     } catch (error) {
       console.error('Error decoding token:', error);

@@ -57,3 +57,4 @@ const FollowListModal = ({ userId, type, onClose }) => {
 };
 
 export default FollowListModal;
+

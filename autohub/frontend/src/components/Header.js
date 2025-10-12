@@ -29,10 +29,50 @@ const Header = () => {
     return () => clearInterval(intervalId);
   }, [currentUser]);
 
-  const navItems = [
+  const mainNavItems = [
     { path: '/community', label: 'Community' },
     { path: '/marketplace', label: 'Marketplace' },
     { path: '/garage', label: 'My Garage' }
+  ];
+
+  const authenticatedDropdowns = [
+    {
+      label: 'Buy',
+      items: [
+        { path: '/search', label: 'Search' },
+        { path: '/favorites', label: 'Saved Items' },
+        { path: '/compare', label: 'Compare' },
+        { path: '/cart', label: 'Cart' },
+        { path: '/orders', label: 'Orders' }
+      ]
+    },
+    {
+      label: 'Sell',
+      items: [
+        { path: '/sell/dashboard', label: 'Dashboard' },
+        { path: '/sell/listings', label: 'My Listings' },
+        { path: '/sell/events', label: 'My Events' },
+        { path: '/sell/create', label: 'Create Listing' }
+      ]
+    },
+    {
+      label: 'Account',
+      items: [
+        { path: '/profile', label: 'Profile' },
+        { path: '/messages', label: 'Messages' },
+        { path: '/notifications', label: 'Notifications' },
+        { path: '/settings', label: 'Settings' }
+      ]
+    },
+    {
+      label: 'Support',
+      items: [
+        { path: '/help', label: 'Help Center' },
+        { path: '/terms', label: 'Terms' },
+        { path: '/privacy', label: 'Privacy' },
+        { path: '/admin', label: 'Admin' }
+      ]
+    }
   ];
 
   return (
@@ -40,7 +80,7 @@ const Header = () => {
       <div className="header-left">
         <Logo />
         <nav className="header-nav">
-          {navItems.map((item) => (
+          {mainNavItems.map((item) => (
             <Link
               key={item.path}
               to={item.path}
@@ -50,60 +90,43 @@ const Header = () => {
             </Link>
           ))}
 
-          <div className="nav-group">
-            <span className="nav-link has-submenu">Buy</span>
-            <div className="dropdown-menu">
-              <Link to="/search" className="dropdown-item">Search</Link>
-              <Link to="/favorites" className="dropdown-item">Saved Items</Link>
-              <Link to="/compare" className="dropdown-item">Compare</Link>
-              <Link to="/cart" className="dropdown-item">Cart</Link>
-              <Link to="/orders" className="dropdown-item">Orders</Link>
-            </div>
-          </div>
+          {!currentUser && (
+            <Link to="/login" className="nav-link">Login</Link>
+          )}
 
-          <div className="nav-group">
-            <span className="nav-link has-submenu">Sell</span>
-            <div className="dropdown-menu">
-              <Link to="/sell/dashboard" className="dropdown-item">Dashboard</Link>
-              <Link to="/sell/listings" className="dropdown-item">My Listings</Link>
-              <Link to="/sell/events" className="dropdown-item">My Events</Link>
-              <Link to="/sell/create" className="dropdown-item">Create Listing</Link>
+          {currentUser && (
+            <div className="nav-group has-submenu">
+              <span className="nav-link">More</span>
+              <div className="dropdown-menu dropdown-more">
+                {authenticatedDropdowns.map(dropdown => (
+                  <React.Fragment key={dropdown.label}>
+                    <span className="dropdown-title">{dropdown.label}</span>
+                    {dropdown.items.map(item => (
+                      <Link key={item.path} to={item.path} className="dropdown-item">{item.label}</Link>
+                    ))}
+                  </React.Fragment>
+                ))}
+              </div>
             </div>
-          </div>
-
-          <div className="nav-group">
-            <span className="nav-link has-submenu">Account</span>
-            <div className="dropdown-menu">
-              <Link to="/profile" className="dropdown-item">Profile</Link>
-              <Link to="/messages" className="dropdown-item">Messages</Link>
-              <Link to="/notifications" className="dropdown-item">Notifications</Link>
-              <Link to="/settings" className="dropdown-item">Settings</Link>
-            </div>
-          </div>
-
-          <div className="nav-group">
-            <span className="nav-link has-submenu">Support</span>
-            <div className="dropdown-menu">
-              <Link to="/help" className="dropdown-item">Help Center</Link>
-              <Link to="/terms" className="dropdown-item">Terms</Link>
-              <Link to="/privacy" className="dropdown-item">Privacy</Link>
-              <Link to="/admin" className="dropdown-item">Admin</Link>
-            </div>
-          </div>
+          )}
         </nav>
       </div>
 
       <div className="header-right">
         <SearchBox />
         <div className="header-icons">
-          <Link to="/notifications" className="icon-link">
-            <div className="notification-icon">
-              🔔
-              {unreadCount > 0 && <span className="notification-badge">{unreadCount}</span>}
-            </div>
-          </Link>
-          <Link to="/settings" className="icon-link"><div className="settings-icon">⚙️</div></Link>
-          <Link to="/profile" className="icon-link"><div className="avatar">👤</div></Link>
+          {currentUser ? (
+            <>
+              <Link to="/notifications" className="icon-link">
+                <div className="notification-icon">
+                  🔔
+                  {unreadCount > 0 && <span className="notification-badge">{unreadCount}</span>}
+                </div>
+              </Link>
+              <Link to="/settings" className="icon-link"><div className="settings-icon">⚙️</div></Link>
+              <Link to="/profile" className="icon-link"><div className="avatar">👤</div></Link>
+            </>
+          ) : null}
         </div>
       </div>
     </header>

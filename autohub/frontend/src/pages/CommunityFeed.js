@@ -5,6 +5,7 @@ import Header from '../components/Header';
 import communityData from '../data/community.json';
 import { useNavigate } from 'react-router-dom';
 import { eventService } from '../services/api';
+import ProfilePreview from '../components/ProfilePreview'; // Import the new component
 import './CommunityFeed.css';
 
 const CommunityFeed = () => {
@@ -19,6 +20,7 @@ const CommunityFeed = () => {
   const currentUser = authService.getCurrentUser?.();
   const [showMediaInput, setShowMediaInput] = useState(false);
   const [newPostImageUrl, setNewPostImageUrl] = useState('');
+  const [communityUsers, setCommunityUsers] = useState([]); // State for community users
   // Per-device owner key for author controls when not authenticated
   const OWNER_KEY_STORAGE = 'autohub_owner_key';
   const HIDDEN_POSTS_STORAGE = 'autohub_hidden_posts';
@@ -70,12 +72,14 @@ const CommunityFeed = () => {
     let cancelled = false;
     const load = async () => {
       try {
-        const [p, s, snaps, e] = await Promise.all([
+        const config = { headers: { 'Authorization': `Bearer ${authService.getToken()}` } };
+        const [p, s, snaps, e, communityUsersData] = await Promise.all([
           // Prefer socialService to fetch shared posts; fall back to legacy endpoint
           socialService.getAllPosts().catch(() => axios.get('/api/posts')),
           axios.get('/api/community/stats'),
           axios.get('/api/community/snapshots').catch(() => ({ data: [] })),
-          eventService.getAllEvents() // Fetch all events
+          eventService.getAllEvents(), // Fetch all events
+          axios.get('/api/community/users', config) // Fetch community users
         ]);
         if (!cancelled) {
           const postsData = Array.isArray(p?.data ?? p) ? (p?.data ?? p) : [];
@@ -124,6 +128,9 @@ const CommunityFeed = () => {
 
           // Set events data
           setEvents(Array.isArray(e) ? e : []);
+
+          // Set community users data
+          setCommunityUsers(Array.isArray(communityUsersData.data) ? communityUsersData.data : []);
         }
       } catch (e) {
         if (!cancelled) {
@@ -143,6 +150,7 @@ const CommunityFeed = () => {
             .map((post) => ({ id: post.id, image: post.image, alt: post.content }));
           setCommunitySnapshots(snaps);
           setEvents([]); // Set events to empty array on error as well
+          setCommunityUsers([]); // Set community users to empty array on error
         }
       }
     };
@@ -599,6 +607,16 @@ const CommunityFeed = () => {
               {!communitySnapshots.length && (
                 <div className="no-snapshots">No snapshots yet.</div>
               )}
+            </div>
+          </div>
+
+          {/* Community Members Section */}
+          <div className="community-members-section">
+            <h3 className="community-members-title">Community Members</h3>
+            <div className="community-members-list">
+              {communityUsers.map(user => (
+                <ProfilePreview key={user.id} userId={user.id} />
+              ))}
             </div>
           </div>
         </aside>
