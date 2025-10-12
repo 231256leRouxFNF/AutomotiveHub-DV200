@@ -6,7 +6,7 @@ const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const path = require('path');
 const Notification = require('./models/Notification'); // Import Notification model
-const auth = require('./middleware/auth'); // Import auth middleware
+const { auth } = require('./middleware/auth'); // Import auth middleware
 
 const app = express();
 app.use(cors());
@@ -590,37 +590,43 @@ app.post('/api/login', (req, res) => {
 });
 
 // Listings collection
-app.get('/api/listings', (req, res) => {
-  const { q, category, condition, make, sort } = req.query;
-  let sql = 'SELECT id, title, price, location, condition, seller, image_url as image FROM listings';
-  const params = [];
-  const where = [];
-  if (q) { where.push('(title LIKE ? OR description LIKE ?)'); params.push(`%${q}%`, `%${q}%`); }
-  if (category) { where.push('category = ?'); params.push(category); }
-  if (condition) { where.push('condition = ?'); params.push(condition); }
-  if (make) { where.push('make = ?'); params.push(make); }
-  if (where.length) sql += ' WHERE ' + where.join(' AND ');
-  if (sort === 'price_asc') sql += ' ORDER BY price_cents ASC';
-  else if (sort === 'price_desc') sql += ' ORDER BY price_cents DESC';
-  else sql += ' ORDER BY created_at DESC';
-  db.query(sql, params, (err, rows) => {
-    if (err) {
-      if (err.code === 'ER_NO_SUCH_TABLE') return res.json([]);
-      console.error('List listings error:', err);
-      return res.status(500).json({ message: 'Failed to load listings' });
-    }
-    res.json(rows || []);
-  });
-});
+// app.get('/api/listings', (req, res) => {
+//   const { q, category, condition, make, sort } = req.query;
+//   let sql = 'SELECT id, title, price, location, condition, seller, image_url as image FROM listings';
+//   const params = [];
+//   const where = [];
+//   if (q) { where.push('(title LIKE ? OR description LIKE ?)'); params.push(`%${q}%`, `%${q}%`); }
+//   if (category) { where.push('category = ?'); params.push(category); }
+//   if (condition) { where.push('condition = ?'); params.push(condition); }
+//   if (make) { where.push('make = ?'); params.push(make); }
+//   if (where.length) sql += ' WHERE ' + where.join(' AND ');
+//   if (sort === 'price_asc') sql += ' ORDER BY price_cents ASC';
+//   else if (sort === 'price_desc') sql += ' ORDER BY price_cents DESC';
+//   else sql += ' ORDER BY created_at DESC';
+//   db.query(sql, params, (err, rows) => {
+//     if (err) {
+//       if (err.code === 'ER_NO_SUCH_TABLE') return res.json([]);
+//       console.error('List listings error:', err);
+//       return res.status(500).json({ message: 'Failed to load listings' });
+//     }
+//     res.json(rows || []);
+//   });
+// });
 
 // Featured listings
 app.get('/api/featured-listings', (req, res) => {
-  const sql = `SELECT id, title, short_description as description, price, image_url as image FROM listings WHERE is_featured = 1 ORDER BY featured_order ASC LIMIT 8`;
+  const sql = `
+    SELECT v.id, v.make, v.model, v.year, v.description, vi.url AS image
+    FROM vehicles v
+    LEFT JOIN vehicle_images vi ON v.id = vi.vehicle_id AND vi.is_primary = 1
+    WHERE v.is_featured = 1
+    ORDER BY v.created_at DESC
+    LIMIT 8
+  `;
   db.query(sql, (err, rows) => {
     if (err) {
-      if (err.code === 'ER_NO_SUCH_TABLE') return res.json([]);
-      console.error('Featured listings error:', err);
-      return res.status(500).json({ message: 'Failed to load featured listings' });
+      console.error('Featured vehicles error:', err);
+      return res.status(500).json({ message: 'Failed to load featured vehicles' });
     }
     res.json(rows || []);
   });

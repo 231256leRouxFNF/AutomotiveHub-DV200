@@ -57,7 +57,7 @@ const Marketplace = () => {
           const fallbackCategories = (marketplaceData.categories || []);
           const fallbackListings = (marketplaceData.listings || []);
 
-          const featuredImages = [Top1, Top2, Top3, Top4];
+          const featuredImages = [Top1, Top4, Top3, Top2];
           const listingImages = [Img1, Img2, Img3, Img4, Img5, Img6, Img7, Img8, Img9, Img10, Img11, Img12];
 
           const featuredToUse = (incomingFeatured.length ? incomingFeatured : fallbackFeatured).map((item, idx) => ({

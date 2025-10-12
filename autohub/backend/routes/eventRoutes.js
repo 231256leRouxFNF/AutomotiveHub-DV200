@@ -3,7 +3,7 @@
 const express = require('express');
 const router = express.Router();
 const eventController = require('../controllers/eventController');
-// const auth = require('../middleware/auth'); // Assuming you have an auth middleware
+const { auth } = require('../middleware/auth'); // Assuming you have an auth middleware
 
 // Get all events
 router.get('/', eventController.getAllEvents);
@@ -15,15 +15,12 @@ router.get('/user/:userId', eventController.getEventsByUserId);
 router.get('/:id', eventController.getEventById);
 
 // Create a new event (requires authentication)
-// router.post('/', auth, eventController.createEvent);
-router.post('/', eventController.createEvent); // Temporarily without auth
+router.post('/', auth, eventController.createEvent);
 
 // Update an event (requires authentication and authorization)
-// router.put('/:id', auth, eventController.updateEvent);
-router.put('/:id', eventController.updateEvent); // Temporarily without auth
+router.put('/:id', auth, eventController.updateEvent);
 
 // Delete an event (requires authentication and authorization)
-// router.delete('/:id', auth, eventController.deleteEvent);
-router.delete('/:id', eventController.deleteEvent); // Temporarily without auth
+router.delete('/:id', auth, eventController.deleteEvent);
 
 module.exports = router;

@@ -318,7 +318,16 @@ export const listingService = {
     } catch (error) {
       throw error.response?.data || error.message;
     }
-  }
+  },
+
+  getAllListings: async () => {
+    try {
+      const response = await api.get('/api/listings');
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
 };
 
 // ============ EVENT SERVICES ============

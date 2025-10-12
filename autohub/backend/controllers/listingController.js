@@ -20,10 +20,29 @@ const listingController = {
 
   // Get all listings
   getAllListings: (req, res) => {
-    Listing.findAll((err, listings) => {
+    const { q, category, condition, make, sort } = req.query;
+    let sql = 'SELECT l.id, l.title, l.description, l.price, l.location, l.condition, l.make, l.model, l.year, l.imageUrls, u.username as owner_username, p.display_name as owner_name, l.created_at FROM listings l JOIN users u ON l.userId = u.id LEFT JOIN profiles p ON u.id = p.user_id';
+    const params = [];
+    const where = [];
+    if (q) { where.push('(l.title LIKE ? OR l.description LIKE ?)'); params.push(`%${q}%`, `%${q}%`); }
+    if (category) { where.push('l.category = ?'); params.push(category); }
+    if (condition) { where.push('l.condition = ?'); params.push(condition); }
+    if (make) { where.push('l.make = ?'); params.push(make); }
+    if (where.length) sql += ' WHERE ' + where.join(' AND ');
+
+    // Ordering logic
+    if (sort === 'price_asc') {
+      sql += ' ORDER BY l.price ASC';
+    } else if (sort === 'price_desc') {
+      sql += ' ORDER BY l.price DESC';
+    } else {
+      sql += ' ORDER BY l.created_at DESC';
+    }
+    
+    Listing.query(sql, params, (err, listings) => {
       if (err) {
-        console.error('Error fetching listings:', err);
-        return res.status(500).json({ success: false, message: 'Failed to fetch listings' });
+        console.error('Error fetching all listings:', err);
+        return res.status(500).json({ success: false, message: 'Failed to fetch all listings' });
       }
       res.status(200).json(listings);
     });

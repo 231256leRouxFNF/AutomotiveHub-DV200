@@ -3,7 +3,7 @@
 const express = require('express');
 const router = express.Router();
 const listingController = require('../controllers/listingController');
-// const auth = require('../middleware/auth'); // Assuming you have an auth middleware
+const { auth } = require('../middleware/auth'); // Assuming you have an auth middleware
 
 // Get all listings
 router.get('/', listingController.getAllListings);
@@ -15,15 +15,12 @@ router.get('/user/:userId', listingController.getListingsByUserId);
 router.get('/:id', listingController.getListingById);
 
 // Create a new listing (requires authentication)
-// router.post('/', auth, listingController.createListing);
-router.post('/', listingController.createListing); // Temporarily without auth
+router.post('/', auth, listingController.createListing);
 
 // Update a listing (requires authentication and authorization)
-// router.put('/:id', auth, listingController.updateListing);
-router.put('/:id', listingController.updateListing); // Temporarily without auth
+router.put('/:id', auth, listingController.updateListing);
 
 // Delete a listing (requires authentication and authorization)
-// router.delete('/:id', auth, listingController.deleteListing);
-router.delete('/:id', listingController.deleteListing); // Temporarily without auth
+router.delete('/:id', auth, listingController.deleteListing);
 
 module.exports = router;

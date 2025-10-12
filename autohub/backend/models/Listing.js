@@ -51,4 +51,9 @@ Listing.delete = (id, callback) => {
   db.query(sql, [id], callback);
 };
 
+// Generic query method for more complex queries
+Listing.query = (sql, values, callback) => {
+  db.query(sql, values, callback);
+};
+
 module.exports = Listing;

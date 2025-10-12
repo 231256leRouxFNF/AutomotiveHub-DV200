@@ -28,9 +28,8 @@ import MyEvents from './pages/MyEvents'; // Import the new MyEvents component
 import { authService } from './services/api'; // Import authService
 
 const AuthWrapper = ({ children }) => {
-  const currentUser = authService.getCurrentUser();
-  console.log('AuthWrapper - currentUser:', currentUser);
-  if (!currentUser) {
+  const isAuthenticated = authService.isAuthenticated();
+  if (!isAuthenticated) {
     // Redirect to login page if not authenticated
     return <Navigate to="/login" replace />;
   }

@@ -1,13 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const followController = require('../controllers/followController');
-// const auth = require('../middleware/auth'); // Assuming you have an auth middleware
+const { auth } = require('../middleware/auth'); // Assuming you have an auth middleware
 
 // Follow a user
-router.post('/follow', followController.followUser);
+router.post('/follow', auth, followController.followUser);
 
 // Unfollow a user
-router.post('/unfollow', followController.unfollowUser);
+router.post('/unfollow', auth, followController.unfollowUser);
 
 // Get followers of a user
 router.get('/:id/followers', followController.getFollowers);
