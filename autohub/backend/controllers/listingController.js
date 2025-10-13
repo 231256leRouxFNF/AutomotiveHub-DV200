@@ -5,11 +5,31 @@ const Listing = require('../models/Listing');
 const listingController = {
   // Create a new listing
   createListing: (req, res) => {
-    const listingData = req.body;
-    // Assuming userId is obtained from authenticated user
-    listingData.userId = req.user.id; 
+    const { title, description, price, category, condition, year, make, model, mileage, location } = req.body;
+    const userId = req.userId; // userId from auth middleware
 
-    Listing.create(listingData, (err, result) => {
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ success: false, message: 'At least one image is required' });
+    }
+
+    const imageUrls = req.files.map(file => `/uploads/${file.filename}`);
+
+    const newListing = {
+      userId,
+      title,
+      description,
+      price,
+      category,
+      condition,
+      year,
+      make,
+      model,
+      mileage,
+      location,
+      imageUrls: JSON.stringify(imageUrls), // Store as JSON string
+    };
+
+    Listing.create(newListing, (err, result) => {
       if (err) {
         console.error('Error creating listing:', err);
         return res.status(500).json({ success: false, message: 'Failed to create listing' });
@@ -19,33 +39,56 @@ const listingController = {
   },
 
   // Get all listings
-  getAllListings: (req, res) => {
-    const { q, category, condition, make, sort } = req.query;
+  getAllListings: async (req, res) => {
+    const { q, category, condition, make, sort, minPrice, maxPrice, limit, offset } = req.query;
     let sql = 'SELECT l.id, l.title, l.description, l.price, l.location, l.condition, l.make, l.model, l.year, l.imageUrls, u.username as owner_username, p.display_name as owner_name, l.created_at FROM listings l JOIN users u ON l.userId = u.id LEFT JOIN profiles p ON u.id = p.user_id';
+    let countSql = 'SELECT COUNT(*) as totalCount FROM listings l JOIN users u ON l.userId = u.id LEFT JOIN profiles p ON u.id = p.user_id';
     const params = [];
     const where = [];
+
     if (q) { where.push('(l.title LIKE ? OR l.description LIKE ?)'); params.push(`%${q}%`, `%${q}%`); }
     if (category) { where.push('l.category = ?'); params.push(category); }
     if (condition) { where.push('l.condition = ?'); params.push(condition); }
     if (make) { where.push('l.make = ?'); params.push(make); }
-    if (where.length) sql += ' WHERE ' + where.join(' AND ');
+    if (minPrice) { where.push('l.price >= ?'); params.push(minPrice); }
+    if (maxPrice) { where.push('l.price <= ?'); params.push(maxPrice); }
+
+    if (where.length) {
+      sql += ' WHERE ' + where.join(' AND ');
+      countSql += ' WHERE ' + where.join(' AND ');
+    }
 
     // Ordering logic
     if (sort === 'price_asc') {
       sql += ' ORDER BY l.price ASC';
     } else if (sort === 'price_desc') {
       sql += ' ORDER BY l.price DESC';
-    } else {
+    } else if (sort === 'created_at_desc') {
       sql += ' ORDER BY l.created_at DESC';
+    } else {
+      sql += ' ORDER BY l.created_at DESC'; // Default sort
     }
+
+    // Add pagination
+    const parsedLimit = parseInt(limit) || 10; // Default limit to 10
+    const parsedOffset = parseInt(offset) || 0; // Default offset to 0
+    sql += ` LIMIT ${parsedLimit} OFFSET ${parsedOffset}`;
     
-    Listing.query(sql, params, (err, listings) => {
-      if (err) {
-        console.error('Error fetching all listings:', err);
-        return res.status(500).json({ success: false, message: 'Failed to fetch all listings' });
-      }
-      res.status(200).json(listings);
-    });
+    try {
+      const [listings] = await Listing.query(sql, params);
+      const [totalCountResult] = await Listing.query(countSql, params);
+      const totalCount = totalCountResult[0].totalCount;
+      
+      res.status(200).json({ 
+        totalCount,
+        limit: parsedLimit,
+        offset: parsedOffset,
+        listings
+      });
+    } catch (err) {
+      console.error('Error fetching all listings:', err);
+      res.status(500).json({ success: false, message: 'Failed to fetch all listings' });
+    }
   },
 
   // Get listings by userId
@@ -82,9 +125,37 @@ const listingController = {
   // Update a listing
   updateListing: (req, res) => {
     const { id } = req.params;
-    const listingData = req.body;
+    const { title, description, price, category, condition, year, make, model, mileage, location } = req.body;
+    const userId = req.userId; // userId from auth middleware
 
-    Listing.update(id, listingData, (err, result) => {
+    if (!userId) {
+      return res.status(403).json({ success: false, message: 'Unauthorized' });
+    }
+
+    let imageUrls = [];
+    if (req.files && req.files.length > 0) {
+      imageUrls = req.files.map(file => `/uploads/${file.filename}`);
+    } else if (req.body.existingImageUrls) {
+      // If no new files, but existingImageUrls are provided, parse them
+      imageUrls = JSON.parse(req.body.existingImageUrls);
+    }
+
+    const updatedListing = {
+      userId, // Ensure the correct user is updating the listing
+      title,
+      description,
+      price,
+      category,
+      condition,
+      year,
+      make,
+      model,
+      mileage,
+      location,
+      imageUrls: JSON.stringify(imageUrls), // Store as JSON string
+    };
+
+    Listing.update(id, updatedListing, (err, result) => {
       if (err) {
         console.error('Error updating listing:', err);
         return res.status(500).json({ success: false, message: 'Failed to update listing' });

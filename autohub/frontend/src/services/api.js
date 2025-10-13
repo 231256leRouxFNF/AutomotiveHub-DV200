@@ -320,9 +320,10 @@ export const listingService = {
     }
   },
 
-  getAllListings: async () => {
+  getAllListings: async (params = {}) => {
     try {
-      const response = await api.get('/api/listings');
+      const queryString = new URLSearchParams(params).toString();
+      const response = await api.get(`/api/listings?${queryString}`);
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;

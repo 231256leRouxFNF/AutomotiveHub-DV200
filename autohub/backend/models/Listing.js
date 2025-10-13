@@ -11,7 +11,7 @@ Listing.create = (listingData, callback) => {
     INSERT INTO listings (userId, title, description, price, category, condition, year, make, model, mileage, location, imageUrls)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
-  const values = [userId, title, description, price, category, condition, year, make, model, mileage, location, JSON.stringify(imageUrls)];
+  const values = [userId, title, description, price, category, condition, year, make, model, mileage, location, imageUrls];
   db.query(sql, values, callback);
 };
 
@@ -41,7 +41,7 @@ Listing.update = (id, listingData, callback) => {
     SET title = ?, description = ?, price = ?, category = ?, condition = ?, year = ?, make = ?, model = ?, mileage = ?, location = ?, imageUrls = ?
     WHERE id = ?
   `;
-  const values = [title, description, price, category, condition, year, make, model, mileage, location, JSON.stringify(imageUrls), id];
+  const values = [title, description, price, category, condition, year, make, model, mileage, location, imageUrls, id];
   db.query(sql, values, callback);
 };
 

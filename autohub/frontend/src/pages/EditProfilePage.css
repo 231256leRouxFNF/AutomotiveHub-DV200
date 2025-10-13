@@ -1,0 +1,119 @@
+/* Styling for the EditProfilePage */
+.edit-profile-container {
+  max-width: 600px;
+  margin: 40px auto;
+  padding: 30px;
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+  font-family: 'Roboto', sans-serif;
+  color: #333;
+}
+
+.edit-profile-container h2 {
+  text-align: center;
+  color: #2c3e50;
+  margin-bottom: 30px;
+  font-size: 2.2em;
+  font-weight: 700;
+}
+
+.edit-profile-form .form-group {
+  margin-bottom: 20px;
+}
+
+.edit-profile-form label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #555;
+  font-size: 1.1em;
+}
+
+.edit-profile-form input[type="text"],
+.edit-profile-form textarea {
+  width: calc(100% - 20px);
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 1em;
+  box-sizing: border-box;
+  transition: border-color 0.3s ease-in-out;
+}
+
+.edit-profile-form input[type="text"]:focus,
+.edit-profile-form textarea:focus {
+  border-color: #007bff;
+  outline: none;
+}
+
+.edit-profile-form textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.avatar-upload-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.avatar-preview {
+  display: flex;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.current-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #ddd;
+  margin-right: 20px;
+}
+
+.edit-profile-form input[type="file"] {
+  padding: 8px 0;
+}
+
+.save-profile-button {
+  width: 100%;
+  padding: 15px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.2em;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s ease-in-out, transform 0.2s ease-in-out;
+  margin-top: 20px;
+}
+
+.save-profile-button:hover {
+  background-color: #0056b3;
+  transform: translateY(-2px);
+}
+
+.save-profile-button:active {
+  transform: translateY(0);
+}
+
+.error {
+  color: #dc3545;
+  text-align: center;
+  margin-top: 20px;
+  font-weight: 500;
+}
+
+@media (max-width: 768px) {
+  .edit-profile-container {
+    margin: 20px;
+    padding: 20px;
+  }
+
+  .edit-profile-container h2 {
+    font-size: 1.8em;
+  }
+}

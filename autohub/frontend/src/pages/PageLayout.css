@@ -1,3 +1,7 @@
+/* Basic spacing utilities */
+.mt-2 { margin-top: 8px; }
+.mb-2 { margin-bottom: 8px; }
+.mb-4 { margin-bottom: 16px; }
 .mt-8 { margin-top: 8px; }
 .mt-12 { margin-top: 12px; }
 
@@ -224,4 +228,68 @@
   .btn {
     width: 100%;
   }
+}
+
+/* Styles for New Message Form in Messages.js */
+.new-message-form {
+  background-color: #19191F;
+  border: 1px solid #393D47;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.new-message-form h3 {
+  color: #F4F4F6;
+  font-family: 'Archivo', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 20px;
+}
+
+.new-message-form .form-input,
+.new-message-form .form-textarea {
+  width: calc(100% - 20px);
+  padding: 10px 15px;
+  border-radius: 6px;
+  border: 1px solid #393D47;
+  background: #000;
+  color: #F4F4F6;
+  font-size: 14px;
+  box-sizing: border-box;
+  margin-bottom: 15px; /* Default margin for form elements */
+}
+
+.new-message-form .form-textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.new-message-form .btn {
+  padding: 10px 20px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+  transition: background-color 0.2s;
+  width: 100%;
+}
+
+.new-message-form .primary-btn {
+  background: #636AE8;
+  color: #FFF;
+}
+
+.new-message-form .primary-btn:hover {
+  background: #5a5fd4;
+}
+
+.new-message-form .secondary-btn {
+  background: #393D47;
+  color: #F4F4F6;
+}
+
+.new-message-form .secondary-btn:hover {
+  background: #4a4f5c;
 }

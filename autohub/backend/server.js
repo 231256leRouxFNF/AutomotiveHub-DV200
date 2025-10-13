@@ -7,6 +7,8 @@ const multer = require('multer');
 const path = require('path');
 const Notification = require('./models/Notification'); // Import Notification model
 const { auth } = require('./middleware/auth'); // Import auth middleware
+const crypto = require('crypto'); // For generating tokens
+// const nodemailer = require('nodemailer'); // For sending emails (uncomment and configure for production)
 
 const app = express();
 app.use(cors());
@@ -160,6 +162,42 @@ app.get('/api/users/:id/profile', auth, async (req, res) => {
   }
 });
 
+// Endpoint to update user profile information
+app.put('/api/users/:id/profile', auth, async (req, res) => {
+  const userId = req.params.id;
+  const { display_name, bio, location } = req.body;
+
+  // Ensure the user is authenticated and is updating their own profile
+  if (!req.userId || parseInt(req.userId) !== parseInt(userId)) {
+    return res.status(403).json({ message: 'Unauthorized to update this profile' });
+  }
+
+  try {
+    const updateSql = `
+      UPDATE profiles 
+      SET display_name = ?, bio = ?, location = ? 
+      WHERE user_id = ?
+    `;
+    const [updateResult] = await db.promise().query(updateSql, [display_name, bio, location, userId]);
+
+    if (updateResult.affectedRows === 0) {
+      // If no rows were affected, it might be a new user without a profile entry yet
+      // In this case, we should insert a new profile record
+      const insertSql = `
+        INSERT INTO profiles (user_id, display_name, bio, location)
+        VALUES (?, ?, ?, ?)
+      `;
+      await db.promise().query(insertSql, [userId, display_name, bio, location]);
+      return res.status(201).json({ message: 'Profile created and updated successfully' });
+    }
+
+    res.status(200).json({ message: 'Profile updated successfully' });
+  } catch (err) {
+    console.error('Error updating user profile:', err);
+    res.status(500).json({ message: 'Failed to update user profile' });
+  }
+});
+
 // Get all users with profile information (for community feed)
 app.get('/api/community/users', auth, async (req, res) => {
   const requestingUserId = req.userId;
@@ -168,51 +206,28 @@ app.get('/api/community/users', auth, async (req, res) => {
       SELECT u.id, u.username, p.display_name, p.avatar_url, p.bio, p.location
       FROM users u
       LEFT JOIN profiles p ON u.id = p.user_id
-      WHERE u.id != ?  -- Exclude the requesting user from the list
+      WHERE u.id != ? OR ? IS NULL
     `;
-    const [users] = await db.promise().query(usersSql, [requestingUserId || 0]); // Use 0 if no requesting user
+    const [users] = await db.promise().query(usersSql, [requestingUserId, requestingUserId]);
 
-    // For each user, fetch follower/following counts and mutuals if authenticated
-    const usersWithDetails = await Promise.all(users.map(async (user) => {
-      const userProfile = { ...user };
-
-      // Get follower count
-      const followersCountSql = 'SELECT COUNT(*) as count FROM follows WHERE followee_id = ?';
-      const [followersCountResults] = await db.promise().query(followersCountSql, [user.id]);
-      userProfile.followersCount = followersCountResults[0].count;
-
-      // Get following count
-      const followingCountSql = 'SELECT COUNT(*) as count FROM follows WHERE follower_id = ?';
-      const [followingCountResults] = await db.promise().query(followingCountSql, [user.id]);
-      userProfile.followingCount = followingCountResults[0].count;
+    const usersWithFollowInfo = await Promise.all(users.map(async user => {
+      const followCountSql = 'SELECT COUNT(*) as count FROM follows WHERE followee_id = ?';
+      const [followersCountResults] = await db.promise().query(followCountSql, [user.id]);
+      user.followersCount = followersCountResults[0].count;
 
       if (requestingUserId) {
-        // Check if requesting user is following this profile
         const isFollowingSql = 'SELECT COUNT(*) as count FROM follows WHERE follower_id = ? AND followee_id = ?';
         const [isFollowingResults] = await db.promise().query(isFollowingSql, [requestingUserId, user.id]);
-        userProfile.isFollowing = isFollowingResults[0].count > 0;
-
-        // Get mutual followers
-        const mutualsSql = `
-          SELECT u2.id, u2.username, p2.display_name, p2.avatar_url
-          FROM follows AS f1
-          JOIN follows AS f2 ON f1.follower_id = f2.follower_id
-          JOIN users AS u2 ON f1.follower_id = u2.id
-          LEFT JOIN profiles AS p2 ON u2.id = p2.user_id
-          WHERE f1.followee_id = ? AND f2.followee_id = ? AND f1.follower_id != ?
-        `;
-        const [mutualsResults] = await db.promise().query(mutualsSql, [user.id, requestingUserId, requestingUserId]);
-        userProfile.mutualFollowers = mutualsResults;
+        user.isFollowing = isFollowingResults[0].count > 0;
       } else {
-        userProfile.isFollowing = false;
-        userProfile.mutualFollowers = [];
+        user.isFollowing = false;
       }
-      return userProfile;
+      return user;
     }));
 
-    res.json(usersWithDetails);
+    res.json(usersWithFollowInfo);
   } catch (err) {
-    console.error('Community users query error:', err);
+    console.error('Error fetching community users:', err);
     res.status(500).json({ message: 'Failed to fetch community users' });
   }
 });
@@ -527,6 +542,105 @@ app.post('/api/register', async (req, res) => {
       success: false, 
       message: 'Internal server error. Please try again later.' 
     });
+  }
+});
+
+// Forgot Password - Request Reset Link
+app.post('/api/forgot-password', async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ message: 'Email is required.' });
+  }
+
+  try {
+    const [users] = await db.promise().query('SELECT id, email FROM users WHERE email = ?', [email]);
+    const user = users[0];
+
+    if (!user) {
+      // For security, always return a generic success message even if email not found
+      return res.status(200).json({ message: 'If an account with that email exists, a password reset link has been sent.' });
+    }
+
+    // Generate a reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetExpires = new Date(Date.now() + 3600000); // 1 hour from now
+
+    await db.promise().query(
+      'UPDATE users SET reset_password_token = ?, reset_password_expires = ? WHERE id = ?',
+      [resetToken, resetExpires, user.id]
+    );
+
+    // --- Email Sending Logic (Placeholder) ---
+    const resetUrl = `http://localhost:3000/reset-password/${resetToken}`;
+    console.log(`Password Reset Link for ${user.email}: ${resetUrl}`);
+    // In a real application, you would send an email here using nodemailer or a similar service.
+    /*
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+
+    const mailOptions = {
+      to: user.email,
+      from: process.env.EMAIL_USER,
+      subject: 'Password Reset',
+      text: `You are receiving this because you (or someone else) have requested the reset of the password for your account.\n\n` +
+            `Please click on the following link, or paste this into your browser to complete the process:\n\n` +
+            `${resetUrl}\n\n` +
+            `If you did not request this, please ignore this email and your password will remain unchanged.\n`,
+    };
+
+    await transporter.sendMail(mailOptions);
+    */
+    // --- End Email Sending Logic ---
+
+    res.status(200).json({ message: 'If an account with that email exists, a password reset link has been sent.' });
+
+  } catch (err) {
+    console.error('Forgot password error:', err);
+    res.status(500).json({ message: 'Error processing request.' });
+  }
+});
+
+// Reset Password
+app.post('/api/reset-password', async (req, res) => {
+  const { token, newPassword } = req.body;
+
+  if (!token || !newPassword) {
+    return res.status(400).json({ message: 'Token and new password are required.' });
+  }
+
+  if (newPassword.length < 6) {
+    return res.status(400).json({ message: 'Password must be at least 6 characters long.' });
+  }
+
+  try {
+    const [users] = await db.promise().query(
+      'SELECT id FROM users WHERE reset_password_token = ? AND reset_password_expires > NOW()',
+      [token]
+    );
+    const user = users[0];
+
+    if (!user) {
+      return res.status(400).json({ message: 'Password reset token is invalid or has expired.' });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10); // Hash new password
+
+    await db.promise().query(
+      'UPDATE users SET password_hash = ?, reset_password_token = NULL, reset_password_expires = NULL WHERE id = ?',
+      [hashedPassword, user.id]
+    );
+
+    res.status(200).json({ message: 'Password has been reset successfully.' });
+
+  } catch (err) {
+    console.error('Reset password error:', err);
+    res.status(500).json({ message: 'Error processing request.' });
   }
 });
 

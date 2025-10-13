@@ -1,6 +1,5 @@
 import React from 'react';
 import Header from '../components/Header';
-import axios from 'axios';
 import { useEffect, useState } from 'react';
 import Footer from '../components/Footer';
 import { useNavigate } from 'react-router-dom';
@@ -50,7 +49,7 @@ const MyListings = () => {
   };
 
   const handleEditListing = (listingId) => {
-    navigate(`/edit-listing/${listingId}`);
+    navigate(`/listing/${listingId}/edit`);
   };
 
   return (

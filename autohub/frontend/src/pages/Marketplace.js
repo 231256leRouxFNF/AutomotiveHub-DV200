@@ -38,20 +38,37 @@ const Marketplace = () => {
   const [featuredListings, setFeaturedListings] = useState([]);
   const [categories, setCategories] = useState([]);
   const [allListings, setAllListings] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [listingsPerPage] = useState(10); // Number of listings per page
+  const [totalListings, setTotalListings] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
       try {
+        const offset = (currentPage - 1) * listingsPerPage;
         const [f, c, a] = await Promise.all([
           axios.get('/api/featured-listings'),
           axios.get('/api/categories'),
-          listingService.getAllListings() // Use new listing service
+          listingService.getAllListings({
+            q: searchQuery,
+            category: selectedCategory,
+            condition: selectedCondition,
+            make: selectedMake,
+            sort: sortBy === 'Newest' ? 'created_at_desc' : (sortBy === 'Price Low to High' ? 'price_asc' : (sortBy === 'Price High to Low' ? 'price_desc' : '')),
+            minPrice,
+            maxPrice,
+            limit: listingsPerPage,
+            offset: offset,
+          })
         ]);
         if (!cancelled) {
           const incomingFeatured = Array.isArray(f.data) ? f.data : [];
           const incomingCategories = Array.isArray(c.data) ? c.data : [];
-          const incomingListings = Array.isArray(a) ? a : []; // `a` is already data from service
+          
+          const incomingListingsData = a; // `a` now contains {totalCount, listings}
+          const incomingListings = Array.isArray(incomingListingsData.listings) ? incomingListingsData.listings : [];
+          setTotalListings(incomingListingsData.totalCount || 0);
 
           const fallbackFeatured = (marketplaceData.featured || []);
           const fallbackCategories = (marketplaceData.categories || []);
@@ -100,14 +117,51 @@ const Marketplace = () => {
     };
     load();
     return () => { cancelled = true; };
-  }, []);
+  }, [searchQuery, selectedCategory, selectedCondition, selectedMake, sortBy, minPrice, maxPrice, currentPage, listingsPerPage]); // Re-run effect when filters change
 
 
 
 
-  const handleApplyFilters = () => {
-    // Filter logic would go here
-    console.log('Applying filters:', { selectedCategory, selectedCondition, selectedMake, minPrice, maxPrice });
+  const handleApplyFilters = async () => {
+    // Ensure minPrice and maxPrice are valid numbers if provided
+    const parsedMinPrice = minPrice ? parseFloat(minPrice) : null;
+    const parsedMaxPrice = maxPrice ? parseFloat(maxPrice) : null;
+
+    if ((minPrice && isNaN(parsedMinPrice)) || (maxPrice && isNaN(parsedMaxPrice))) {
+      alert('Please enter valid numbers for price range.');
+      return;
+    }
+
+    try {
+      const response = await listingService.getAllListings({
+        q: searchQuery,
+        category: selectedCategory,
+        condition: selectedCondition,
+        make: selectedMake,
+        sort: sortBy === 'Newest' ? 'created_at_desc' : (sortBy === 'Price Low to High' ? 'price_asc' : (sortBy === 'Price High to Low' ? 'price_desc' : '')),
+        minPrice: parsedMinPrice,
+        maxPrice: parsedMaxPrice,
+        limit: listingsPerPage,
+        offset: 0, // Reset to first page on new filter application
+      });
+
+      setCurrentPage(1); // Reset to first page
+      setTotalListings(response.totalCount || 0);
+
+      setAllListings(response.listings.map((item, idx) => ({
+        ...item,
+        image: (item.imageUrls && JSON.parse(item.imageUrls)[0]) || marketplaceData.listings[idx % marketplaceData.listings.length].image,
+        price: parseFloat(item.price).toFixed(2),
+        location: item.location || 'Unknown',
+        condition: item.condition || 'N/A',
+        seller: item.owner_username || 'Anonymous'
+      })));
+    } catch (error) {
+      console.error('Error applying filters:', error);
+      alert('Failed to fetch listings with applied filters.');
+      setAllListings([]);
+      setTotalListings(0);
+    }
   };
 
   const handleClearFilters = () => {
@@ -203,10 +257,10 @@ const Marketplace = () => {
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
               >
-                <option value="">Category</option>
-                <option value="cars">Cars</option>
-                <option value="parts">Parts</option>
-                <option value="accessories">Accessories</option>
+                <option value="">All Categories</option>
+                {categories.map(cat => (
+                  <option key={cat.slug} value={cat.slug}>{cat.name}</option>
+                ))}
               </select>
               
               <select
@@ -214,10 +268,11 @@ const Marketplace = () => {
                 value={selectedCondition}
                 onChange={(e) => setSelectedCondition(e.target.value)}
               >
-                <option value="">Condition</option>
+                <option value="">All Conditions</option>
                 <option value="new">New</option>
-                <option value="used-excellent">Used - Excellent</option>
-                <option value="used-good">Used - Good</option>
+                <option value="used">Used</option>
+                <option value="certified_used">Certified Used</option>
+                <option value="parts">For Parts</option>
               </select>
               
               <select
@@ -225,11 +280,10 @@ const Marketplace = () => {
                 value={selectedMake}
                 onChange={(e) => setSelectedMake(e.target.value)}
               >
-                <option value="">Make</option>
-                <option value="audi">Audi</option>
-                <option value="bmw">BMW</option>
-                <option value="ford">Ford</option>
-                <option value="honda">Honda</option>
+                <option value="">All Makes</option>
+                {[...new Set(allListings.map(listing => listing.make))].filter(Boolean).sort().map(make => (
+                  <option key={make} value={make}>{make}</option>
+                ))}
               </select>
             </div>
             
@@ -262,10 +316,9 @@ const Marketplace = () => {
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
                 >
-                  <option value="Newest">Newest</option>
-                  <option value="Price Low to High">Price Low to High</option>
-                  <option value="Price High to Low">Price High to Low</option>
-                  <option value="Most Popular">Most Popular</option>
+                  <option value="created_at_desc">Newest</option>
+                  <option value="price_asc">Price Low to High</option>
+                  <option value="price_desc">Price High to Low</option>
                 </select>
               </div>
             </div>
@@ -291,6 +344,25 @@ const Marketplace = () => {
                 </div>
               </div>
             ))}
+          </div>
+
+          {/* Pagination Controls */}
+          <div className="pagination-controls">
+            <button 
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+              className="pagination-btn"
+            >
+              Previous
+            </button>
+            <span>Page {currentPage} of {Math.ceil(totalListings / listingsPerPage)}</span>
+            <button 
+              onClick={() => setCurrentPage(prev => Math.min(Math.ceil(totalListings / listingsPerPage), prev + 1))}
+              disabled={currentPage === Math.ceil(totalListings / listingsPerPage)}
+              className="pagination-btn"
+            >
+              Next
+            </button>
           </div>
         </section>
 

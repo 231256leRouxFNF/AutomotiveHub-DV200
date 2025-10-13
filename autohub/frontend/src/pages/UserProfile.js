@@ -4,7 +4,7 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import './PageLayout.css';
 import './UserProfile.css'; // Import the new CSS file
-import { userService, authService, followService, socialService, listingService } from '../services/api';
+import { userService, authService, followService, socialService, listingService, garageService } from '../services/api';
 import FollowListModal from '../components/FollowListModal'; // Import the new modal component
 
 const UserProfile = () => {
@@ -16,6 +16,7 @@ const UserProfile = () => {
   const [followingCount, setFollowingCount] = useState(0);
   const [userPosts, setUserPosts] = useState([]); // New state for user's posts
   const [userListings, setUserListings] = useState([]); // New state for user's listings
+  const [userVehicles, setUserVehicles] = useState([]); // New state for user's vehicles
   const [showFollowModal, setShowFollowModal] = useState(false); // State to control modal visibility
   const [modalType, setModalType] = useState(''); // State to control modal content ('followers' or 'following')
   const currentUser = authService.getCurrentUser();
@@ -46,11 +47,16 @@ const UserProfile = () => {
         const listings = await listingService.getListingsByUserId(id);
         setUserListings(listings);
 
+        // Fetch user's vehicles from garage
+        const vehicles = await garageService.getUserVehicles(id); // Use garageService
+        setUserVehicles(vehicles);
+
       } catch (error) {
         console.error('Error fetching profile data:', error);
         setProfile(null);
         setUserPosts([]);
         setUserListings([]);
+        setUserVehicles([]);
       }
     };
 
@@ -163,15 +169,41 @@ const UserProfile = () => {
               <span onClick={() => openFollowModal('following')} className="clickable-stat"><strong>{followingCount}</strong> Following</span>
             </div>
             <div className="profile-actions">
+              {isOwner && (
+                <Link to={`/profile/${id}/edit`} className="btn primary-btn">Edit Profile</Link>
+              )}
               {!isOwner && currentUser && (
                 <button onClick={handleFollowToggle} className={`btn ${isFollowing ? 'secondary-btn' : 'primary-btn'}`}>
                   {isFollowing ? 'Unfollow' : 'Follow'}
                 </button>
               )}
               <Link to={`/garage/${profile.id}`} className="btn secondary-btn">View Garage</Link>
+              {!isOwner && currentUser && ( // Message button for other users
+                <button onClick={() => navigate(`/messages?recipientId=${profile.id}`)} className="btn primary-btn">Message</button>
+              )}
             </div>
           </div>
         </div>
+
+        {/* New Section: User Activity Summary */}
+        <section className="section user-activity-summary">
+          <h2 className="section-title">Activity Summary</h2>
+          <div className="activity-stats-grid">
+            <div className="stat-card">
+              <h3>{userPosts.length}</h3>
+              <p>Posts</p>
+            </div>
+            <div className="stat-card">
+              <h3>{userListings.length}</h3>
+              <p>Listings</p>
+            </div>
+            <div className="stat-card">
+              <h3>{userVehicles.length}</h3>
+              <p>Vehicles in Garage</p>
+            </div>
+            {/* Add more stats as needed */}
+          </div>
+        </section>
 
         <section className="section">
           <h2 className="section-title">Recent Posts</h2>
@@ -212,6 +244,28 @@ const UserProfile = () => {
               ))
             ) : (
               <p>No listings yet.</p>
+            )}
+          </div>
+        </section>
+
+        {/* New Section: User Vehicles (Garage Overview) */}
+        <section className="section">
+          <h2 className="section-title">My Garage Overview</h2>
+          <div className="section-content grid vehicles-grid">
+            {userVehicles.length > 0 ? (
+              userVehicles.map(vehicle => (
+                <div key={vehicle.id} className="vehicle-card-small">
+                  {vehicle.image_url && (
+                    <img src={vehicle.image_url} alt={`${vehicle.make} ${vehicle.model}`} className="vehicle-image-small" />
+                  )}
+                  <div className="vehicle-content-small">
+                    <h3 className="vehicle-title-small">{vehicle.make} {vehicle.model} ({vehicle.year})</h3>
+                    <p className="vehicle-description-small">{vehicle.description}</p>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p>No vehicles in garage yet.</p>
             )}
           </div>
         </section>

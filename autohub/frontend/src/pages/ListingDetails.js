@@ -1,20 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom'; // Import useNavigate
 import Header from '../components/Header';
 import Footer from '../components/Footer'; // Import Footer component
 import listingStatic from '../data/listingDetails.json';
-import { listingService, userService } from '../services/api'; // Import listingService and userService
+import { listingService, userService, authService } from '../services/api'; // Import authService
 import './ListingDetails.css';
 
 const ListingDetails = () => {
   const { id } = useParams();
+  const navigate = useNavigate(); // Initialize useNavigate
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [listing, setListing] = useState(null); // Changed from 'details' to 'listing'
   const [vehicleImages, setVehicleImages] = useState([]);
   const [vehicleSpecs, setVehicleSpecs] = useState([]);
   const [relatedListings, setRelatedListings] = useState([]);
   const [sellerProfile, setSellerProfile] = useState(null);
+  const currentUser = authService.getCurrentUser(); // Get current user
+  const isOwner = currentUser && listing && parseInt(currentUser.id) === parseInt(listing.userId); // Check if current user is the owner
 
   useEffect(() => {
     let cancelled = false;
@@ -57,7 +60,7 @@ const ListingDetails = () => {
     };
     loadListingDetails();
     return () => { cancelled = true; };
-  }, [id]);
+  }, [id, currentUser, listing]); // Add listing to dependencies to re-evaluate isOwner
 
   if (!listing) {
     return <div className="page-wrapper"><Header /><main className="page-container"><p>Loading listing details...</p></main><Footer /></div>;
@@ -88,6 +91,19 @@ const ListingDetails = () => {
   const handleShareListing = () => {
     // Handle share listing action
     console.log('Share listing clicked');
+  };
+
+  const handleDeleteListing = async () => {
+    if (window.confirm('Are you sure you want to delete this listing?')) {
+      try {
+        await listingService.deleteListing(id);
+        alert('Listing deleted successfully!');
+        navigate('/marketplace'); // Redirect to marketplace after deletion
+      } catch (error) {
+        console.error('Error deleting listing:', error);
+        alert('Failed to delete listing.');
+      }
+    }
   };
 
   const handleViewDetails = (listingId) => {
@@ -175,7 +191,7 @@ const ListingDetails = () => {
                     />
                   </div>
                   <div className="seller-details">
-                    <h3 className="seller-name">{sellerProfile?.display_name || listing.seller_username || 'N/A'}</h3>
+                    <h3 className="seller-name">{sellerProfile?.display_name || listing.owner_username || 'N/A'}</h3>
                     <p className="seller-join-date">Joined: {sellerProfile?.created_at ? new Date(sellerProfile.created_at).toLocaleDateString() : 'N/A'}</p>
                     <div className="seller-location">
                       <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -201,12 +217,24 @@ const ListingDetails = () => {
               </div>
               
               <div className="action-buttons">
-                <button className="btn btn-primary" onClick={handleMessageSeller}>
-                  <svg width="16" height="16" viewBox="0 0 17 16" fill="none">
-                    <path d="M14.0317 3.31005C14.0317 3.13235 13.9611 2.96199 13.8354 2.83634C13.7097 2.71069 13.5394 2.64005 13.3617 2.64005L3.98168 2.64005C3.80398 2.64005 3.63362 2.71069 3.50797 2.83634C3.38232 2.96199 3.31168 3.13235 3.31168 3.31005L3.31168 12.4126L4.84797 10.8764L4.89704 10.8319C5.01627 10.7341 5.16618 10.68 5.32168 10.68L13.3617 10.68C13.5394 10.68 13.7097 10.6094 13.8354 10.4837C13.9611 10.3581 14.0317 10.1877 14.0317 10.01L14.0317 3.31005Z" fill="white"/>
-                  </svg>
-                  Message Seller
-                </button>
+                {isOwner && (
+                  <>
+                    <button className="btn btn-primary" onClick={() => navigate(`/listing/${id}/edit`)}>
+                      Edit Listing
+                    </button>
+                    <button className="btn btn-secondary" onClick={handleDeleteListing}>
+                      Delete Listing
+                    </button>
+                  </>
+                )}
+                {!isOwner && (
+                  <button className="btn btn-primary" onClick={handleMessageSeller}>
+                    <svg width="16" height="16" viewBox="0 0 17 16" fill="none">
+                      <path d="M14.0317 3.31005C14.0317 3.13235 13.9611 2.96199 13.8354 2.83634C13.7097 2.71069 13.5394 2.64005 13.3617 2.64005L3.98168 2.64005C3.80398 2.64005 3.63362 2.71069 3.50797 2.83634C3.38232 2.96199 3.31168 3.13235 3.31168 3.31005L3.31168 12.4126L4.84797 10.8764L4.89704 10.8319C5.01627 10.7341 5.16618 10.68 5.32168 10.68L13.3617 10.68C13.5394 10.68 13.7097 10.6094 13.8354 10.4837C13.9611 10.3581 14.0317 10.1877 14.0317 10.01L14.0317 3.31005Z" fill="white"/>
+                    </svg>
+                    Message Seller
+                  </button>
+                )}
                 
                 <button className="btn btn-secondary" onClick={handleAddToWatchlist}>
                   <svg width="16" height="16" viewBox="0 0 17 16" fill="none">

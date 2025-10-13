@@ -115,7 +115,7 @@ const LoginSection = () => {
             </div>
             
             <div className="forgot-password">
-              <Link to="#" className="forgot-link">Forgot password?</Link>
+              <Link to="/forgot-password" className="forgot-link">Forgot password?</Link>
             </div>
             
             <div className="captcha-container">

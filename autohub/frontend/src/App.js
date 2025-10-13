@@ -25,6 +25,10 @@ import CategoryPage from './pages/CategoryPage';
 import AdminDashboard from './pages/AdminDashboard';
 import CreateEventWizard from './pages/CreateEventWizard'; // Import the new component
 import MyEvents from './pages/MyEvents'; // Import the new MyEvents component
+import EditProfilePage from './pages/EditProfilePage'; // Import the new EditProfilePage component
+import EditListingWizard from './pages/EditListingWizard'; // Import the new EditListingWizard component
+import ForgotPasswordPage from './pages/ForgotPasswordPage'; // Import the new ForgotPasswordPage component
+import ResetPasswordPage from './pages/ResetPasswordPage'; // Import the new ResetPasswordPage component
 import { authService } from './services/api'; // Import authService
 
 const AuthWrapper = ({ children }) => {
@@ -75,7 +79,11 @@ function App() {
         <Route path="/admin" element={<AuthWrapper><AdminDashboard /></AuthWrapper>} />
         <Route path="/create-event" element={<AuthWrapper><CreateEventWizard /></AuthWrapper>} />
         <Route path="/profile/:id" element={<AuthWrapper><UserProfile /></AuthWrapper>} />
+        <Route path="/profile/:id/edit" element={<AuthWrapper><EditProfilePage /></AuthWrapper>} />
+        <Route path="/listing/:id/edit" element={<AuthWrapper><EditListingWizard /></AuthWrapper>} />
         <Route path="/garage/:id" element={<AuthWrapper><VehicleManagement /></AuthWrapper>} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
       </Routes>
     </Router>
   );
