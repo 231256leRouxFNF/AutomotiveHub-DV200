@@ -24,40 +24,44 @@ const UserProfile = () => {
   const isOwner = currentUserId && parseInt(id) === currentUserId; // More robust owner check
 
   useEffect(() => {
+    const profileIdToFetch = id || currentUserId;
+
+    if (!profileIdToFetch) {
+      // If no ID is available in the URL and no user is logged in, redirect to login.
+      // This is a safeguard, as AuthWrapper should already handle this.
+      navigate('/login', { replace: true });
+      return;
+    }
+
+    // If the URL is generic '/profile', redirect to the specific user's profile URL.
+    if (!id && currentUserId) {
+      navigate(`/profile/${currentUserId}`, { replace: true });
+      return;
+    }
+
     const fetchProfileData = async () => {
-      console.log(`[UserProfile] Fetching data for user ID: ${id}`);
+      console.log(`[UserProfile] Fetching data for user ID: ${profileIdToFetch}`);
       try {
-        const userProfile = await userService.getUserProfile(id);
-        console.log(`[UserProfile] Fetched user profile:`, userProfile);
+        const userProfile = await userService.getUserProfile(profileIdToFetch);
         setProfile(userProfile);
 
-        if (currentUserId && currentUserId !== parseInt(id)) {
-          const followingStatus = await followService.isFollowing(id);
-          console.log(`[UserProfile] User ${currentUserId} is following ${id}:`, followingStatus);
+        if (currentUserId && currentUserId !== parseInt(profileIdToFetch)) {
+          const followingStatus = await followService.isFollowing(profileIdToFetch);
           setIsFollowing(followingStatus);
         }
 
-        const followers = await followService.getFollowers(id);
-        console.log(`[UserProfile] Followers for ${id}:`, followers);
+        const [followers, following, posts, listings, vehicles] = await Promise.all([
+          followService.getFollowers(profileIdToFetch),
+          followService.getFollowing(profileIdToFetch),
+          socialService.getPostsByUserId(profileIdToFetch),
+          listingService.getListingsByUserId(profileIdToFetch),
+          garageService.getUserVehicles(profileIdToFetch)
+        ]);
+
         setFollowersCount(followers.length);
-
-        const following = await followService.getFollowing(id);
-        console.log(`[UserProfile] Following by ${id}:`, following);
         setFollowingCount(following.length);
-
-        // Fetch user's posts
-        const posts = await socialService.getPostsByUserId(id);
-        console.log(`[UserProfile] Fetched user posts:`, posts);
         setUserPosts(posts);
-
-        // Fetch user's listings
-        const listings = await listingService.getListingsByUserId(id);
-        console.log(`[UserProfile] Fetched user listings:`, listings);
         setUserListings(listings);
-
-        // Fetch user's vehicles from garage
-        const vehicles = await garageService.getUserVehicles(id); // Use garageService
-        console.log(`[UserProfile] Fetched user vehicles:`, vehicles);
         setUserVehicles(vehicles);
 
       } catch (error) {
@@ -69,8 +73,10 @@ const UserProfile = () => {
       }
     };
 
-    fetchProfileData();
-  }, [id, currentUserId, isFollowing]); // Re-run effect if id, currentUserId, or isFollowing changes
+    if (profileIdToFetch) {
+      fetchProfileData();
+    }
+  }, [id, currentUserId, isFollowing, navigate]); // Re-run effect if id, currentUserId, or isFollowing changes
 
   const handleAvatarChange = async (e) => {
     const file = e.target.files[0];
