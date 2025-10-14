@@ -118,26 +118,31 @@ app.get('/api/users/:id/profile', auth, async (req, res) => {
     const [profileResults] = await db.promise().query(profileSql, [userId]);
 
     if (profileResults.length === 0) {
+      console.log(`Profile for user ID ${userId} not found in DB.`);
       return res.status(404).json({ message: 'User not found' });
     }
 
     const profile = profileResults[0];
+    console.log(`Fetched profile data for user ID ${userId}:`, profile);
 
     // Get follower count
     const followersCountSql = 'SELECT COUNT(*) as count FROM follows WHERE followee_id = ?';
     const [followersCountResults] = await db.promise().query(followersCountSql, [userId]);
     profile.followersCount = followersCountResults[0].count;
+    console.log(`Followers count for user ID ${userId}:`, profile.followersCount);
 
     // Get following count
     const followingCountSql = 'SELECT COUNT(*) as count FROM follows WHERE follower_id = ?';
     const [followingCountResults] = await db.promise().query(followingCountSql, [userId]);
     profile.followingCount = followingCountResults[0].count;
+    console.log(`Following count for user ID ${userId}:`, profile.followingCount);
 
     // Check if requesting user is following this profile
     if (requestingUserId) {
       const isFollowingSql = 'SELECT COUNT(*) as count FROM follows WHERE follower_id = ? AND followee_id = ?';
       const [isFollowingResults] = await db.promise().query(isFollowingSql, [requestingUserId, userId]);
       profile.isFollowing = isFollowingResults[0].count > 0;
+      console.log(`User ${requestingUserId} is following ${userId}:`, profile.isFollowing);
 
       // Get mutual followers
       const mutualsSql = `
@@ -150,9 +155,11 @@ app.get('/api/users/:id/profile', auth, async (req, res) => {
       `;
       const [mutualsResults] = await db.promise().query(mutualsSql, [userId, requestingUserId, requestingUserId]);
       profile.mutualFollowers = mutualsResults;
+      console.log(`Mutual followers for user ID ${userId} and ${requestingUserId}:`, profile.mutualFollowers);
     } else {
       profile.isFollowing = false;
       profile.mutualFollowers = [];
+      console.log(`No requesting user. isFollowing: false, mutualFollowers: []`);
     }
     
     res.json(profile);

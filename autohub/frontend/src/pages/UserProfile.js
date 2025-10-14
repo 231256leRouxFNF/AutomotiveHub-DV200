@@ -20,7 +20,8 @@ const UserProfile = () => {
   const [showFollowModal, setShowFollowModal] = useState(false); // State to control modal visibility
   const [modalType, setModalType] = useState(''); // State to control modal content ('followers' or 'following')
   const currentUser = authService.getCurrentUser();
-  const isOwner = currentUser && parseInt(currentUser.id) === parseInt(id);
+  const currentUserId = currentUser ? parseInt(currentUser.id) : null; // Safely parse current user ID once
+  const isOwner = currentUserId && parseInt(id) === currentUserId; // More robust owner check
 
   useEffect(() => {
     const fetchProfileData = async () => {
@@ -28,7 +29,7 @@ const UserProfile = () => {
         const userProfile = await userService.getUserProfile(id);
         setProfile(userProfile);
 
-        if (currentUser && currentUser.id !== parseInt(id)) {
+        if (currentUserId && currentUserId !== parseInt(id)) {
           const followingStatus = await followService.isFollowing(id);
           setIsFollowing(followingStatus);
         }
@@ -61,7 +62,7 @@ const UserProfile = () => {
     };
 
     fetchProfileData();
-  }, [id, currentUser, isFollowing]); // Re-run effect if id, currentUser, or isFollowing changes
+  }, [id, currentUserId, isFollowing]); // Re-run effect if id, currentUserId, or isFollowing changes
 
   const handleAvatarChange = async (e) => {
     const file = e.target.files[0];
@@ -216,7 +217,7 @@ const UserProfile = () => {
                   )}
                   <div className="post-content-small">
                     <p className="post-text-small">{post.content}</p>
-                    <span className="post-timestamp-small">{new Date(post.created_at).toLocaleDateString()}</span>
+                    <span className="post-timestamp-small">{post.created_at ? new Date(post.created_at).toLocaleDateString() : 'N/A'}</span>
                   </div>
                 </div>
               ))

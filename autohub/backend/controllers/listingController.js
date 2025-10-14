@@ -93,7 +93,7 @@ const listingController = {
 
   // Get listings by userId
   getListingsByUserId: (req, res) => {
-    const { userId } = req.query; // Assuming userId is passed as a query parameter
+    const { userId } = req.params; // Get userId from URL parameters
     if (!userId) {
       return res.status(400).json({ success: false, message: 'User ID is required' });
     }
