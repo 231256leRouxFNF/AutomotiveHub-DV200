@@ -25,35 +25,43 @@ const UserProfile = () => {
 
   useEffect(() => {
     const fetchProfileData = async () => {
+      console.log(`[UserProfile] Fetching data for user ID: ${id}`);
       try {
         const userProfile = await userService.getUserProfile(id);
+        console.log(`[UserProfile] Fetched user profile:`, userProfile);
         setProfile(userProfile);
 
         if (currentUserId && currentUserId !== parseInt(id)) {
           const followingStatus = await followService.isFollowing(id);
+          console.log(`[UserProfile] User ${currentUserId} is following ${id}:`, followingStatus);
           setIsFollowing(followingStatus);
         }
 
         const followers = await followService.getFollowers(id);
+        console.log(`[UserProfile] Followers for ${id}:`, followers);
         setFollowersCount(followers.length);
 
         const following = await followService.getFollowing(id);
+        console.log(`[UserProfile] Following by ${id}:`, following);
         setFollowingCount(following.length);
 
         // Fetch user's posts
         const posts = await socialService.getPostsByUserId(id);
+        console.log(`[UserProfile] Fetched user posts:`, posts);
         setUserPosts(posts);
 
         // Fetch user's listings
         const listings = await listingService.getListingsByUserId(id);
+        console.log(`[UserProfile] Fetched user listings:`, listings);
         setUserListings(listings);
 
         // Fetch user's vehicles from garage
         const vehicles = await garageService.getUserVehicles(id); // Use garageService
+        console.log(`[UserProfile] Fetched user vehicles:`, vehicles);
         setUserVehicles(vehicles);
 
       } catch (error) {
-        console.error('Error fetching profile data:', error);
+        console.error('[UserProfile] Error fetching profile data:', error);
         setProfile(null);
         setUserPosts([]);
         setUserListings([]);
@@ -254,17 +262,34 @@ const UserProfile = () => {
           <h2 className="section-title">My Garage Overview</h2>
           <div className="section-content grid vehicles-grid">
             {userVehicles.length > 0 ? (
-              userVehicles.map(vehicle => (
-                <div key={vehicle.id} className="vehicle-card-small">
-                  {vehicle.image_url && (
-                    <img src={vehicle.image_url} alt={`${vehicle.make} ${vehicle.model}`} className="vehicle-image-small" />
-                  )}
-                  <div className="vehicle-content-small">
-                    <h3 className="vehicle-title-small">{vehicle.make} {vehicle.model} ({vehicle.year})</h3>
-                    <p className="vehicle-description-small">{vehicle.description}</p>
+              userVehicles.map(vehicle => {
+                let imageUrl = null;
+                try {
+                  // Assuming vehicle.image_url is a string that might be JSON or a direct URL
+                  if (vehicle.image_url && vehicle.image_url.startsWith('[')) {
+                    const parsedImages = JSON.parse(vehicle.image_url);
+                    if (Array.isArray(parsedImages) && parsedImages.length > 0) {
+                      imageUrl = parsedImages[0];
+                    }
+                  } else if (vehicle.image_url) {
+                    imageUrl = vehicle.image_url;
+                  }
+                } catch (e) {
+                  console.error(`[UserProfile] Error parsing vehicle imageUrl for vehicle ${vehicle.id}:`, e);
+                }
+
+                return (
+                  <div key={vehicle.id} className="vehicle-card-small">
+                    {imageUrl && (
+                      <img src={imageUrl} alt={`${vehicle.make} ${vehicle.model}`} className="vehicle-image-small" />
+                    )}
+                    <div className="vehicle-content-small">
+                      <h3 className="vehicle-title-small">{vehicle.make} {vehicle.model} ({vehicle.year})</h3>
+                      <p className="vehicle-description-small">{vehicle.description}</p>
+                    </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             ) : (
               <p>No vehicles in garage yet.</p>
             )}
