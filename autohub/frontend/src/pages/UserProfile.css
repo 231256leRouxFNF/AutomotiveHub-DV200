@@ -139,6 +139,9 @@
 
 .stats-row { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
 
+/* Spacing utilities */
+.mt-24 { margin-top: 24px; }
+
 /* Responsive */
 @media (max-width: 1200px) {
   .profile-grid { grid-template-columns: 1fr; }
