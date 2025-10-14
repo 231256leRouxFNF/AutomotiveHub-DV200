@@ -121,7 +121,7 @@ const UserProfile = () => {
               </div>
             </div>
 
-            <h3 className="section-title" style={{ marginTop: 24 }}>Preferences</h3>
+            <h3 className="section-title mt-24">Preferences</h3>
             <div className="section-grid">
               <div className="info-card">
                 <div className="info-label">Language</div>
