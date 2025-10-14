@@ -3,6 +3,7 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import StatCard from '../components/StatCard';
 import VehicleCard from '../components/VehicleCard';
+import api from '../services/api';
 import { garageService } from '../services/api';
 import { authService } from '../services/api';
 import './VehicleManagement.css';
@@ -136,13 +137,11 @@ const VehicleManagement = () => {
         form.append('images', imageFile);
       }
 
-      const response = await fetch('http://localhost:5000/api/garage/vehicles', {
-        method: 'POST',
-        body: form,
+      const { data: result } = await api.post('/api/garage/vehicles', form, {
+        headers: { 'Content-Type': 'multipart/form-data' }
       });
-      const result = await response.json();
 
-      if (result.success) {
+      if (result && result.success) {
         alert('Vehicle added successfully!');
         setFormData({
           make: '',
@@ -265,8 +264,8 @@ const VehicleManagement = () => {
               >
                 {formData.imageUrl ? (
                   <div className="image-preview">
-                    <img src={formData.imageUrl} alt="Vehicle Preview" style={{width: '100%', height: '120px', objectFit: 'cover', borderRadius: '4px'}} />
-                    <p className="upload-text" style={{marginTop: '8px', fontSize: '12px'}}>Click or drag to change image</p>
+                    <img src={formData.imageUrl} alt="Vehicle Preview" className="preview-image" />
+                    <p className="upload-text preview-caption">Click or drag to change image</p>
                   </div>
                 ) : (
                   <>

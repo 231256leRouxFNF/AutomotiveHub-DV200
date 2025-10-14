@@ -19,7 +19,7 @@ html, body {
 /* Main Content */
 .garage-main {
   flex: 1;
-  padding: 48px 24px 24px; /* slightly tighter to fit 3 cols */
+  padding: 48px 32px 32px;
 }
 
 .garage-title {
@@ -28,23 +28,22 @@ html, body {
   font-size: 36px;
   font-weight: 800;
   line-height: 40px;
-  margin: 0 0 32px 0; /* tighter */
+  margin: 0 0 40px 0;
 }
 
 /* Stats Cards */
 .stats-container {
   display: flex;
-  gap: 20px;
-  margin-bottom: 24px;
+  gap: 23px;
+  margin-bottom: 32px;
 }
 
 /* Content Grid */
 .content-grid {
   display: grid;
-  grid-template-columns: minmax(280px, 300px) repeat(3, minmax(280px, 1fr));
-  gap: 20px;
-  align-items: self-start;
-  margin: 2.5% 2.5% 0 2.5%;
+  grid-template-columns: 300px minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
 }
 
 /* Add Vehicle Card */
@@ -57,10 +56,6 @@ html, body {
   box-shadow: 4px 4px 0 #636AE8;
   padding: 25px;
   box-sizing: border-box;
-  position: sticky;
-  top: 96px;
-  height: fit-content;
-  grid-column: 1; /* Explicitly place in first column */
 }
 
 .add-vehicle-title {
@@ -218,13 +213,11 @@ html, body {
   height: 16px;
 }
 
-/* Vehicles Grid (auto-fits up to three columns, thinner min width) */
+/* Vehicles Grid */
 .vehicles-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr); /* Explicitly set 3 columns */
-  gap: 10%;
-  align-items: start;
-  grid-column: 2 / span 3; /* Start at second column and span three */
+  grid-template-columns: repeat(auto-fit, minmax(324px, 1fr));
+  gap: 24px;
 }
 
 .vehicles-placeholder {
@@ -237,6 +230,7 @@ html, body {
   border-radius: 8px;
 }
 
+
 /* Responsive Design */
 @media (max-width: 1200px) {
   .stats-container {
@@ -244,45 +238,24 @@ html, body {
   }
   
   .content-grid {
-    grid-template-columns: 300px minmax(0, 1fr);
-    gap: 16px;
+    grid-template-columns: 1fr;
+    gap: 32px;
   }
   
   .add-vehicle-card {
     width: 100%;
-    max-width: 300px;
-    margin: 0;
-    top: 80px;
-    grid-column: auto; /* Reset for smaller screens */
-  }
-  
-  .vehicles-grid { /* Added for 1200px breakpoint */
-    grid-template-columns: repeat(2, 1fr); /* Two columns for vehicles at this breakpoint */
-  }
-}
-
-@media (max-width: 992px) {
-  .content-grid {
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
-  
-  .add-vehicle-card {
-    position: static;
     max-width: 500px;
     margin: 0 auto;
-    grid-column: auto; /* Reset for smaller screens */
   }
   
-  .vehicles-grid {
-    grid-template-columns: 1fr;
-    grid-column: auto; /* Reset for smaller screens */
+  .footer-bottom {
+    padding: 0 32px;
   }
 }
 
 @media (max-width: 768px) {
   .garage-main {
-    padding: 24px 16px;
+    padding: 24px 20px;
   }
   
   .garage-title {
@@ -303,11 +276,12 @@ html, body {
     flex-direction: column;
     gap: 16px;
   }
+  
 }
 
 @media (max-width: 480px) {
   .garage-main {
-    padding: 20px 12px;
+    padding: 20px 16px;
   }
   
   .garage-title {
@@ -322,4 +296,18 @@ html, body {
   .upload-area {
     padding: 24px;
   }
+
+}
+
+/* Preview area styles extracted from inline */
+.preview-image {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.preview-caption {
+  margin-top: 8px;
+  font-size: 12px;
 }
