@@ -1407,16 +1407,47 @@ app.listen(5000, () => {
   console.log('Server running on http://localhost:5000');
 });
 
-async function fetchData() {
+import mysql from 'mysql2/promise';
+
+export default async function handler(req, res) {
+  // Connect to the database
+  const db = await mysql.createConnection({
+    host: process.env.MYSQL_HOST,
+    user: process.env.MYSQL_USER,
+    password: process.env.MYSQL_PASSWORD,
+    database: process.env.MYSQL_DATABASE,
+  });
+
   try {
-    // Assuming your Render backend is deployed and has a public URL
-    const response = await fetch('YOUR_RENDER_BACKEND_URL/api/some-endpoint');
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    const data = await response.json();
-    console.log('Data from backend:', data);
+    const [rows] = await db.execute('SELECT * FROM users');
+    res.status(200).json(rows);
   } catch (error) {
-    console.error('Error fetching data:', error);
+    res.status(500).json({ error: 'Failed to fetch data' });
+  } finally {
+    await db.end();
   }
 };
+
+
+import mysql from 'mysql2/promise';
+
+const pool = mysql.createPool({
+  host: process.env.MYSQL_HOST,
+  user: process.env.MYSQL_USER,
+  password: process.env.MYSQL_PASSWORD,
+  database: process.env.MYSQL_DATABASE,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
+});
+
+export default async function handler(req, res) {
+  try {
+    const [rows] = await pool.execute('SELECT * FROM users');
+    res.status(200).json(rows);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch data' });
+  }
+}
+
+
