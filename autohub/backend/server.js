@@ -1406,3 +1406,17 @@ app.delete('/api/garage/vehicles/:vehicleId', async (req, res) => {
 app.listen(5000, () => {
   console.log('Server running on http://localhost:5000');
 });
+
+async function fetchData() {
+  try {
+    // Assuming your Render backend is deployed and has a public URL
+    const response = await fetch('YOUR_RENDER_BACKEND_URL/api/some-endpoint');
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    console.log('Data from backend:', data);
+  } catch (error) {
+    console.error('Error fetching data:', error);
+  }
+};
