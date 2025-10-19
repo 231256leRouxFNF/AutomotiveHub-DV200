@@ -29,6 +29,29 @@ const requireAdmin = (req, res, next) => {
   next();
 };
 
+// replace any raw `... WHERE userId = NULL ...` with parameterized query:
+
+// example: assume req.user.id holds the authenticated user's id
+const userId = req.user?.id ?? null;
+
+if (userId === null) {
+  // handle anonymous / no-user case safely
+  // e.g., skip notifications check or set count = 0
+  req.unreadNotificationsCount = 0;
+  return next();
+}
+
+try {
+  const [rows] = await db.query(
+    'SELECT COUNT(*) AS count FROM notifications WHERE userId = ? AND isRead = FALSE',
+    [userId]
+  );
+  req.unreadNotificationsCount = rows[0]?.count || 0;
+  next();
+} catch (err) {
+  next(err);
+}
+
 module.exports = {
   auth,
   requireAdmin,

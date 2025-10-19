@@ -1,10 +1,13 @@
-const express = require('express');
 const db = require('./config/db');
 const cors = require('cors');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const path = require('path');
+require('dotenv').config({ path: require('path').resolve(__dirname, '.env') });
+
+// Ensure express is defined
+const express = require('express');
 const Notification = require('./models/Notification'); // Import Notification model
 const { auth } = require('./middleware/auth'); // Import auth middleware
 const crypto = require('crypto'); // For generating tokens
@@ -81,11 +84,14 @@ app.post('/api/users/:id/profile/avatar', uploadProfile.single('avatar'), (req, 
   });
 });
 
-app.get('/test-db', (req, res) => {
-  db.query('SELECT 1', (err, result) => {
-    if (err) return res.status(500).send('DB Error');
-    res.send('DB Connected!');
-  });
+// Add a quick DB test route (if you don't already have one)
+app.get('/test-db', async (req, res) => {
+  try {
+    const [rows] = await db.query('SELECT 1 AS ok');
+    res.json({ ok: rows[0].ok === 1 });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ============ AUTOHUB API ENDPOINTS ============
@@ -1403,51 +1409,15 @@ app.delete('/api/garage/vehicles/:vehicleId', async (req, res) => {
   }
 });
 
+app.get('/cars', async (req, res) => {
+  try {
+    const [rows] = await db.query('SELECT * FROM cars LIMIT 100');
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.listen(5000, () => {
   console.log('Server running on http://localhost:5000');
 });
-
-import mysql from 'mysql2/promise';
-
-export default async function handler(req, res) {
-  // Connect to the database
-  const db = await mysql.createConnection({
-    host: process.env.MYSQL_HOST,
-    user: process.env.MYSQL_USER,
-    password: process.env.MYSQL_PASSWORD,
-    database: process.env.MYSQL_DATABASE,
-  });
-
-  try {
-    const [rows] = await db.execute('SELECT * FROM users');
-    res.status(200).json(rows);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch data' });
-  } finally {
-    await db.end();
-  }
-};
-
-
-import mysql from 'mysql2/promise';
-
-const pool = mysql.createPool({
-  host: process.env.MYSQL_HOST,
-  user: process.env.MYSQL_USER,
-  password: process.env.MYSQL_PASSWORD,
-  database: process.env.MYSQL_DATABASE,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0
-});
-
-export default async function handler(req, res) {
-  try {
-    const [rows] = await pool.execute('SELECT * FROM users');
-    res.status(200).json(rows);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch data' });
-  }
-}
-
-

@@ -16,23 +16,11 @@ root.render(
 // or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
 reportWebVitals();
 
-const mysql = require('mysql2/promise');
+const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:3000';
 
-async function createDbConnection() {
-  try {
-    const connection = await mysql.createConnection({
-      host: process.env.DB_HOST,
-      port: parseInt(process.env.DB_PORT, 10),
-      database: process.env.DB_NAME,
-      user: process.env.DB_USER,
-      password: process.env.DB_PASSWORD
-    });
-    console.log('Connected to Alwaysdata MySQL database!');
-    return connection;
-  } catch (error) {
-    console.error('Error connecting to database:', error);
-    throw error; // Re-throw to handle upstream
-  }
+// Example: replace direct DB calls with fetch to backend endpoints
+export async function fetchCars() {
+  const res = await fetch(`${API_BASE}/cars`);
+  if (!res.ok) throw new Error('Failed to fetch cars');
+  return res.json();
 }
-
-// You would then call createDbConnection() where needed in your backend logic.
