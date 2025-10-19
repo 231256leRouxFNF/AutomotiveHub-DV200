@@ -609,16 +609,6 @@ const CommunityFeed = () => {
               )}
             </div>
           </div>
-
-          {/* Community Members Section */}
-          <div className="community-members-section">
-            <h3 className="community-members-title">Community Members</h3>
-            <div className="community-members-list">
-              {communityUsers.map(user => (
-                <ProfilePreview key={user.id} userId={user.id} />
-              ))}
-            </div>
-          </div>
         </aside>
       </div>
 
