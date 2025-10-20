@@ -61,14 +61,15 @@ const RegisterForm = () => {
       console.error('Registration error:', error);
       let errorMessage = 'Registration failed. Please try again.';
 
-      if (error.message) {
+      if (error instanceof Error) {
         errorMessage = error.message;
       } else if (typeof error === 'string') {
         errorMessage = error;
-      } else if (error && typeof error === 'object') {
-        errorMessage = error.message || JSON.stringify(error);
+      } else if (error && typeof error === 'object' && error.message) {
+        errorMessage = error.message;
       }
 
+      console.log('Final error message:', errorMessage);
       setErrors({ general: errorMessage });
     } finally {
       setIsLoading(false);
