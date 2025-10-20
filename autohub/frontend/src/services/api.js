@@ -92,13 +92,20 @@ export const authService = {
 
   register: async (username, email, password) => {
     try {
+      console.log('Registration attempt:', { username, email });
       const response = await api.post('/api/register', { username, email, password });
       if (response.data.token) {
         localStorage.setItem('authToken', response.data.token);
       }
       return response.data;
     } catch (error) {
-      throw error.response?.data || error.message;
+      console.error('Registration error details:', {
+        hasResponse: !!error.response,
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message
+      });
+      throw error.response?.data || { message: error.message };
     }
   },
 
