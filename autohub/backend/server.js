@@ -11,7 +11,12 @@ const crypto = require('crypto'); // For generating tokens
 // const nodemailer = require('nodemailer'); // For sending emails (uncomment and configure for production)
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: true,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
 
 // Import routes
