@@ -103,9 +103,14 @@ export const authService = {
         hasResponse: !!error.response,
         status: error.response?.status,
         data: error.response?.data,
-        message: error.message
+        message: error.message,
+        errorType: typeof error
       });
-      throw error.response?.data || { message: error.message };
+
+      if (error.response?.data) {
+        throw new Error(error.response.data.message || error.response.data.error || 'Registration failed');
+      }
+      throw new Error(error.message || 'Registration failed. Please try again.');
     }
   },
 
