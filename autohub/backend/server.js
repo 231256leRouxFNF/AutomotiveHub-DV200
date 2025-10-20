@@ -14,7 +14,12 @@ const crypto = require('crypto'); // For generating tokens
 // const nodemailer = require('nodemailer'); // For sending emails (uncomment and configure for production)
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: true,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
 
 // Import routes
@@ -659,9 +664,11 @@ app.post('/api/reset-password', async (req, res) => {
 
 // Login endpoint allowing username or email (case-insensitive)
 app.post('/api/login', (req, res) => {
+  console.log('Login request received:', { body: req.body });
   const { identifier, password } = req.body || {};
   const ident = (identifier ?? '').toString().trim();
   if (!ident || !password) {
+    console.warn('Missing credentials:', { hasIdent: !!ident, hasPassword: !!password });
     return res.status(400).json({ success: false, message: 'Identifier and password are required' });
   }
 
@@ -673,22 +680,26 @@ app.post('/api/login', (req, res) => {
   `;
 
   const identLower = ident.toLowerCase();
+  console.log('Querying user with identifier:', identLower);
 
   db.query(sql, [identLower, identLower], async (err, results) => {
     if (err) {
       console.error('Login query error:', err);
-      return res.status(500).json({ success: false, message: 'Internal server error' });
+      return res.status(500).json({ success: false, message: 'Database error', error: err.message });
     }
 
     if (!results || results.length === 0) {
+      console.warn('User not found:', identLower);
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
 
     const user = results[0];
+    console.log('User found:', { id: user.id, username: user.username, email: user.email });
 
     try {
       const match = await bcrypt.compare(password, user.password_hash);
       if (!match) {
+        console.warn('Password mismatch for user:', user.username);
         return res.status(401).json({ success: false, message: 'Invalid credentials' });
       }
 
@@ -703,6 +714,7 @@ app.post('/api/login', (req, res) => {
         console.warn('JWT signing skipped:', e.message);
       }
 
+      console.log('Login successful for user:', user.username);
       return res.json({
         success: true,
         message: 'Login successful',
@@ -711,7 +723,7 @@ app.post('/api/login', (req, res) => {
       });
     } catch (e) {
       console.error('Password compare error:', e);
-      return res.status(500).json({ success: false, message: 'Internal server error' });
+      return res.status(500).json({ success: false, message: 'Internal server error', error: e.message });
     }
   });
 });

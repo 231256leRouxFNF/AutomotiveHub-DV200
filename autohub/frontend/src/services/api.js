@@ -1,7 +1,15 @@
 import axios from 'axios';
 
 // Base API configuration
-const API_BASE_URL = process.env.REACT_APP_API_URL || '';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
+// Log API configuration for debugging
+if (typeof window !== 'undefined') {
+  console.log('API Configuration:', {
+    REACT_APP_API_URL: process.env.REACT_APP_API_URL,
+    API_BASE_URL: API_BASE_URL
+  });
+}
 
 // Create axios instance with default config
 const api = axios.create({
@@ -19,21 +27,50 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    console.log('API Request:', {
+      method: config.method,
+      url: config.url,
+      baseURL: config.baseURL,
+      fullURL: config.baseURL + config.url
+    });
     return config;
   },
   (error) => {
+    console.error('Request interceptor error:', error);
     return Promise.reject(error);
   }
 );
 
 // Handle response errors
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log('API Response:', {
+      status: response.status,
+      url: response.config.url
+    });
+    return response;
+  },
   (error) => {
+    console.error('API Error:', {
+      message: error.message,
+      code: error.code,
+      hasResponse: !!error.response,
+      status: error.response?.status,
+      data: error.response?.data,
+      config: {
+        method: error.config?.method,
+        url: error.config?.url,
+        baseURL: error.config?.baseURL
+      }
+    });
     if (error.response?.status === 401) {
       // Token expired or invalid
       localStorage.removeItem('authToken');
       window.location.href = '/login';
+    }
+    // Provide better error message for network errors
+    if (!error.response) {
+      error.message = error.message || 'Network Error - Unable to reach server';
     }
     return Promise.reject(error);
   }
@@ -55,13 +92,25 @@ export const authService = {
 
   register: async (username, email, password) => {
     try {
+      console.log('Registration attempt:', { username, email });
       const response = await api.post('/api/register', { username, email, password });
       if (response.data.token) {
         localStorage.setItem('authToken', response.data.token);
       }
       return response.data;
     } catch (error) {
-      throw error.response?.data || error.message;
+      console.error('Registration error details:', {
+        hasResponse: !!error.response,
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message,
+        errorType: typeof error
+      });
+
+      if (error.response?.data) {
+        throw new Error(error.response.data.message || error.response.data.error || 'Registration failed');
+      }
+      throw new Error(error.message || 'Registration failed. Please try again.');
     }
   },
 
