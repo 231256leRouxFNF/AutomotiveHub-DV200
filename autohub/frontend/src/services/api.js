@@ -43,8 +43,26 @@ api.interceptors.request.use(
 
 // Handle response errors
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log('API Response:', {
+      status: response.status,
+      url: response.config.url
+    });
+    return response;
+  },
   (error) => {
+    console.error('API Error:', {
+      message: error.message,
+      code: error.code,
+      hasResponse: !!error.response,
+      status: error.response?.status,
+      data: error.response?.data,
+      config: {
+        method: error.config?.method,
+        url: error.config?.url,
+        baseURL: error.config?.baseURL
+      }
+    });
     if (error.response?.status === 401) {
       // Token expired or invalid
       localStorage.removeItem('authToken');
