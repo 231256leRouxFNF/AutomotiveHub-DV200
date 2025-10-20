@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Base API configuration
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://automotivehub-dv200-1.onrender.com';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://www.automotivehub.digital';
 
 // Log API configuration for debugging
 if (typeof window !== 'undefined') {
