@@ -1,7 +1,15 @@
 import axios from 'axios';
 
 // Base API configuration
-const API_BASE_URL = process.env.REACT_APP_API_URL || '';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
+// Log API configuration for debugging
+if (typeof window !== 'undefined') {
+  console.log('API Configuration:', {
+    REACT_APP_API_URL: process.env.REACT_APP_API_URL,
+    API_BASE_URL: API_BASE_URL
+  });
+}
 
 // Create axios instance with default config
 const api = axios.create({
