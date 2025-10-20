@@ -59,7 +59,16 @@ const RegisterForm = () => {
       }
     } catch (error) {
       console.error('Registration error:', error);
-      const errorMessage = error.message || 'Registration failed. Please try again.';
+      let errorMessage = 'Registration failed. Please try again.';
+
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      } else if (error && typeof error === 'object') {
+        errorMessage = error.message || JSON.stringify(error);
+      }
+
       setErrors({ general: errorMessage });
     } finally {
       setIsLoading(false);
