@@ -35,6 +35,10 @@ api.interceptors.response.use(
       localStorage.removeItem('authToken');
       window.location.href = '/login';
     }
+    // Provide better error message for network errors
+    if (!error.response) {
+      error.message = error.message || 'Network Error - Unable to reach server';
+    }
     return Promise.reject(error);
   }
 );
