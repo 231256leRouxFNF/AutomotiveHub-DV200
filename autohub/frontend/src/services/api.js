@@ -14,7 +14,6 @@ if (typeof window !== 'undefined') {
 // Create axios instance with default config
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 100000,
   headers: {
     'Content-Type': 'application/json',
   },
