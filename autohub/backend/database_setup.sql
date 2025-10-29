@@ -605,24 +605,3 @@ COMMIT;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
-
-app.get('/api/garage/vehicles/:userId', (req, res) => {
-  const userId = req.params.userId;
-  db.query(
-    `
-    SELECT v.*, vi.url as primary_image
-    FROM vehicles v
-    LEFT JOIN vehicle_images vi ON v.id = vi.vehicle_id AND vi.is_primary = 1
-    WHERE v.user_id = ?
-    ORDER BY v.created_at DESC
-    `,
-    [userId],
-    (err, vehicles) => {
-      if (err) {
-        console.error('Error fetching vehicles:', err);
-        return res.status(500).json({ success: false, message: 'Failed to fetch vehicles' });
-      }
-      res.json(vehicles);
-    }
-  );
-});
