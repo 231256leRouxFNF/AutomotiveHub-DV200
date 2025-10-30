@@ -1,28 +1,30 @@
+const express = require('express');
 const db = require('./config/db');
 const cors = require('cors');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const path = require('path');
-require('dotenv').config({ path: require('path').resolve(__dirname, '.env') });
+// REMOVE OR COMMENT OUT THIS LINE:
+// require('dotenv').config({ path: require('path').resolve(__dirname, '.env') });
 
-// Ensure express is defined
-const express = require('express');
-const Notification = require('./models/Notification'); // Import Notification model
-const { auth } = require('./middleware/auth'); // Import auth middleware
-const crypto = require('crypto'); // For generating tokens
-// const nodemailer = require('nodemailer'); // For sending emails (uncomment and configure for production)
+// For local development only
+if (process.env.NODE_ENV !== 'production') {
+  require('dotenv').config({ path: require('path').resolve(__dirname, '.env') });
+}
+
+const Notification = require('./models/Notification');
+const { auth } = require('./middleware/auth');
+const crypto = require('crypto');
 
 const app = express();
 
-// Add this BEFORE CORS to log environment variables (for debugging)
-console.log('Environment Variables Check:', {
-  DB_HOST: process.env.DB_HOST ? 'Set' : 'Missing',
-  DB_USER: process.env.DB_USER ? 'Set' : 'Missing',
-  DB_NAME: process.env.DB_NAME ? 'Set' : 'Missing',
-  DB_PASSWORD: process.env.DB_PASSWORD ? 'Set (hidden)' : 'Missing',
-  DB_PORT: process.env.DB_PORT ? 'Set' : 'Missing',
-  JWT_SECRET: process.env.JWT_SECRET ? 'Set' : 'Missing'
+// Log env vars to verify they're loaded
+console.log('Environment Check:', {
+  DB_HOST: process.env.DB_HOST || 'MISSING',
+  DB_USER: process.env.DB_USER || 'MISSING',
+  DB_NAME: process.env.DB_NAME || 'MISSING',
+  NODE_ENV: process.env.NODE_ENV || 'MISSING'
 });
 
 // CORS Configuration
