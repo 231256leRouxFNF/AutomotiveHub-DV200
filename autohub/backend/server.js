@@ -15,7 +15,12 @@ const crypto = require('crypto'); // For generating tokens
 
 const app = express();
 app.use(cors({
-  origin: ['https://www.automotivehub.digital', 'https://automotivehub-dv200-1.onrender.com'],
+  origin: [
+    'https://www.automotivehub.digital', 
+    'https://automotivehub-dv200-1.onrender.com',
+    'http://localhost:3000',  // Add this for Create React App
+    'http://localhost:5173'   // Add this for Vite
+  ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -102,15 +107,15 @@ app.get('/test-db', async (req, res) => {
 // ============ AUTOHUB API ENDPOINTS ============
 
 // Get all users (admin only - add auth later)
-app.get('/api/users', (req, res) => {
-  const sql = 'SELECT id, username, email, role, created_at, last_login FROM users ORDER BY created_at DESC';
-  db.query(sql, (err, results) => {
-    if (err) {
-      console.error('Users query error:', err);
-      return res.status(500).json({ message: 'Failed to fetch users' });
-    }
+app.get('/api/users', async (req, res) => {
+  try {
+    const sql = 'SELECT id, username, email, role, created_at, last_login FROM users ORDER BY created_at DESC';
+    const [results] = await db.promise().query(sql);
     res.json(results);
-  });
+  } catch (err) {
+    console.error('Users query error:', err);
+    res.status(500).json({ message: 'Failed to fetch users' });
+  }
 });
 
 // Get user profile by ID
@@ -251,69 +256,59 @@ app.get('/api/community/users', auth, async (req, res) => {
 });
 
 // Get all vehicles
-app.get('/api/vehicles', (req, res) => {
-  const sql = `
-    SELECT v.*, u.username as owner_username, p.display_name as owner_name
-    FROM vehicles v
-    JOIN users u ON v.user_id = u.id
-    LEFT JOIN profiles p ON u.id = p.user_id
-    ORDER BY v.created_at DESC
-  `;
-  db.query(sql, (err, results) => {
-    if (err) {
-      console.error('Vehicles query error:', err);
-      return res.status(500).json({ message: 'Failed to fetch vehicles' });
-    }
+app.get('/api/vehicles', async (req, res) => {
+  try {
+    const sql = `
+      SELECT v.*, u.username as owner_username, p.display_name as owner_name
+      FROM vehicles v
+      JOIN users u ON v.user_id = u.id
+      LEFT JOIN profiles p ON u.id = p.user_id
+      ORDER BY v.created_at DESC
+    `;
+    const [results] = await db.promise().query(sql);
     res.json(results);
-  });
+  } catch (err) {
+    console.error('Vehicles query error:', err);
+    res.status(500).json({ message: 'Failed to fetch vehicles' });
+  }
 });
 
 // Get vehicle by ID with images and modifications
-app.get('/api/vehicles/:id', (req, res) => {
+app.get('/api/vehicles/:id', async (req, res) => {
   const vehicleId = req.params.id;
-  const vehicleSql = `
-    SELECT v.*, u.username as owner_username, p.display_name as owner_name
-    FROM vehicles v
-    JOIN users u ON v.user_id = u.id
-    LEFT JOIN profiles p ON u.id = p.user_id
-    WHERE v.id = ?
-  `;
-  
-  db.query(vehicleSql, [vehicleId], (err, vehicleResults) => {
-    if (err) {
-      console.error('Vehicle query error:', err);
-      return res.status(500).json({ message: 'Failed to fetch vehicle' });
-    }
+  try {
+    const vehicleSql = `
+      SELECT v.*, u.username as owner_username, p.display_name as owner_name
+      FROM vehicles v
+      JOIN users u ON v.user_id = u.id
+      LEFT JOIN profiles p ON u.id = p.user_id
+      WHERE v.id = ?
+    `;
+
+    const [vehicleResults] = await db.promise().query(vehicleSql, [vehicleId]);
     if (vehicleResults.length === 0) {
       return res.status(404).json({ message: 'Vehicle not found' });
     }
-    
+
     const vehicle = vehicleResults[0];
-    
+
     // Get vehicle images
     const imagesSql = 'SELECT * FROM vehicle_images WHERE vehicle_id = ? ORDER BY sort_order, id';
-    db.query(imagesSql, [vehicleId], (imgErr, imageResults) => {
-      if (imgErr) {
-        console.error('Vehicle images query error:', imgErr);
-        return res.status(500).json({ message: 'Failed to fetch vehicle images' });
-      }
-      
-      // Get vehicle modifications
-      const modsSql = 'SELECT * FROM modifications WHERE vehicle_id = ? ORDER BY installed_at DESC';
-      db.query(modsSql, [vehicleId], (modErr, modResults) => {
-        if (modErr) {
-          console.error('Vehicle modifications query error:', modErr);
-          return res.status(500).json({ message: 'Failed to fetch vehicle modifications' });
-        }
-        
-        res.json({
-          ...vehicle,
-          images: imageResults,
-          modifications: modResults
-        });
-      });
+    const [imageResults] = await db.promise().query(imagesSql, [vehicleId]);
+
+    // Get vehicle modifications
+    const modsSql = 'SELECT * FROM modifications WHERE vehicle_id = ? ORDER BY installed_at DESC';
+    const [modResults] = await db.promise().query(modsSql, [vehicleId]);
+
+    res.json({
+      ...vehicle,
+      images: imageResults,
+      modifications: modResults
     });
-  });
+  } catch (err) {
+    console.error('Vehicle query error:', err);
+    res.status(500).json({ message: 'Failed to fetch vehicle' });
+  }
 });
 
 // Get all posts with user info and images
