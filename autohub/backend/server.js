@@ -14,15 +14,31 @@ const crypto = require('crypto'); // For generating tokens
 // const nodemailer = require('nodemailer'); // For sending emails (uncomment and configure for production)
 
 const app = express();
+
+// Replace this entire CORS section:
 app.use(cors({
-  origin: [
-    'https://www.automotivehub.digital', 
-    'https://automotivehub-dv200-1.onrender.com',
-    'http://localhost:3000',
-    'http://localhost:5173',
-    'https://automotive-hub-dv-200-iwd1fozs8-francois-le-rouxs-projects.vercel.app',
-    'https://automotive-hub-dv-200.vercel.app'  // Your production URL (if different)
-  ],
+  origin: function(origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl)
+    if (!origin) return callback(null, true);
+    
+    const allowedOrigins = [
+      'https://www.automotivehub.digital',
+      'https://automotivehub-dv200-1.onrender.com',
+      'http://localhost:3000',
+      'http://localhost:5173'
+    ];
+    
+    // Allow all Vercel deployments
+    if (origin.includes('.vercel.app')) {
+      return callback(null, true);
+    }
+    
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    
+    callback(new Error('Not allowed by CORS'));
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
