@@ -18,8 +18,10 @@ app.use(cors({
   origin: [
     'https://www.automotivehub.digital', 
     'https://automotivehub-dv200-1.onrender.com',
-    'http://localhost:3000',  // Add this for Create React App
-    'http://localhost:5173'   // Add this for Vite
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'https://automotive-hub-dv-200-iwd1fozs8-francois-le-rouxs-projects.vercel.app',
+    'https://automotive-hub-dv-200.vercel.app'  // Your production URL (if different)
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
