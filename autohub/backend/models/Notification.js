@@ -38,13 +38,14 @@ Notification.markAsRead = (notificationId, callback) => {
 
 Notification.getUnreadCount = (userId, callback) => {
   const query = 'SELECT COUNT(*) AS count FROM notifications WHERE userId = ? AND isRead = FALSE';
-  db.query(query, [userId], (err, results) => {
-    if (err) {
+  db.promise().query(query, [userId])
+    .then(([results]) => {
+      callback(null, results[0].count);
+    })
+    .catch(err => {
       console.error('Error fetching unread notification count:', err);
-      return callback(err);
-    }
-    callback(null, results[0].count);
-  });
+      callback(err);
+    });
 };
 
 Notification.delete = (notificationId, callback) => {

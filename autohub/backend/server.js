@@ -71,22 +71,22 @@ app.get('/', (req, res) => {
 });
 
 // Endpoint to upload/update user profile photo
-app.post('/api/users/:id/profile/avatar', uploadProfile.single('avatar'), (req, res) => {
+app.post('/api/users/:id/profile/avatar', uploadProfile.single('avatar'), async (req, res) => {
   const userId = req.params.id;
   const avatarUrl = `/uploads/profiles/${req.file.filename}`;
 
   // Update the profiles table with the new avatar_url
   const sql = 'UPDATE profiles SET avatar_url = ? WHERE user_id = ?';
-  db.query(sql, [avatarUrl, userId], (err, result) => {
-    if (err) {
-      console.error('Error updating profile avatar:', err);
-      return res.status(500).json({ success: false, message: 'Failed to update profile avatar' });
-    }
+  try {
+    const [result] = await db.promise().query(sql, [avatarUrl, userId]);
     if (result.affectedRows === 0) {
       return res.status(404).json({ success: false, message: 'User profile not found' });
     }
     res.status(200).json({ success: true, message: 'Profile avatar updated successfully', avatar_url: avatarUrl });
-  });
+  } catch (err) {
+    console.error('Error updating profile avatar:', err);
+    res.status(500).json({ success: false, message: 'Failed to update profile avatar' });
+  }
 });
 
 // Add a quick DB test route (if you don't already have one)
