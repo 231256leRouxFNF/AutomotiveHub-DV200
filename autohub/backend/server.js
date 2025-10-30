@@ -15,34 +15,38 @@ const crypto = require('crypto'); // For generating tokens
 
 const app = express();
 
-// Replace this entire CORS section:
+// Add this BEFORE CORS to log environment variables (for debugging)
+console.log('Environment Variables Check:', {
+  DB_HOST: process.env.DB_HOST ? 'Set' : 'Missing',
+  DB_USER: process.env.DB_USER ? 'Set' : 'Missing',
+  DB_NAME: process.env.DB_NAME ? 'Set' : 'Missing',
+  DB_PASSWORD: process.env.DB_PASSWORD ? 'Set (hidden)' : 'Missing',
+  DB_PORT: process.env.DB_PORT ? 'Set' : 'Missing',
+  JWT_SECRET: process.env.JWT_SECRET ? 'Set' : 'Missing'
+});
+
+// CORS Configuration
+const allowedOrigins = [
+  'https://www.automotivehub.digital',
+  'https://automotivehub-dv200-1.onrender.com',
+  'http://localhost:3000',
+  'http://localhost:5173'
+];
+
 app.use(cors({
   origin: function(origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl)
     if (!origin) return callback(null, true);
-    
-    const allowedOrigins = [
-      'https://www.automotivehub.digital',
-      'https://automotivehub-dv200-1.onrender.com',
-      'http://localhost:3000',
-      'http://localhost:5173'
-    ];
-    
-    // Allow all Vercel deployments
-    if (origin.includes('.vercel.app')) {
-      return callback(null, true);
-    }
-    
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-    
-    callback(new Error('Not allowed by CORS'));
+    if (origin.includes('.vercel.app')) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1) return callback(null, true);
+    return callback(null, true);
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['Content-Range', 'X-Content-Range']
 }));
+
+app.options('*', cors());
 app.use(express.json());
 
 // Import routes
