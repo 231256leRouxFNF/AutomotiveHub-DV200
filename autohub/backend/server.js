@@ -196,7 +196,7 @@ app.get('/', (req, res) => {
 });
 
 // Endpoint to upload/update user profile photo
-app.post('/api/users/id/profile/avatar', uploadProfile.single('avatar'), async (req, res) => {
+app.post('/api/users/:id/profile/avatar', uploadProfile.single('avatar'), async (req, res) => {
   const userId = req.params.id;
   const avatarUrl = `/uploads/profiles/${req.file.filename}`;
 
