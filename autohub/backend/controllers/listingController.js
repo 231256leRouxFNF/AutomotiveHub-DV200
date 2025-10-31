@@ -182,6 +182,42 @@ const listingController = {
       res.status(200).json({ success: true, message: 'Listing deleted successfully' });
     });
   },
+
+  // Get related listings
+  getRelatedListings: (req, res) => {
+    const { listingId } = req.params;
+    
+    // First get the current listing to find similar ones
+    Listing.findById(listingId, (err, listing) => {
+      if (err) {
+        console.error('Error fetching listing:', err);
+        return res.status(500).json({ success: false, message: 'Failed to fetch listing' });
+      }
+      if (!listing) {
+        return res.status(404).json({ success: false, message: 'Listing not found' });
+      }
+
+      // Find related listings by same make or category
+      const sql = `
+        SELECT l.*, u.username as owner_username 
+        FROM listings l 
+        JOIN users u ON l.userId = u.id 
+        WHERE l.id != ? 
+        AND (l.make = ? OR l.category = ?) 
+        ORDER BY l.created_at DESC 
+        LIMIT 6
+      `;
+      
+      Listing.query(sql, [listingId, listing.make, listing.category])
+        .then(([results]) => {
+          res.status(200).json(results);
+        })
+        .catch(error => {
+          console.error('Error fetching related listings:', error);
+          res.status(500).json({ success: false, message: 'Failed to fetch related listings' });
+        });
+    });
+  },
 };
 
 module.exports = listingController;
