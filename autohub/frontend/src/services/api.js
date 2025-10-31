@@ -12,8 +12,8 @@ const API_BASE_URL = (() => {
 })();
 
 const api = axios.create({
-  baseURL: getBaseURL(),
-  timeout: 30000, // 30 seconds
+  baseURL: https://automotivehub-dv200-1.onrender.com/,
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   }
