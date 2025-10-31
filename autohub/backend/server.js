@@ -65,57 +65,70 @@ app.use(cors({
 app.options('*', cors());
 app.use(express.json());
 
-// Import routes
-const listingRoutes = require('./routes/listingRoutes');
-const eventRoutes = require('./routes/eventRoutes');
-const notificationRoutes = require('./routes/notificationRoutes');
-const followRoutes = require('./routes/followRoutes'); // Import follow routes
-
-// Use routes with error handling - COMMENT OUT THE DUPLICATE IMPORTS ABOVE
+// Import routes WITH ERROR HANDLING - Comment out the old imports
 // const listingRoutes = require('./routes/listingRoutes');
 // const eventRoutes = require('./routes/eventRoutes');
 // const notificationRoutes = require('./routes/notificationRoutes');
 // const followRoutes = require('./routes/followRoutes');
 
-// SAFER: Load routes one by one with try-catch
+// Load routes one by one to identify which one is broken
+let listingRoutes, eventRoutes, notificationRoutes, followRoutes;
+
 try {
   console.log('Loading listingRoutes...');
-  const listingRouter = require('./routes/listingRoutes');
-  app.use('/api/listings', listingRouter);
-  console.log('✓ listingRoutes loaded');
+  listingRoutes = require('./routes/listingRoutes');
+  console.log('✓ listingRoutes loaded successfully');
 } catch (e) {
-  console.error('❌ listingRoutes ERROR:', e.message);
+  console.error('❌ FAILED TO LOAD listingRoutes:', e.message);
   console.error('Stack:', e.stack);
 }
 
 try {
   console.log('Loading eventRoutes...');
-  const eventRouter = require('./routes/eventRoutes');
-  app.use('/api/events', eventRouter);
-  console.log('✓ eventRoutes loaded');
+  eventRoutes = require('./routes/eventRoutes');
+  console.log('✓ eventRoutes loaded successfully');
 } catch (e) {
-  console.error('❌ eventRoutes ERROR:', e.message);
+  console.error('❌ FAILED TO LOAD eventRoutes:', e.message);
   console.error('Stack:', e.stack);
 }
 
 try {
   console.log('Loading notificationRoutes...');
-  const notificationRouter = require('./routes/notificationRoutes');
-  app.use('/api/notifications', notificationRouter);
-  console.log('✓ notificationRoutes loaded');
+  notificationRoutes = require('./routes/notificationRoutes');
+  console.log('✓ notificationRoutes loaded successfully');
 } catch (e) {
-  console.error('❌ notificationRoutes ERROR:', e.message);
+  console.error('❌ FAILED TO LOAD notificationRoutes:', e.message);
   console.error('Stack:', e.stack);
 }
 
 try {
   console.log('Loading followRoutes...');
-  const followRouter = require('./routes/followRoutes');
-  app.use('/api/follows', followRouter);
-  console.log('✓ followRoutes loaded');
+  followRoutes = require('./routes/followRoutes');
+  console.log('✓ followRoutes loaded successfully');
 } catch (e) {
-  console.error('❌ followRoutes ERROR:', e.message);
+  console.error('❌ FAILED TO LOAD followRoutes:', e.message);
   console.error('Stack:', e.stack);
+}
+
+// Mount routes only if they loaded successfully
+if (listingRoutes) {
+  app.use('/api/listings', listingRoutes);
+  console.log('✓ listingRoutes mounted');
+}
+
+if (eventRoutes) {
+  app.use('/api/events', eventRoutes);
+  console.log('✓ eventRoutes mounted');
+}
+
+if (notificationRoutes) {
+  app.use('/api/notifications', notificationRoutes);
+  console.log('✓ notificationRoutes mounted');
+}
+
+if (followRoutes) {
+  app.use('/api/follows', followRoutes);
+  console.log('✓ followRoutes mounted');
 }
 
 // REMOVE OR COMMENT OUT THE OLD ROUTES LOADING:
