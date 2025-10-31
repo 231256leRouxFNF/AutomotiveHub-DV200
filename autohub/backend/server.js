@@ -33,7 +33,7 @@ app.get('/test-db', (req, res) => {
   });
 });
 
-// ============ REGISTER ROUTE ONLY ============
+// ============ REGISTER ROUTE ============
 app.post('/api/register', async (req, res) => {
   try {
     const { username, email, password, display_name } = req.body;
@@ -94,6 +94,78 @@ app.post('/api/register', async (req, res) => {
     res.status(500).json({ 
       success: false, 
       message: 'Failed to register user',
+      error: error.message 
+    });
+  }
+});
+
+// ============ LOGIN ROUTE ============
+app.post('/api/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    // Validate input
+    if (!email || !password) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Email and password are required' 
+      });
+    }
+
+    // Find user
+    const sql = 'SELECT * FROM users WHERE email = ?';
+    const [users] = await db.promise().query(sql, [email]);
+
+    if (users.length === 0) {
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Invalid email or password' 
+      });
+    }
+
+    const user = users[0];
+
+    // Compare password
+    const isValidPassword = await bcrypt.compare(password, user.password);
+
+    if (!isValidPassword) {
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Invalid email or password' 
+      });
+    }
+
+    // Get user profile
+    const profileSql = 'SELECT * FROM profiles WHERE user_id = ?';
+    const [profiles] = await db.promise().query(profileSql, [user.id]);
+    const profile = profiles[0] || {};
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { id: user.id, username: user.username, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    res.json({
+      success: true,
+      message: 'Login successful',
+      token,
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        display_name: profile.display_name || user.username,
+        avatar_url: profile.avatar_url,
+        bio: profile.bio
+      }
+    });
+
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Login failed',
       error: error.message 
     });
   }
