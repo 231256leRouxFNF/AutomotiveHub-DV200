@@ -39,29 +39,22 @@ const allowedOrigins = [
 ];
 
 app.use(cors({
-  origin: function(origin, callback) {
-    // Allow requests with no origin (mobile apps, Postman, curl, etc.)
+  origin(origin, callback) {
     if (!origin) return callback(null, true);
-    
-    // In development, allow all origins
-    if (process.env.NODE_ENV !== 'production') {
+
+    const staticWhitelist = [
+      'https://www.automotivehub.digital',
+      'https://automotivehub-dv200-1.onrender.com'
+    ];
+
+    const localhost = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
+    const render = /^https?:\/\/.*\.onrender\.com$/;
+
+    if (staticWhitelist.includes(origin) || localhost.test(origin) || render.test(origin)) {
       return callback(null, true);
     }
-    
-    // Check if origin matches any allowed origins
-    const isAllowed = allowedOrigins.some(allowed => {
-      if (allowed instanceof RegExp) {
-        return allowed.test(origin);
-      }
-      return allowed === origin;
-    });
-    
-    if (isAllowed) {
-      callback(null, true);
-    } else {
-      console.log('❌ CORS blocked origin:', origin);
-      callback(new Error('Not allowed by CORS'));
-    }
+
+    return callback(new Error(`Not allowed by CORS: ${origin}`));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],

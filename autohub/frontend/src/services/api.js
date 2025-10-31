@@ -1,14 +1,15 @@
 import axios from 'axios';
 
-// Configure API base URL based on environment
-const getBaseURL = () => {
-  // In production (Vercel), use your Render backend URL
-  if (process.env.NODE_ENV === 'production') {
-    return process.env.REACT_APP_API_URL || 'https://automotivehub-dv200-1.onrender.com';
+// Base API configuration
+const API_BASE_URL = (() => {
+  if (process.env.REACT_APP_API_URL) {
+    return process.env.REACT_APP_API_URL;
   }
-  // In development, proxy is configured in package.json
-  return '';
-};
+  if (typeof window !== 'undefined' && /^(localhost|127\.0\.0\.1)$/.test(window.location.hostname)) {
+    return 'http://localhost:5000';
+  }
+  return 'https://www.automotivehub.digital';
+})();
 
 const api = axios.create({
   baseURL: getBaseURL(),
