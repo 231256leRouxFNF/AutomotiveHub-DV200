@@ -493,8 +493,8 @@ app.get('/api/posts/:id/comments', (req, res) => {
 });
 
 // Get user followers/following
-app.get('/api/users/:id/follows', (req, res) => {
-  const userId = req.params.id;
+app.get('/api/users/:userId/follows', (req, res) => {
+  const userId = req.params.userId;
   const type = req.query.type; // 'followers' or 'following'
   
   let sql;
