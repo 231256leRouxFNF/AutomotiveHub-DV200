@@ -175,3 +175,21 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`✓ Server running on port ${PORT}`);
 });
+
+// Check your LoginSection.js onSubmit function
+// It should look like this:
+
+const onSubmit = async (e) => {
+  e.preventDefault();
+  
+  try {
+    const response = await api.login({
+      email: email,      // Make sure this matches your input field
+      password: password // Make sure this matches your input field
+    });
+    
+    // Handle success
+  } catch (error) {
+    console.error('Login error:', error);
+  }
+};

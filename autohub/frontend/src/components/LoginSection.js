@@ -30,6 +30,8 @@ const LoginSection = () => {
       return;
     }
 
+    console.log('Login data being sent:', { identifier: formData.identifier, password: formData.password }); // Debugging line
+
     try {
       const result = await authService.login(formData.identifier, formData.password);
       
