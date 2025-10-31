@@ -1,37 +1,37 @@
 import axios from 'axios';
 
-// Base API configuration
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://www.automotivehub.digital';
+// Configure API base URL based on environment
+const getBaseURL = () => {
+  // In production (Vercel), use your Render backend URL
+  if (process.env.NODE_ENV === 'production') {
+    return process.env.REACT_APP_API_URL || 'https://automotivehub-dv200-1.onrender.com';
+  }
+  // In development, use the proxy configured in package.json
+  return '';
+};
 
-// Log API configuration for debugging
-if (typeof window !== 'undefined') {
-  console.log('API Configuration:', {
-    REACT_APP_API_URL: process.env.REACT_APP_API_URL,
-    API_BASE_URL: API_BASE_URL
-  });
-}
-
-// Create axios instance with default config
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: getBaseURL(),
+  timeout: 30000, // 30 seconds
   headers: {
     'Content-Type': 'application/json',
-  },
+  }
 });
 
-// Add auth token to requests if available
+// Log all requests for debugging
 api.interceptors.request.use(
   (config) => {
+    console.log('API Request:', {
+      method: config.method?.toUpperCase(),
+      url: config.url,
+      baseURL: config.baseURL,
+      fullURL: `${config.baseURL}${config.url}`
+    });
+    
     const token = localStorage.getItem('authToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    console.log('API Request:', {
-      method: config.method,
-      url: config.url,
-      baseURL: config.baseURL,
-      fullURL: config.baseURL + config.url
-    });
     return config;
   },
   (error) => {
@@ -40,7 +40,7 @@ api.interceptors.request.use(
   }
 );
 
-// Handle response errors
+// Handle response errors with better logging
 api.interceptors.response.use(
   (response) => {
     console.log('API Response:', {
@@ -59,18 +59,21 @@ api.interceptors.response.use(
       config: {
         method: error.config?.method,
         url: error.config?.url,
-        baseURL: error.config?.baseURL
+        baseURL: error.config?.baseURL,
+        fullURL: error.config ? `${error.config.baseURL}${error.config.url}` : 'unknown'
       }
     });
+    
     if (error.response?.status === 401) {
-      // Token expired or invalid
       localStorage.removeItem('authToken');
       window.location.href = '/login';
     }
+    
     // Provide better error message for network errors
     if (!error.response) {
-      error.message = error.message || 'Network Error - Unable to reach server';
+      error.message = 'Network Error - Unable to reach server. Please check your internet connection.';
     }
+    
     return Promise.reject(error);
   }
 );

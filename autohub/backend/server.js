@@ -1,17 +1,15 @@
 const express = require('express');
-const db = require('./config/db');
 const cors = require('cors');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const path = require('path');
-// REMOVE OR COMMENT OUT THIS LINE:
-// require('dotenv').config({ path: require('path').resolve(__dirname, '.env') });
 
-// For local development only
-if (process.env.NODE_ENV !== 'production') {
-  require('dotenv').config({ path: require('path').resolve(__dirname, '.env') });
-}
+// ALWAYS load environment variables first
+require('dotenv').config({ path: path.resolve(__dirname, '.env') });
+
+// Now import db AFTER environment is loaded
+const db = require('./config/db');
 
 const Notification = require('./models/Notification');
 const { auth } = require('./middleware/auth');
@@ -21,26 +19,43 @@ const app = express();
 
 // Log env vars to verify they're loaded
 console.log('Environment Check:', {
-  DB_HOST: process.env.DB_HOST || 'MISSING',
-  DB_USER: process.env.DB_USER || 'MISSING',
-  DB_NAME: process.env.DB_NAME || 'MISSING',
-  NODE_ENV: process.env.NODE_ENV || 'MISSING'
+  DB_HOST: process.env.DB_HOST ? '✓ Set' : '✗ Missing',
+  DB_USER: process.env.DB_USER ? '✓ Set' : '✗ Missing',
+  DB_NAME: process.env.DB_NAME ? '✓ Set' : '✗ Missing',
+  DB_PASSWORD: process.env.DB_PASSWORD ? '✓ Set' : '✗ Missing',
+  JWT_SECRET: process.env.JWT_SECRET ? '✓ Set' : '✗ Missing',
+  NODE_ENV: process.env.NODE_ENV || 'development'
 });
 
-// CORS Configuration
+// CORS Configuration - UPDATE THIS WITH YOUR ACTUAL VERCEL URL
 const allowedOrigins = [
   'https://www.automotivehub.digital',
   'https://automotivehub-dv200-1.onrender.com',
   'http://localhost:3000',
-  'http://localhost:5173'
+  'http://localhost:5173',
+  // Add your actual Vercel deployment URLs here
+  /\.vercel\.app$/  // This regex allows all vercel.app subdomains
 ];
 
 app.use(cors({
   origin: function(origin, callback) {
+    // Allow requests with no origin (mobile apps, Postman, etc.)
     if (!origin) return callback(null, true);
-    if (origin.includes('.vercel.app')) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) !== -1) return callback(null, true);
-    return callback(null, true);
+    
+    // Check if origin matches any allowed origins
+    const isAllowed = allowedOrigins.some(allowed => {
+      if (allowed instanceof RegExp) {
+        return allowed.test(origin);
+      }
+      return allowed === origin;
+    });
+    
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      console.log('❌ CORS blocked origin:', origin);
+      callback(null, true); // For debugging, allow all. Change to callback(new Error('Not allowed by CORS')) in production
+    }
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
@@ -488,10 +503,17 @@ app.get('/api/users/:id/follows', (req, res) => {
 
 // User registration endpoint
 app.post('/api/register', async (req, res) => {
+  console.log('📝 Registration attempt received:', { 
+    body: req.body ? 'present' : 'missing',
+    username: req.body?.username ? 'present' : 'missing',
+    email: req.body?.email ? 'present' : 'missing'
+  });
+
   const { username, email, password } = req.body || {};
   
   // Validate input
   if (!username || !email || !password) {
+    console.log('❌ Validation failed: Missing fields');
     return res.status(400).json({ 
       success: false, 
       message: 'Username, email, and password are required' 
@@ -501,6 +523,7 @@ app.post('/api/register', async (req, res) => {
   // Validate email format
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email)) {
+    console.log('❌ Validation failed: Invalid email format');
     return res.status(400).json({ 
       success: false, 
       message: 'Please provide a valid email address' 
@@ -509,6 +532,7 @@ app.post('/api/register', async (req, res) => {
   
   // Validate password length
   if (password.length < 6) {
+    console.log('❌ Validation failed: Password too short');
     return res.status(400).json({ 
       success: false, 
       message: 'Password must be at least 6 characters long' 
@@ -518,14 +542,10 @@ app.post('/api/register', async (req, res) => {
   try {
     // Check if username or email already exists
     const checkSql = 'SELECT id FROM users WHERE username = ? OR email = ? LIMIT 1';
-    const existingUser = await new Promise((resolve, reject) => {
-      db.query(checkSql, [username, email.toLowerCase()], (err, results) => {
-        if (err) reject(err);
-        else resolve(results);
-      });
-    });
+    const [existingUser] = await db.query(checkSql, [username, email.toLowerCase()]);
     
     if (existingUser.length > 0) {
+      console.log('❌ User already exists');
       return res.status(409).json({ 
         success: false, 
         message: 'Username or email already exists' 
@@ -535,15 +555,12 @@ app.post('/api/register', async (req, res) => {
     // Hash password
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
+    console.log('✓ Password hashed');
     
     // Insert new user
     const insertSql = 'INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)';
-    const result = await new Promise((resolve, reject) => {
-      db.query(insertSql, [username, email.toLowerCase(), hashedPassword], (err, result) => {
-        if (err) reject(err);
-        else resolve(result);
-      });
-    });
+    const [result] = await db.query(insertSql, [username, email.toLowerCase(), hashedPassword]);
+    console.log('✓ User inserted, ID:', result.insertId);
     
     // Create JWT token for auto-login after registration
     const payload = { 
@@ -553,15 +570,15 @@ app.post('/api/register', async (req, res) => {
     };
     
     let token = null;
-    try {
-      const secret = process.env.JWT_SECRET;
-      if (secret) {
-        token = jwt.sign(payload, secret, { expiresIn: '7d' });
-      }
-    } catch (e) {
-      console.warn('JWT signing skipped:', e.message);
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      console.error('❌ JWT_SECRET not configured!');
+    } else {
+      token = jwt.sign(payload, secret, { expiresIn: '7d' });
+      console.log('✓ JWT token generated');
     }
     
+    console.log('✅ Registration successful for:', username);
     return res.status(201).json({
       success: true,
       message: 'Account created successfully!',
@@ -574,10 +591,11 @@ app.post('/api/register', async (req, res) => {
     });
     
   } catch (error) {
-    console.error('Registration error:', error);
+    console.error('❌ Registration error:', error);
     return res.status(500).json({ 
       success: false, 
-      message: 'Internal server error. Please try again later.' 
+      message: 'Internal server error. Please try again later.',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
