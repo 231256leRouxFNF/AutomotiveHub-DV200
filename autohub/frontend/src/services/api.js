@@ -1,7 +1,15 @@
 import axios from 'axios';
 
 // Base API configuration
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://www.automotivehub.digital';
+const API_BASE_URL = (() => {
+  if (process.env.REACT_APP_API_URL) {
+    return process.env.REACT_APP_API_URL;
+  }
+  if (typeof window !== 'undefined' && /^(localhost|127\.0\.0\.1)$/.test(window.location.hostname)) {
+    return 'http://localhost:5000';
+  }
+  return 'https://www.automotivehub.digital';
+})();
 
 // Log API configuration for debugging
 if (typeof window !== 'undefined') {

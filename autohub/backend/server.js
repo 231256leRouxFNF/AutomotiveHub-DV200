@@ -17,27 +17,22 @@ const app = express();
 
 // Replace this entire CORS section:
 app.use(cors({
-  origin: function(origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl)
+  origin(origin, callback) {
     if (!origin) return callback(null, true);
-    
-    const allowedOrigins = [
+
+    const staticWhitelist = [
       'https://www.automotivehub.digital',
-      'https://automotivehub-dv200-1.onrender.com',
-      'http://localhost:3000',
-      'http://localhost:5173'
+      'https://automotivehub-dv200-1.onrender.com'
     ];
-    
-    // Allow all Vercel deployments
-    if (origin.includes('.vercel.app')) {
+
+    const localhost = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
+    const render = /^https?:\/\/.*\.onrender\.com$/;
+
+    if (staticWhitelist.includes(origin) || localhost.test(origin) || render.test(origin)) {
       return callback(null, true);
     }
-    
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-    
-    callback(new Error('Not allowed by CORS'));
+
+    return callback(new Error(`Not allowed by CORS: ${origin}`));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
