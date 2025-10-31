@@ -1,7 +1,5 @@
 require('dotenv').config({ path: require('path').resolve(__dirname, '../.env') });
 const mysql = require('mysql2');
-const express = require('express');
-const app = express();
 
 const host = process.env.DB_HOST || 'localhost';
 const port = Number(process.env.DB_PORT || 3306);
@@ -58,27 +56,6 @@ pool.getConnection((err, connection) => {
   } else {
     console.log('✅ Database connected successfully');
     connection.release();
-  }
-});
-
-// Health check endpoint with detailed diagnostics
-app.get('/api/health', async (req, res) => {
-  const health = {
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development',
-    database: 'unknown'
-  };
-
-  try {
-    await pool.query('SELECT 1');
-    health.database = 'connected';
-    res.json(health);
-  } catch (error) {
-    health.status = 'error';
-    health.database = 'disconnected';
-    health.error = error.message;
-    res.status(500).json(health);
   }
 });
 

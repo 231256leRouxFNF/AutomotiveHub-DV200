@@ -69,14 +69,41 @@ app.use(express.json());
 // Import routes
 const listingRoutes = require('./routes/listingRoutes');
 const eventRoutes = require('./routes/eventRoutes');
-const notificationRoutes = require('./routes/notificationRoutes'); // Import notification routes
+const notificationRoutes = require('./routes/notificationRoutes');
 const followRoutes = require('./routes/followRoutes'); // Import follow routes
 
-// Use routes
-app.use('/api/listings', listingRoutes);
-app.use('/api/events', eventRoutes);
-app.use('/api/notifications', notificationRoutes); // Use notification routes
-app.use('/api/follows', followRoutes); // Use follow routes
+// Use routes with error handling
+try {
+  console.log('Loading listingRoutes...');
+  app.use('/api/listings', listingRoutes);
+  console.log('✓ listingRoutes loaded');
+} catch (e) {
+  console.error('❌ Error in listingRoutes:', e.message);
+}
+
+try {
+  console.log('Loading eventRoutes...');
+  app.use('/api/events', eventRoutes);
+  console.log('✓ eventRoutes loaded');
+} catch (e) {
+  console.error('❌ Error in eventRoutes:', e.message);
+}
+
+try {
+  console.log('Loading notificationRoutes...');
+  app.use('/api/notifications', notificationRoutes);
+  console.log('✓ notificationRoutes loaded');
+} catch (e) {
+  console.error('❌ Error in notificationRoutes:', e.message);
+}
+
+try {
+  console.log('Loading followRoutes...');
+  app.use('/api/follows', followRoutes);
+  console.log('✓ followRoutes loaded');
+} catch (e) {
+  console.error('❌ Error in followRoutes:', e.message);
+}
 
 // Serve uploaded images statically
 app.use('/uploads', express.static('uploads'));
