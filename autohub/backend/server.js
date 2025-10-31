@@ -1388,7 +1388,7 @@ app.post('/api/garage/vehicles', upload.array('images'), async (req, res) => {
 });
 
 // Update vehicle
-app.put('/api/garage/vehicles/:vehicleId', async (req, res) => {
+app.put('/api/garage/vehicles/:vehicleId', (req, res) => {
   const vehicleId = req.params.vehicleId;
   const { make, model, year, color, description, imageUrl } = req.body || {};
 
