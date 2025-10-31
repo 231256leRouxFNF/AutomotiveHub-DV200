@@ -3,14 +3,14 @@
 const express = require('express');
 const router = express.Router();
 const listingController = require('../controllers/listingController');
-const { auth } = require('../middleware/auth'); // Assuming you have an auth middleware
+const { auth } = require('../middleware/auth');
 const multer = require('multer');
 const path = require('path');
 
 // Multer configuration for listing images
 const listingStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'uploads/'); // Remove the ./ prefix
+    cb(null, 'uploads/');
   },
   filename: (req, file, cb) => {
     cb(null, Date.now() + '-' + file.originalname);
@@ -25,19 +25,19 @@ router.get('/', listingController.getAllListings);
 // Get listings by user ID
 router.get('/user/:userId', listingController.getListingsByUserId);
 
-// Get a single listing by ID
+// ⭐ SPECIFIC ROUTES FIRST - /related must come BEFORE /:listingId
+router.get('/:listingId/related', listingController.getRelatedListings);
+
+// GENERIC ROUTES LAST - /:listingId comes after specific routes
 router.get('/:listingId', listingController.getListingById);
 
-// Create a new listing (requires authentication and image upload)
+// Create a new listing
 router.post('/', auth, uploadListings.array('images', 10), listingController.createListing);
 
-// Update a listing (requires authentication and authorization, and image upload)
+// Update a listing
 router.put('/:listingId', auth, listingController.updateListing);
 
-// Delete a listing (requires authentication and authorization)
+// Delete a listing
 router.delete('/:listingId', auth, listingController.deleteListing);
-
-// Get related listings
-router.get('/:listingId/related', listingController.getRelatedListings);
 
 module.exports = router;
