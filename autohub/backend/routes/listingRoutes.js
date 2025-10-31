@@ -10,7 +10,7 @@ const path = require('path');
 // Multer configuration for listing images
 const listingStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, './uploads/'); // Directory where listing images will be stored
+    cb(null, 'uploads/'); // Remove the ./ prefix
   },
   filename: (req, file, cb) => {
     cb(null, Date.now() + '-' + file.originalname);
