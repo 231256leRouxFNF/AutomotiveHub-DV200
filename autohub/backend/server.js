@@ -1388,7 +1388,7 @@ app.post('/api/garage/vehicles', upload.array('images'), async (req, res) => {
 });
 
 // Update vehicle
-app.put('/api/garage/vehicles/:vehicleId', (req, res) => {
+app.put('/api/garage/vehicles/:vehicleId', async (req, res) => {
   const vehicleId = req.params.vehicleId;
   const { make, model, year, color, description, imageUrl } = req.body || {};
 
@@ -1403,57 +1403,57 @@ app.put('/api/garage/vehicles/:vehicleId', (req, res) => {
     yearNum = parsed;
   }
 
-  try {
-    // Update core fields (no image_url or updated_at column)
-    const updateSql = 'UPDATE vehicles SET make = ?, model = ?, year = ?, color = ?, description = ? WHERE id = ?';
-    await new Promise((resolve, reject) => {
-      db.query(updateSql, [make, model, yearNum, color, description, vehicleId], (err, result) => {
+try {
+  // Update core fields (no image_url or updated_at column)
+  const updateSql = 'UPDATE vehicles SET make = ?, model = ?, year = ?, color = ?, description = ? WHERE id = ?';
+  await new Promise((resolve, reject) => {
+    db.query(updateSql, [make, model, yearNum, color, description, vehicleId], (err, result) => {
+      if (err) return reject(err);
+      resolve(result);
+    });
+  });
+
+  // Upsert primary image if imageUrl provided
+  if (imageUrl) {
+    const selectImgSql = 'SELECT id FROM vehicle_images WHERE vehicle_id = ? AND is_primary = 1 LIMIT 1';
+    const existing = await new Promise((resolve, reject) => {
+      db.query(selectImgSql, [vehicleId], (err, rows) => {
         if (err) return reject(err);
-        resolve(result);
+        resolve(rows && rows[0]);
       });
     });
 
-    // Upsert primary image if imageUrl provided
-    if (imageUrl) {
-      const selectImgSql = 'SELECT id FROM vehicle_images WHERE vehicle_id = ? AND is_primary = 1 LIMIT 1';
-      const existing = await new Promise((resolve, reject) => {
-        db.query(selectImgSql, [vehicleId], (err, rows) => {
+    if (existing) {
+      const updateImgSql = 'UPDATE vehicle_images SET url = ? WHERE id = ?';
+      await new Promise((resolve, reject) => {
+        db.query(updateImgSql, [imageUrl, existing.id], (err, result) => {
           if (err) return reject(err);
-          resolve(rows && rows[0]);
+          resolve(result);
         });
       });
-
-      if (existing) {
-        const updateImgSql = 'UPDATE vehicle_images SET url = ? WHERE id = ?';
-        await new Promise((resolve, reject) => {
-          db.query(updateImgSql, [imageUrl, existing.id], (err, result) => {
-            if (err) return reject(err);
-            resolve(result);
-          });
+    } else {
+      const insertImgSql = 'INSERT INTO vehicle_images (vehicle_id, url, is_primary) VALUES (?, ?, 1)';
+      await new Promise((resolve, reject) => {
+        db.query(insertImgSql, [vehicleId, imageUrl], (err, result) => {
+          if (err) return reject(err);
+          resolve(result);
         });
-      } else {
-        const insertImgSql = 'INSERT INTO vehicle_images (vehicle_id, url, is_primary) VALUES (?, ?, 1)';
-        await new Promise((resolve, reject) => {
-          db.query(insertImgSql, [vehicleId, imageUrl], (err, result) => {
-            if (err) return reject(err);
-            resolve(result);
-          });
-        });
-      }
+      });
     }
-
-    res.json({
-      success: true,
-      message: 'Vehicle updated successfully!'
-    });
-
-  } catch (error) {
-    console.error('Update vehicle error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Failed to update vehicle' 
-    });
   }
+
+  res.json({
+    success: true,
+    message: 'Vehicle updated successfully!'
+  });
+
+} catch (error) {
+  console.error('Update vehicle error:', error);
+  res.status(500).json({ 
+    success: false, 
+    message: 'Failed to update vehicle' 
+  });
+}
 });
 
 // Delete vehicle
@@ -1461,7 +1461,6 @@ app.delete('/api/garage/vehicles/:vehicleId', async (req, res) => {
   const vehicleId = req.params.vehicleId;
   
   try {
-    // Hard delete vehicle; vehicle_images will cascade delete
     const deleteSql = 'DELETE FROM vehicles WHERE id = ? LIMIT 1';
     await new Promise((resolve, reject) => {
       db.query(deleteSql, [vehicleId], (err, result) => {
