@@ -26,15 +26,18 @@ router.get('/', listingController.getAllListings);
 router.get('/user/:userId', listingController.getListingsByUserId);
 
 // Get a single listing by ID
-router.get('/:id', listingController.getListingById);
+router.get('/:listingId', listingController.getListingById);
 
 // Create a new listing (requires authentication and image upload)
 router.post('/', auth, uploadListings.array('images', 10), listingController.createListing);
 
 // Update a listing (requires authentication and authorization, and image upload)
-router.put('/:id', auth, uploadListings.array('images', 10), listingController.updateListing);
+router.put('/:listingId', auth, listingController.updateListing);
 
 // Delete a listing (requires authentication and authorization)
-router.delete('/:id', auth, listingController.deleteListing);
+router.delete('/:listingId', auth, listingController.deleteListing);
+
+// Get related listings
+router.get('/:listingId/related', listingController.getRelatedListings);
 
 module.exports = router;
