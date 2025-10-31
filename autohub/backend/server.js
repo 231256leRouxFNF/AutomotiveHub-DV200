@@ -575,7 +575,7 @@ app.post('/api/register', async (req, res) => {
   try {
     // Check if username or email already exists
     const checkSql = 'SELECT id FROM users WHERE username = ? OR email = ? LIMIT 1';
-    const [existingUser] = await db.query(checkSql, [username, email.toLowerCase()]);
+    const [existingUser] = await db.promise().query(checkSql, [username, email.toLowerCase()]);
     
     if (existingUser.length > 0) {
       console.log('❌ User already exists');
@@ -592,7 +592,7 @@ app.post('/api/register', async (req, res) => {
     
     // Insert new user
     const insertSql = 'INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)';
-    const [result] = await db.query(insertSql, [username, email.toLowerCase(), hashedPassword]);
+    const [result] = await db.promise().query(insertSql, [username, email.toLowerCase(), hashedPassword]);
     console.log('✓ User inserted, ID:', result.insertId);
     
     // Create JWT token for auto-login after registration
