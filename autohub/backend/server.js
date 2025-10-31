@@ -33,14 +33,20 @@ const allowedOrigins = [
   'https://automotivehub-dv200-1.onrender.com',
   'http://localhost:3000',
   'http://localhost:5173',
-  // Add your actual Vercel deployment URLs here
-  /\.vercel\.app$/  // This regex allows all vercel.app subdomains
+  'http://localhost:5000',
+  /\.vercel\.app$/,
+  /localhost:\d+$/  // Allow any localhost port in development
 ];
 
 app.use(cors({
   origin: function(origin, callback) {
-    // Allow requests with no origin (mobile apps, Postman, etc.)
+    // Allow requests with no origin (mobile apps, Postman, curl, etc.)
     if (!origin) return callback(null, true);
+    
+    // In development, allow all origins
+    if (process.env.NODE_ENV !== 'production') {
+      return callback(null, true);
+    }
     
     // Check if origin matches any allowed origins
     const isAllowed = allowedOrigins.some(allowed => {
@@ -54,7 +60,7 @@ app.use(cors({
       callback(null, true);
     } else {
       console.log('❌ CORS blocked origin:', origin);
-      callback(null, true); // For debugging, allow all. Change to callback(new Error('Not allowed by CORS')) in production
+      callback(new Error('Not allowed by CORS'));
     }
   },
   credentials: true,

@@ -6,7 +6,7 @@ const getBaseURL = () => {
   if (process.env.NODE_ENV === 'production') {
     return process.env.REACT_APP_API_URL || 'https://automotivehub-dv200-1.onrender.com';
   }
-  // In development, use the proxy configured in package.json
+  // In development, proxy is configured in package.json
   return '';
 };
 
@@ -18,14 +18,14 @@ const api = axios.create({
   }
 });
 
-// Log all requests for debugging
+// Add request interceptor to handle auth token
 api.interceptors.request.use(
   (config) => {
     console.log('API Request:', {
       method: config.method?.toUpperCase(),
       url: config.url,
       baseURL: config.baseURL,
-      fullURL: `${config.baseURL}${config.url}`
+      fullURL: `${config.baseURL || ''}${config.url}`
     });
     
     const token = localStorage.getItem('authToken');
@@ -35,43 +35,30 @@ api.interceptors.request.use(
     return config;
   },
   (error) => {
-    console.error('Request interceptor error:', error);
+    console.error('API Request Error:', error);
     return Promise.reject(error);
   }
 );
 
-// Handle response errors with better logging
+// Add response interceptor to handle errors
 api.interceptors.response.use(
   (response) => {
-    console.log('API Response:', {
-      status: response.status,
-      url: response.config.url
-    });
+    console.log('API Response:', response.status, response.config.url);
     return response;
   },
   (error) => {
-    console.error('API Error:', {
-      message: error.message,
-      code: error.code,
-      hasResponse: !!error.response,
+    console.error('API Response Error:', {
       status: error.response?.status,
-      data: error.response?.data,
-      config: {
-        method: error.config?.method,
-        url: error.config?.url,
-        baseURL: error.config?.baseURL,
-        fullURL: error.config ? `${error.config.baseURL}${error.config.url}` : 'unknown'
-      }
+      url: error.config?.url,
+      message: error.message,
+      data: error.response?.data
     });
     
+    // Handle 401 Unauthorized
     if (error.response?.status === 401) {
       localStorage.removeItem('authToken');
+      localStorage.removeItem('currentUser');
       window.location.href = '/login';
-    }
-    
-    // Provide better error message for network errors
-    if (!error.response) {
-      error.message = 'Network Error - Unable to reach server. Please check your internet connection.';
     }
     
     return Promise.reject(error);
@@ -83,67 +70,84 @@ export const authService = {
   login: async (identifier, password) => {
     try {
       const response = await api.post('/api/login', { identifier, password });
-      if (response.data.token) {
+      
+      if (response.data.success && response.data.token) {
         localStorage.setItem('authToken', response.data.token);
+        localStorage.setItem('currentUser', JSON.stringify(response.data.user));
+        
+        // Set default authorization header
+        api.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
+        
+        return response.data;
       }
-      return response.data;
+      
+      throw new Error('Login failed: Invalid response from server');
     } catch (error) {
+      console.error('Login error:', error);
       throw error.response?.data || error.message;
     }
   },
 
   register: async (username, email, password) => {
     try {
-      console.log('Registration attempt:', { username, email });
       const response = await api.post('/api/register', { username, email, password });
-      if (response.data.token) {
+      
+      if (response.data.success && response.data.token) {
         localStorage.setItem('authToken', response.data.token);
+        localStorage.setItem('currentUser', JSON.stringify(response.data.user));
+        
+        // Set default authorization header
+        api.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
+        
+        return response.data;
       }
-      return response.data;
+      
+      throw new Error('Registration failed: Invalid response from server');
     } catch (error) {
-      console.error('Registration error details:', {
-        hasResponse: !!error.response,
-        status: error.response?.status,
-        data: error.response?.data,
-        message: error.message,
-        errorType: typeof error
-      });
-
-      if (error.response?.data) {
-        throw new Error(error.response.data.message || error.response.data.error || 'Registration failed');
-      }
-      throw new Error(error.message || 'Registration failed. Please try again.');
+      console.error('Registration error:', error);
+      throw error.response?.data || error.message;
     }
   },
 
   logout: () => {
-    localStorage.removeItem('authToken');
-    window.location.href = '/login';
+    try {
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('currentUser');
+      delete api.defaults.headers.common['Authorization'];
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  },
+
+  getToken: () => {
+    try {
+      return localStorage.getItem('authToken');
+    } catch (error) {
+      console.error('Error getting token:', error);
+      return null;
+    }
   },
 
   getCurrentUser: () => {
-    const token = localStorage.getItem('authToken');
-    if (!token) return null;
-    
     try {
-      const tokenParts = token.split('.');
-      if (tokenParts.length !== 3) {
-        console.error('Invalid token format: expected 3 parts separated by dots.');
-        return null;
-      }
-      // Decode JWT token to get user info
-      const payload = JSON.parse(atob(tokenParts[1]));
-      // Add the token to the payload for easier access if needed
-      payload.token = token;
-      return payload;
+      const userStr = localStorage.getItem('currentUser');
+      return userStr ? JSON.parse(userStr) : null;
     } catch (error) {
-      console.error('Error decoding token:', error);
+      console.error('Error getting current user:', error);
+      localStorage.removeItem('currentUser'); // Clear corrupted data
       return null;
     }
   },
 
   isAuthenticated: () => {
-    return !!localStorage.getItem('authToken');
+    try {
+      const token = localStorage.getItem('authToken');
+      const user = localStorage.getItem('currentUser');
+      return !!(token && user);
+    } catch (error) {
+      console.error('Error checking authentication:', error);
+      return false;
+    }
   }
 };
 
