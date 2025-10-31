@@ -1,4 +1,3 @@
-// autohub/backend/controllers/listingController.js
 
 const Listing = require('../models/Listing');
 

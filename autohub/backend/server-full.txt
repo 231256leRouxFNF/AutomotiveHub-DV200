@@ -1,30 +1,15 @@
-console.log('🚀 SERVER.JS STARTED - Line 1');
-
 const express = require('express');
-console.log('✓ Express loaded');
-
 const cors = require('cors');
-console.log('✓ CORS loaded');
-
 const bcrypt = require('bcrypt');
-console.log('✓ bcrypt loaded');
-
 const jwt = require('jsonwebtoken');
-console.log('✓ JWT loaded');
-
 const multer = require('multer');
-console.log('✓ Multer loaded');
-
 const path = require('path');
-console.log('✓ Path loaded');
 
 // ALWAYS load environment variables first
 require('dotenv').config({ path: path.resolve(__dirname, '.env') });
-console.log('✓ Dotenv loaded');
 
 // Now import db AFTER environment is loaded
 const db = require('./config/db');
-console.log('✓ DB loaded');
 
 const Notification = require('./models/Notification');
 const { auth } = require('./middleware/auth');
@@ -196,7 +181,7 @@ app.get('/', (req, res) => {
 });
 
 // Endpoint to upload/update user profile photo
-app.post('/api/usersid/profile/avatar', uploadProfile.single('avatar'), async (req, res) => {
+app.post('/api/users/:id/profile/avatar', uploadProfile.single('avatar'), async (req, res) => {
   const userId = req.params.id;
   const avatarUrl = `/uploads/profiles/${req.file.filename}`;
 

@@ -1,4 +1,3 @@
-// autohub/backend/controllers/eventController.js
 
 const Event = require('../models/Event');
 
