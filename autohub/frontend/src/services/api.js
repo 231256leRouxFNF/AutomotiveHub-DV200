@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Create axios instance with backend URL
 const api = axios.create({
-  baseURL: 'https://automotivehub-dv200-1.onrender.com', // ✅ BACKEND URL
+  baseURL: 'https://automotivehub-dv200-1.onrender.com',
   headers: {
     'Content-Type': 'application/json'
   }
@@ -90,6 +90,39 @@ export const garageService = {
   deleteVehicle: async (vehicleId) => {
     const response = await api.delete(`/api/garage/${vehicleId}`);
     return response.data;
+  }
+};
+
+// Notification endpoints
+export const notificationService = {
+  getUnreadCount: async (userId) => {
+    try {
+      const response = await api.get(`/api/notifications/unread-count?userId=${userId}`);
+      return response.data.count || 0;
+    } catch (error) {
+      console.error('Failed to fetch unread count:', error);
+      return 0;
+    }
+  },
+
+  getNotifications: async (userId) => {
+    try {
+      const response = await api.get(`/api/notifications?userId=${userId}`);
+      return response.data.notifications || [];
+    } catch (error) {
+      console.error('Failed to fetch notifications:', error);
+      return [];
+    }
+  },
+
+  markAsRead: async (notificationId) => {
+    try {
+      const response = await api.put(`/api/notifications/${notificationId}/read`);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to mark notification as read:', error);
+      return { success: false };
+    }
   }
 };
 
