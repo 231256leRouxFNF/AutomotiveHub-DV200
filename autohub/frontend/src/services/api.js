@@ -8,21 +8,13 @@ const api = axios.create({
   }
 });
 
-// Add request interceptor for logging
+// Add request interceptor
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    
-    console.log('API Request:', {
-      method: config.method.toUpperCase(),
-      url: config.url,
-      baseURL: config.baseURL,
-      fullURL: `${config.baseURL}${config.url}`
-    });
-    
     return config;
   },
   (error) => {
@@ -30,24 +22,7 @@ api.interceptors.request.use(
   }
 );
 
-// Add response interceptor for logging
-api.interceptors.response.use(
-  (response) => {
-    console.log('API Response:', response.status, response.config.url);
-    return response;
-  },
-  (error) => {
-    console.log('API Response Error:', {
-      status: error.response?.status,
-      url: error.config?.url,
-      message: error.message,
-      data: error.response?.data
-    });
-    return Promise.reject(error);
-  }
-);
-
-// Auth endpoints
+// Auth Service - ESSENTIAL
 export const authService = {
   register: async (userData) => {
     const response = await api.post('/api/register', userData);
@@ -74,17 +49,24 @@ export const authService = {
   }
 };
 
-// Garage endpoints
+// User Service - ESSENTIAL
+export const userService = {
+  getProfile: async () => {
+    const response = await api.get('/api/user/profile');
+    return response.data.user || null;
+  },
+
+  updateProfile: async (profileData) => {
+    const response = await api.put('/api/user/profile', profileData);
+    return response.data;
+  }
+};
+
+// Garage Service - ESSENTIAL
 export const garageService = {
   getUserVehicles: async (userId) => {
     const response = await api.get(`/api/garage/${userId}`);
-    console.log('🔍 API Response:', response.data);
     return response.data.vehicles || [];
-  },
-
-  getGarageStats: async (userId) => {
-    const response = await api.get(`/api/garage/stats/${userId}`);
-    return response.data || {};
   },
 
   deleteVehicle: async (vehicleId) => {
@@ -93,68 +75,20 @@ export const garageService = {
   }
 };
 
-// Notification endpoints
-export const notificationService = {
-  getUnreadCount: async (userId) => {
-    try {
-      const response = await api.get(`/api/notifications/unread-count?userId=${userId}`);
-      return response.data.count || 0;
-    } catch (error) {
-      console.error('Failed to fetch unread count:', error);
-      return 0;
-    }
-  },
-
-  getNotifications: async (userId) => {
-    try {
-      const response = await api.get(`/api/notifications?userId=${userId}`);
-      return response.data.notifications || [];
-    } catch (error) {
-      console.error('Failed to fetch notifications:', error);
-      return [];
-    }
-  },
-
-  markAsRead: async (notificationId) => {
-    try {
-      const response = await api.put(`/api/notifications/${notificationId}/read`);
-      return response.data;
-    } catch (error) {
-      console.error('Failed to mark notification as read:', error);
-      return { success: false };
-    }
-  }
-};
-
-// Listing endpoints (Marketplace)
+// Listing Service - ESSENTIAL (Marketplace)
 export const listingService = {
   getAllListings: async () => {
-    try {
-      const response = await api.get('/api/listings');
-      return response.data.listings || [];
-    } catch (error) {
-      console.error('Failed to fetch listings:', error);
-      return [];
-    }
+    const response = await api.get('/api/listings');
+    return response.data.listings || [];
   },
 
   getListing: async (id) => {
-    try {
-      const response = await api.get(`/api/listings/${id}`);
-      return response.data.listing || null;
-    } catch (error) {
-      console.error('Failed to fetch listing:', error);
-      return null;
-    }
+    const response = await api.get(`/api/listings/${id}`);
+    return response.data.listing || null;
   },
 
   createListing: async (listingData) => {
     const response = await api.post('/api/listings', listingData);
-    return response.data;
-  },
-
-  updateListing: async (id, listingData) => {
-    const response = await api.put(`/api/listings/${id}`, listingData);
     return response.data;
   },
 
@@ -164,91 +98,39 @@ export const listingService = {
   },
 
   searchListings: async (query) => {
+    const response = await api.get('/api/search', { params: query });
+    return response.data.listings || [];
+  }
+};
+
+// Event Service - SIMPLE (Community)
+export const eventService = {
+  getAllEvents: async () => {
+    const response = await api.get('/api/events');
+    return response.data.events || [];
+  }
+};
+
+// Notification Service - SIMPLE (just count)
+export const notificationService = {
+  getUnreadCount: async (userId) => {
     try {
-      const response = await api.get('/api/search', { params: query });
-      return response.data.listings || [];
+      const response = await api.get(`/api/notifications/unread-count?userId=${userId}`);
+      return response.data.count || 0;
     } catch (error) {
-      console.error('Failed to search listings:', error);
-      return [];
+      return 0; // Return 0 if endpoint doesn't exist yet
     }
   }
 };
 
-// Social/Community endpoints
+// Social Service - SIMPLE (just posts)
 export const socialService = {
   getPosts: async () => {
     try {
       const response = await api.get('/api/social/posts');
       return response.data.posts || [];
     } catch (error) {
-      console.error('Failed to fetch posts:', error);
-      return [];
-    }
-  },
-
-  createPost: async (postData) => {
-    const response = await api.post('/api/social/posts', postData);
-    return response.data;
-  },
-
-  likePost: async (postId) => {
-    const response = await api.post(`/api/social/posts/${postId}/like`);
-    return response.data;
-  },
-
-  addComment: async (postId, comment) => {
-    const response = await api.post(`/api/social/posts/${postId}/comments`, { content: comment });
-    return response.data;
-  }
-};
-
-// User/Profile endpoints
-export const userService = {
-  getProfile: async () => {
-    try {
-      const response = await api.get('/api/user/profile');
-      return response.data.user || null;
-    } catch (error) {
-      console.error('Failed to fetch profile:', error);
-      return null;
-    }
-  },
-
-  updateProfile: async (profileData) => {
-    const response = await api.put('/api/user/profile', profileData);
-    return response.data;
-  },
-
-  getUserById: async (userId) => {
-    try {
-      const response = await api.get(`/api/users/${userId}`);
-      return response.data.user || null;
-    } catch (error) {
-      console.error('Failed to fetch user:', error);
-      return null;
-    }
-  }
-};
-
-// Event endpoints
-export const eventService = {
-  getAllEvents: async () => {
-    try {
-      const response = await api.get('/api/events');
-      return response.data.events || [];
-    } catch (error) {
-      console.error('Failed to fetch events:', error);
-      return [];
-    }
-  },
-
-  getEvent: async (id) => {
-    try {
-      const response = await api.get(`/api/events/${id}`);
-      return response.data.event || null;
-    } catch (error) {
-      console.error('Failed to fetch event:', error);
-      return null;
+      return []; // Return empty array if endpoint doesn't exist yet
     }
   }
 };
