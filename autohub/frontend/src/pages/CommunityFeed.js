@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { socialService, authService } from '../services/api';
+import api, { socialService, authService, eventService } from '../services/api'; // Import api and eventService
 import Header from '../components/Header';
 import communityData from '../data/community.json';
 import { useNavigate } from 'react-router-dom';
-import { eventService } from '../services/api';
-import ProfilePreview from '../components/ProfilePreview'; // Import the new component
+import ProfilePreview from '../components/ProfilePreview';
 import './CommunityFeed.css';
 
 const CommunityFeed = () => {
@@ -29,23 +27,15 @@ const CommunityFeed = () => {
         setError(null);
         console.log('📥 Fetching community feed data...');
         
-        // Fetch events from API
-        const eventsResponse = await axios.get('/api/events');
-        console.log('✅ Events response:', eventsResponse);
-        console.log('✅ Events data:', eventsResponse.data);
+        // ✅ USE eventService instead of axios directly
+        const eventsList = await eventService.getAllEvents();
+        console.log('✅ Events fetched:', eventsList);
+        setEvents(eventsList);
         
-        // Check if response has the expected structure
-        if (eventsResponse.data && eventsResponse.data.success) {
-          const eventsList = eventsResponse.data.events || [];
-          console.log('✅ Setting events:', eventsList);
-          setEvents(eventsList);
-        } else {
-          console.warn('⚠️ Unexpected events response structure:', eventsResponse.data);
-          setEvents([]);
-        }
-        
-        // Fetch posts (placeholder for now)
-        setPosts([]);
+        // Fetch posts
+        const postsList = await socialService.getPosts();
+        console.log('✅ Posts fetched:', postsList);
+        setPosts(postsList);
         
       } catch (error) {
         console.error('❌ Error fetching community data:', error);
