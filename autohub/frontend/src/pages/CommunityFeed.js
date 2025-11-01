@@ -12,7 +12,7 @@ const CommunityFeed = () => {
   const [newPostContent, setNewPostContent] = useState('');
   const [communityStats, setCommunityStats] = useState([]);
   const [posts, setPosts] = useState([]);
-  const [events, setEvents] = useState([]); // State for events
+  const [events, setEvents] = useState([]);
   const [communitySnapshots, setCommunitySnapshots] = useState([]);
   const [editingPostId, setEditingPostId] = useState(null);
   const [editContent, setEditContent] = useState('');
@@ -171,6 +171,84 @@ const CommunityFeed = () => {
 
     fetchEvents();
   }, []);
+
+  const renderIcon = (iconName) => {
+    // Simple icon rendering - you can expand this
+    const icons = {
+      'message-square': '💬',
+      'car': '🚗',
+      'tag': '🏷️',
+      'calendar': '📅',
+      'sparkles': '✨',
+      'award': '🏆',
+      'heart': '❤️',
+      'message': '💬',
+      'share': '↗️',
+      'more': '⋯'
+    };
+    return <span>{icons[iconName] || '•'}</span>;
+  };
+
+  const handlePostSubmit = async (e) => {
+    e.preventDefault();
+    if (!newPostContent.trim()) return;
+
+    try {
+      // Add your post submission logic here
+      console.log('Submitting post:', newPostContent);
+      // await api.post('/api/posts', { content: newPostContent });
+      
+      setNewPostContent('');
+      // Refresh posts
+    } catch (error) {
+      console.error('Failed to submit post:', error);
+    }
+  };
+
+  const handleLike = async (postId) => {
+    try {
+      console.log('Liking post:', postId);
+      // await api.post(`/api/posts/${postId}/like`);
+      // Refresh posts
+    } catch (error) {
+      console.error('Failed to like post:', error);
+    }
+  };
+
+  const handleEditPost = (postId, currentContent) => {
+    setEditingPostId(postId);
+    setEditContent(currentContent);
+  };
+
+  const handleDeletePost = async (postId) => {
+    if (!window.confirm('Are you sure you want to delete this post?')) return;
+
+    try {
+      console.log('Deleting post:', postId);
+      // await api.delete(`/api/posts/${postId}`);
+      // Refresh posts
+    } catch (error) {
+      console.error('Failed to delete post:', error);
+    }
+  };
+
+  const handleAddComment = async (postId, comment) => {
+    if (!comment.trim()) return;
+
+    try {
+      console.log('Adding comment to post:', postId, comment);
+      // await api.post(`/api/posts/${postId}/comments`, { content: comment });
+      
+      // Clear the comment draft
+      setCommentDrafts(prev => ({
+        ...prev,
+        [postId]: ''
+      }));
+      // Refresh posts
+    } catch (error) {
+      console.error('Failed to add comment:', error);
+    }
+  };
 
   const sidebarLinks = [
     { label: 'All Discussions', icon: 'message-square', active: true },
