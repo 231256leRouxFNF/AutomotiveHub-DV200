@@ -135,4 +135,21 @@ export const socialService = {
   }
 };
 
+// General Service - SIMPLE (dashboard stats, etc.)
+export const generalService = {
+  getDashboardStats: async () => {
+    try {
+      const response = await api.get('/api/dashboard/stats');
+      return response.data || {};
+    } catch (error) {
+      return {
+        totalVehicles: 0,
+        totalListings: 0,
+        totalEvents: 0,
+        activeUsers: 0
+      };
+    }
+  }
+};
+
 export default api;
