@@ -44,12 +44,15 @@ const VehicleManagement = () => {
   
   const loadGarageData = async (userId) => {
     try {
+      console.log('📥 Loading garage data for user:', userId); // Add this
+
       const [stats, userVehicles] = await Promise.all([
         garageService.getGarageStats(userId),
         garageService.getUserVehicles(userId)
       ]);
       
-      // Normalize stats to ensure required fields exist
+      console.log('🚗 User vehicles response:', userVehicles); // Add this
+      
       const normalizedStats = {
         totalVehicles: Number((stats && (stats.totalVehicles ?? stats.total_vehicles)) ?? 0),
         featured: Number((stats && (stats.featured ?? stats.featured_count)) ?? 0),
@@ -57,10 +60,16 @@ const VehicleManagement = () => {
       };
 
       setGarageStats(normalizedStats);
-      setVehicles(Array.isArray(userVehicles) ? userVehicles : []);
+      
+      // Fix: Check if userVehicles has .vehicles property
+      const vehiclesArray = Array.isArray(userVehicles) 
+        ? userVehicles 
+        : (userVehicles?.vehicles || []);
+      
+      console.log('✅ Setting vehicles:', vehiclesArray); // Add this
+      setVehicles(vehiclesArray);
     } catch (error) {
-      console.error('Error loading garage data:', error);
-      // Set default values if API fails
+      console.error('❌ Error loading garage data:', error);
       setGarageStats({ totalVehicles: 0, featured: 0, upcomingEvents: 0 });
       setVehicles([]);
     }
@@ -138,13 +147,13 @@ const VehicleManagement = () => {
         form.append('images', imageFile);
       }
 
-      console.log('📤 Submitting vehicle:', { make: formData.make, model: formData.model });
+      console.log(' Submitting vehicle:', { make: formData.make, model: formData.model });
 
       const { data: result } = await api.post('/api/garage/vehicles', form, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
 
-      console.log('✅ Response:', result);
+      console.log(' Response:', result);
 
       if (result && result.success) {
         alert('Vehicle added successfully!');

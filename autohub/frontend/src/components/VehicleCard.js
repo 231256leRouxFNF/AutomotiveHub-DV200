@@ -3,31 +3,42 @@ import api from '../services/api';
 import './VehicleCard.css';
 
 const VehicleCard = ({ vehicle, onEdit, onDelete }) => {
+  console.log(' VehicleCard vehicle data:', vehicle); // Add this line
+
   const handleImageError = (e) => {
+    console.log(' Image failed to load:', e.target.src); // Add this line
     e.target.src = 'https://via.placeholder.com/300x200/393D47/8C8D8B?text=No+Image';
   };
 
   const resolveImageSrc = () => {
     const candidate = (
-      vehicle.primary_image ||
       vehicle.image_url ||
       vehicle.imageUrl ||
+      vehicle.primary_image ||
       vehicle.image ||
       (Array.isArray(vehicle.images) && vehicle.images[0]) ||
-      vehicle.image_path ||
-      vehicle.imagePath ||
       ''
     );
 
-    if (!candidate) return 'https://via.placeholder.com/300x200/393D47/8C8D8B?text=No+Image';
+    console.log('🖼️ Image candidate:', candidate); // Add this line
+
+    if (!candidate) {
+      return 'https://via.placeholder.com/300x200/393D47/8C8D8B?text=No+Image';
+    }
 
     const src = String(candidate);
+    
     if (src.startsWith('http://') || src.startsWith('https://') || src.startsWith('data:')) {
       return src;
     }
-    // Prepend API base URL for server-relative paths like /uploads/...
-    const base = api?.defaults?.baseURL || '';
-    if (src.startsWith('/')) return `${base}${src}`;
+    
+    const baseURL = process.env.REACT_APP_API_URL || 'https://automotivehub-dv200-1.onrender.com';
+    if (src.startsWith('/uploads')) {
+      const resolved = `${baseURL}${src}`;
+      console.log('✅ Resolved image URL:', resolved); // Add this line
+      return resolved;
+    }
+    
     return src;
   };
 
