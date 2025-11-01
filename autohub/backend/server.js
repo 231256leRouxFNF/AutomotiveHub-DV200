@@ -38,7 +38,7 @@ app.post('/api/register', async (req, res) => {
   try {
     const { username, email, password, display_name } = req.body;
 
-    // Validate input
+    // Validates the input
     if (!username || !email || !password) {
       return res.status(400).json({ 
         success: false, 
@@ -46,7 +46,7 @@ app.post('/api/register', async (req, res) => {
       });
     }
 
-    // Check if user already exists
+    // Checks if user already exists
     const checkUserSql = 'SELECT * FROM users WHERE email = ? OR username = ?';
     const [existingUsers] = await db.promise().query(checkUserSql, [email, username]);
 
@@ -57,16 +57,16 @@ app.post('/api/register', async (req, res) => {
       });
     }
 
-    // Hash password
+    // Hashes the password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Insert user
+    // Inserts user(s) to db
     const insertUserSql = 'INSERT INTO users (username, email, password) VALUES (?, ?, ?)';
     const [result] = await db.promise().query(insertUserSql, [username, email, hashedPassword]);
 
     const userId = result.insertId;
 
-    // Create profile
+    // Creates account
     const insertProfileSql = 'INSERT INTO profiles (user_id, display_name) VALUES (?, ?)';
     await db.promise().query(insertProfileSql, [userId, display_name || username]);
 
@@ -99,46 +99,49 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
-// ============ LOGIN ROUTE ============
+// ============ LOGIN ROUTE (NEW VERSION) ============
 app.post('/api/login', async (req, res) => {
   try {
-    console.log('📥 Login request body:', req.body); // Add this debug line
+    console.log('📥 Login request body:', req.body);
     
-    const { email, password } = req.body;
+    const { email, username, identifier, password } = req.body;
+    
+    // Supports email, username, or identifier field
+    const loginField = identifier || email || username;
 
     // Validate input
-    if (!email || !password) {
-      console.log('❌ Missing fields:', { email: !!email, password: !!password }); // Debug
+    if (!loginField || !password) {
+      console.log('❌ Missing fields:', { loginField: !!loginField, password: !!password });
       return res.status(400).json({ 
         success: false, 
-        message: 'Email and password are required' 
+        message: 'Email/username and password are required' 
       });
     }
 
-    // Find user
-    const sql = 'SELECT * FROM users WHERE email = ?';
-    const [users] = await db.promise().query(sql, [email]);
+    // Searchesfor user via email OR username
+    const sql = 'SELECT * FROM users WHERE email = ? OR username = ?';
+    const [users] = await db.promise().query(sql, [loginField, loginField]);
 
     if (users.length === 0) {
       return res.status(401).json({ 
         success: false, 
-        message: 'Invalid email or password' 
+        message: 'Invalid email/username or password' 
       });
     }
 
     const user = users[0];
 
-    // Compare password
+    // Compares password
     const isValidPassword = await bcrypt.compare(password, user.password);
 
     if (!isValidPassword) {
       return res.status(401).json({ 
         success: false, 
-        message: 'Invalid email or password' 
+        message: 'Invalid email/username or password' 
       });
     }
 
-    // Get user profile
+    // Fetches user profile
     const profileSql = 'SELECT * FROM profiles WHERE user_id = ?';
     const [profiles] = await db.promise().query(profileSql, [user.id]);
     const profile = profiles[0] || {};
@@ -187,11 +190,11 @@ const onSubmit = async (e) => {
   
   try {
     const response = await api.login({
-      email: email,      // Make sure this matches your input field
-      password: password // Make sure this matches your input field
+      email: email,      // These should match the backend fields
+      password: password // These should match the backend fields
     });
     
-    // Handle success
+    // Handles success
   } catch (error) {
     console.error('Login error:', error);
   }
