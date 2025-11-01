@@ -389,6 +389,59 @@ app.delete('/api/garage/:vehicleId', auth, async (req, res) => {
   }
 });
 
+// ============ CREATE EVENT ============
+app.post('/api/events', auth, async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { title, description, date, location } = req.body;
+
+    if (!title || !date || !location) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Title, date, and location are required' 
+      });
+    }
+
+    const sql = `
+      INSERT INTO events (userId, title, description, date, location)
+      VALUES (?, ?, ?, ?, ?)
+    `;
+    
+    const [result] = await db.promise().query(sql, [
+      userId, title, description, date, location
+    ]);
+
+    res.status(201).json({ 
+      success: true, 
+      message: 'Event created successfully',
+      eventId: result.insertId 
+    });
+  } catch (error) {
+    console.error('Create event error:', error);
+    res.status(500).json({ success: false, message: 'Failed to create event' });
+  }
+});
+
+// ============ GET ALL EVENTS ============
+app.get('/api/events', async (req, res) => {
+  try {
+    const sql = `
+      SELECT e.*, u.username, p.display_name
+      FROM events e
+      JOIN users u ON e.userId = u.id
+      LEFT JOIN profiles p ON u.id = p.user_id
+      ORDER BY e.date ASC
+      LIMIT 50
+    `;
+    
+    const [events] = await db.promise().query(sql);
+    res.json({ success: true, events });
+  } catch (error) {
+    console.error('Events error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch events' });
+  }
+});
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`✓ Server running on port ${PORT}`);
