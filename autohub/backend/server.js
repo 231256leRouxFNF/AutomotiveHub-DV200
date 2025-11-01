@@ -604,15 +604,6 @@ app.get('/api/social/posts', async (req, res) => {
   }
 });
 
-// ============ STATIC FILES AND FRONTEND SERVING COMES LAST ============
-// Only serve static files if you're serving the frontend from this backend
-// If frontend is on Vercel, REMOVE these lines:
-
-app.use(express.static(path.join(__dirname, '../frontend/build')));
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
-});
-
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`✓ Server running on port ${PORT}`);
