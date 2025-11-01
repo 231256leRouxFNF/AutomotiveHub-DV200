@@ -177,6 +177,51 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
+// ============ AUTH MIDDLEWARE ============
+const { auth } = require('./middleware/auth');
+
+// ============ GET USER PROFILE ============
+app.get('/api/user/profile', auth, async (req, res) => {
+  try {
+    const userId = req.userId; // From auth middleware
+
+    const sql = `
+      SELECT u.id, u.username, u.email, u.role,
+             p.display_name, p.bio, p.avatar_url
+      FROM users u
+      LEFT JOIN profiles p ON u.id = p.user_id
+      WHERE u.id = ?
+    `;
+    
+    const [users] = await db.promise().query(sql, [userId]);
+    
+    if (users.length === 0) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    res.json({ success: true, user: users[0] });
+  } catch (error) {
+    console.error('Profile error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch profile' });
+  }
+});
+
+// ============ UPDATE USER PROFILE ============
+app.put('/api/user/profile', auth, async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { display_name, bio } = req.body;
+
+    const sql = 'UPDATE profiles SET display_name = ?, bio = ? WHERE user_id = ?';
+    await db.promise().query(sql, [display_name, bio, userId]);
+
+    res.json({ success: true, message: 'Profile updated successfully' });
+  } catch (error) {
+    console.error('Update error:', error);
+    res.status(500).json({ success: false, message: 'Failed to update profile' });
+  }
+});
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`✓ Server running on port ${PORT}`);
