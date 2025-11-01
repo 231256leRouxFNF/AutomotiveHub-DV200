@@ -570,18 +570,3 @@ const onSubmit = async (e) => {
     console.error('Login error:', error);
   }
 };
-
-// In your Community.js or CommunityPage.js
-useEffect(() => {
-  const fetchEvents = async () => {
-    try {
-      const response = await api.get('/events'); // Should be GET /api/events
-      console.log('Events fetched:', response.data);
-      setEvents(response.data.events); // Make sure you're accessing .events
-    } catch (error) {
-      console.error('Failed to fetch events:', error);
-    }
-  };
-
-  fetchEvents();
-}, []);
