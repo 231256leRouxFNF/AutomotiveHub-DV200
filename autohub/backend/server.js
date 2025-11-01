@@ -272,6 +272,44 @@ app.post('/api/listings', auth, async (req, res) => {
   }
 });
 
+// ============ SEARCH LISTINGS ============
+app.get('/api/search', async (req, res) => {
+  try {
+    const { q, category, maxPrice } = req.query;
+    
+    let sql = `
+      SELECT l.*, u.username
+      FROM listings l
+      JOIN users u ON l.userId = u.id
+      WHERE 1=1
+    `;
+    const params = [];
+
+    if (q) {
+      sql += ' AND (l.title LIKE ? OR l.description LIKE ?)';
+      params.push(`%${q}%`, `%${q}%`);
+    }
+
+    if (category) {
+      sql += ' AND l.category = ?';
+      params.push(category);
+    }
+
+    if (maxPrice) {
+      sql += ' AND l.price <= ?';
+      params.push(maxPrice);
+    }
+
+    sql += ' ORDER BY l.created_at DESC LIMIT 50';
+
+    const [listings] = await db.promise().query(sql, params);
+    res.json({ success: true, listings });
+  } catch (error) {
+    console.error('Search error:', error);
+    res.status(500).json({ success: false, message: 'Search failed' });
+  }
+});
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`✓ Server running on port ${PORT}`);
