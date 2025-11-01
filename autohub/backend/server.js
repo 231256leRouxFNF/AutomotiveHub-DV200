@@ -145,7 +145,7 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
-// ============ LOGIN ROUTE (NEW VERSION) ============
+// ============ LOGIN ROUTE ============
 app.post('/api/login', async (req, res) => {
   try {
     console.log('📥 Login request body:', req.body);
