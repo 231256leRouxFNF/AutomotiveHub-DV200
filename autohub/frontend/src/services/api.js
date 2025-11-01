@@ -126,4 +126,103 @@ export const notificationService = {
   }
 };
 
+// Listing endpoints (Marketplace)
+export const listingService = {
+  getAllListings: async () => {
+    try {
+      const response = await api.get('/api/listings');
+      return response.data.listings || [];
+    } catch (error) {
+      console.error('Failed to fetch listings:', error);
+      return [];
+    }
+  },
+
+  getListing: async (id) => {
+    try {
+      const response = await api.get(`/api/listings/${id}`);
+      return response.data.listing || null;
+    } catch (error) {
+      console.error('Failed to fetch listing:', error);
+      return null;
+    }
+  },
+
+  createListing: async (listingData) => {
+    const response = await api.post('/api/listings', listingData);
+    return response.data;
+  },
+
+  updateListing: async (id, listingData) => {
+    const response = await api.put(`/api/listings/${id}`, listingData);
+    return response.data;
+  },
+
+  deleteListing: async (id) => {
+    const response = await api.delete(`/api/listings/${id}`);
+    return response.data;
+  },
+
+  searchListings: async (query) => {
+    try {
+      const response = await api.get('/api/search', { params: query });
+      return response.data.listings || [];
+    } catch (error) {
+      console.error('Failed to search listings:', error);
+      return [];
+    }
+  }
+};
+
+// Social/Community endpoints
+export const socialService = {
+  getPosts: async () => {
+    try {
+      const response = await api.get('/api/social/posts');
+      return response.data.posts || [];
+    } catch (error) {
+      console.error('Failed to fetch posts:', error);
+      return [];
+    }
+  },
+
+  createPost: async (postData) => {
+    const response = await api.post('/api/social/posts', postData);
+    return response.data;
+  },
+
+  likePost: async (postId) => {
+    const response = await api.post(`/api/social/posts/${postId}/like`);
+    return response.data;
+  },
+
+  addComment: async (postId, comment) => {
+    const response = await api.post(`/api/social/posts/${postId}/comments`, { content: comment });
+    return response.data;
+  }
+};
+
+// Event endpoints
+export const eventService = {
+  getAllEvents: async () => {
+    try {
+      const response = await api.get('/api/events');
+      return response.data.events || [];
+    } catch (error) {
+      console.error('Failed to fetch events:', error);
+      return [];
+    }
+  },
+
+  getEvent: async (id) => {
+    try {
+      const response = await api.get(`/api/events/${id}`);
+      return response.data.event || null;
+    } catch (error) {
+      console.error('Failed to fetch event:', error);
+      return null;
+    }
+  }
+};
+
 export default api;
