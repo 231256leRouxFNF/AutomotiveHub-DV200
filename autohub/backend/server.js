@@ -222,6 +222,56 @@ app.put('/api/user/profile', auth, async (req, res) => {
   }
 });
 
+// ============ GET ALL LISTINGS ============
+app.get('/api/listings', async (req, res) => {
+  try {
+    const sql = `
+      SELECT l.*, u.username, p.display_name
+      FROM listings l
+      JOIN users u ON l.userId = u.id
+      LEFT JOIN profiles p ON u.id = p.user_id
+      ORDER BY l.created_at DESC
+      LIMIT 50
+    `;
+    
+    const [listings] = await db.promise().query(sql);
+    res.json({ success: true, listings });
+  } catch (error) {
+    console.error('Listings error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch listings' });
+  }
+});
+
+// ============ CREATE LISTING ============
+app.post('/api/listings', auth, async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { title, description, price, category, make, model, year } = req.body;
+
+    if (!title || !price) {
+      return res.status(400).json({ success: false, message: 'Title and price are required' });
+    }
+
+    const sql = `
+      INSERT INTO listings (userId, title, description, price, category, make, model, year)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+    
+    const [result] = await db.promise().query(sql, [
+      userId, title, description, price, category, make, model, year
+    ]);
+
+    res.status(201).json({ 
+      success: true, 
+      message: 'Listing created successfully',
+      listingId: result.insertId 
+    });
+  } catch (error) {
+    console.error('Create listing error:', error);
+    res.status(500).json({ success: false, message: 'Failed to create listing' });
+  }
+});
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`✓ Server running on port ${PORT}`);
