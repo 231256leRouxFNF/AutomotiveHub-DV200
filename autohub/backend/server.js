@@ -33,6 +33,52 @@ app.get('/test-db', (req, res) => {
   });
 });
 
+// Add this after your test-db route
+app.get('/test-vehicles-table', async (req, res) => {
+  try {
+    const [tables] = await db.promise().query("SHOW TABLES LIKE 'vehicles'");
+    if (tables.length === 0) {
+      return res.json({ 
+        exists: false, 
+        message: 'vehicles table does not exist' 
+      });
+    }
+    
+    const [columns] = await db.promise().query("DESCRIBE vehicles");
+    res.json({ 
+      exists: true, 
+      columns: columns 
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Add this debug endpoint
+app.get('/test-events-table', async (req, res) => {
+  try {
+    const [tables] = await db.promise().query("SHOW TABLES LIKE 'events'");
+    if (tables.length === 0) {
+      return res.json({ 
+        exists: false, 
+        message: 'events table does not exist' 
+      });
+    }
+    
+    // Check if any events exist
+    const [events] = await db.promise().query("SELECT COUNT(*) as count FROM events");
+    const [allEvents] = await db.promise().query("SELECT * FROM events ORDER BY created_at DESC LIMIT 5");
+    
+    res.json({ 
+      exists: true,
+      eventCount: events[0].count,
+      recentEvents: allEvents
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // ============ REGISTER ROUTE ============
 app.post('/api/register', async (req, res) => {
   try {
@@ -307,6 +353,62 @@ app.get('/api/search', async (req, res) => {
   } catch (error) {
     console.error('Search error:', error);
     res.status(500).json({ success: false, message: 'Search failed' });
+  }
+});
+
+// ============ GET SINGLE LISTING ============
+app.get('/api/listings/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const sql = `
+      SELECT l.*, u.username, p.display_name, p.avatar_url
+      FROM listings l
+      JOIN users u ON l.userId = u.id
+      LEFT JOIN profiles p ON u.id = p.user_id
+      WHERE l.id = ?
+    `;
+    
+    const [listings] = await db.promise().query(sql, [id]);
+
+    if (listings.length === 0) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Listing not found' 
+      });
+    }
+
+    res.json({ success: true, listing: listings[0] });
+  } catch (error) {
+    console.error('Listing error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch listing' });
+  }
+});
+
+// ============ DELETE LISTING ============
+app.delete('/api/listings/:id', auth, async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { id } = req.params;
+
+    // Verify ownership
+    const checkSql = 'SELECT * FROM listings WHERE id = ? AND userId = ?';
+    const [listings] = await db.promise().query(checkSql, [id, userId]);
+
+    if (listings.length === 0) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Listing not found or unauthorized' 
+      });
+    }
+
+    const deleteSql = 'DELETE FROM listings WHERE id = ?';
+    await db.promise().query(deleteSql, [id]);
+
+    res.json({ success: true, message: 'Listing deleted successfully' });
+  } catch (error) {
+    console.error('Delete listing error:', error);
+    res.status(500).json({ success: false, message: 'Failed to delete listing' });
   }
 });
 
