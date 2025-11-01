@@ -158,6 +158,19 @@ const CommunityFeed = () => {
     return () => { cancelled = true; };
   }, []);
 
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        const response = await axios.get('/api/events'); // Should be GET /api/events
+        console.log('Events fetched:', response.data);
+        setEvents(response.data.events); // Make sure you're accessing .events
+      } catch (error) {
+        console.error('Failed to fetch events:', error);
+      }
+    };
+
+    fetchEvents();
+  }, []);
 
   const sidebarLinks = [
     { label: 'All Discussions', icon: 'message-square', active: true },

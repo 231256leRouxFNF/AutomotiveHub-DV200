@@ -524,9 +524,11 @@ app.post('/api/events', auth, async (req, res) => {
   }
 });
 
-// ============ GET ALL EVENTS ============
+// ============ GET ALL EVENTS (UPDATED WITH LOGGING) ============
 app.get('/api/events', async (req, res) => {
   try {
+    console.log('📥 Fetching events...');
+    
     const sql = `
       SELECT e.*, u.username, p.display_name
       FROM events e
@@ -537,9 +539,11 @@ app.get('/api/events', async (req, res) => {
     `;
     
     const [events] = await db.promise().query(sql);
+    console.log(`✅ Found ${events.length} events`);
+    
     res.json({ success: true, events });
   } catch (error) {
-    console.error('Events error:', error);
+    console.error('❌ Events error:', error);
     res.status(500).json({ success: false, message: 'Failed to fetch events' });
   }
 });
@@ -566,3 +570,18 @@ const onSubmit = async (e) => {
     console.error('Login error:', error);
   }
 };
+
+// In your Community.js or CommunityPage.js
+useEffect(() => {
+  const fetchEvents = async () => {
+    try {
+      const response = await api.get('/events'); // Should be GET /api/events
+      console.log('Events fetched:', response.data);
+      setEvents(response.data.events); // Make sure you're accessing .events
+    } catch (error) {
+      console.error('Failed to fetch events:', error);
+    }
+  };
+
+  fetchEvents();
+}, []);
