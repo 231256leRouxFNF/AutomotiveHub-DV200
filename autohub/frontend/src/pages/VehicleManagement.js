@@ -127,19 +127,24 @@ const VehicleManagement = () => {
 
     try {
       const form = new FormData();
-      form.append('user_id', currentUser.id);
+      // DON'T send user_id - the backend gets it from JWT token
       form.append('make', formData.make);
       form.append('model', formData.model);
       form.append('year', formData.year);
       form.append('color', formData.color);
       form.append('description', formData.description);
+      
       if (imageFile) {
         form.append('images', imageFile);
       }
 
+      console.log('📤 Submitting vehicle:', { make: formData.make, model: formData.model });
+
       const { data: result } = await api.post('/api/garage/vehicles', form, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
+
+      console.log('✅ Response:', result);
 
       if (result && result.success) {
         alert('Vehicle added successfully!');
@@ -157,8 +162,8 @@ const VehicleManagement = () => {
         alert(result.message || 'Failed to add vehicle');
       }
     } catch (error) {
-      console.error('Error adding vehicle:', error);
-      alert('Failed to add vehicle. Please try again.');
+      console.error('❌ Error adding vehicle:', error);
+      alert(`Failed to add vehicle: ${error.response?.data?.message || error.message}`);
     } finally {
       setIsLoading(false);
     }

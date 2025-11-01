@@ -5,6 +5,8 @@ const cors = require('cors');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const path = require('path');
+const multer = require('multer');
+const fs = require('fs');
 
 // ALWAYS load environment variables first
 require('dotenv').config({ path: path.resolve(__dirname, '.env') });
@@ -412,85 +414,6 @@ app.delete('/api/listings/:id', auth, async (req, res) => {
   }
 });
 
-// ============ GET USER GARAGE ============
-app.get('/api/garage/:userId', async (req, res) => {
-  try {
-    const { userId } = req.params;
-
-    const sql = `
-      SELECT * FROM vehicles 
-      WHERE user_id = ? 
-      ORDER BY created_at DESC
-    `;
-    
-    const [vehicles] = await db.promise().query(sql, [userId]);
-    res.json({ success: true, vehicles });
-  } catch (error) {
-    console.error('Garage error:', error);
-    res.status(500).json({ success: false, message: 'Failed to fetch garage' });
-  }
-});
-
-// ============ ADD VEHICLE TO GARAGE ============
-app.post('/api/garage', auth, async (req, res) => {
-  try {
-    const userId = req.userId;
-    const { make, model, year, color, mileage, vin, nickname } = req.body;
-
-    if (!make || !model || !year) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Make, model, and year are required' 
-      });
-    }
-
-    const sql = `
-      INSERT INTO vehicles (user_id, make, model, year, color, mileage, vin, nickname)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `;
-    
-    const [result] = await db.promise().query(sql, [
-      userId, make, model, year, color, mileage, vin, nickname
-    ]);
-
-    res.status(201).json({ 
-      success: true, 
-      message: 'Vehicle added to garage',
-      vehicleId: result.insertId 
-    });
-  } catch (error) {
-    console.error('Add vehicle error:', error);
-    res.status(500).json({ success: false, message: 'Failed to add vehicle' });
-  }
-});
-
-// ============ DELETE VEHICLE FROM GARAGE ============
-app.delete('/api/garage/:vehicleId', auth, async (req, res) => {
-  try {
-    const userId = req.userId;
-    const { vehicleId } = req.params;
-
-    // Verify ownership
-    const checkSql = 'SELECT * FROM vehicles WHERE id = ? AND user_id = ?';
-    const [vehicles] = await db.promise().query(checkSql, [vehicleId, userId]);
-
-    if (vehicles.length === 0) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Vehicle not found or unauthorized' 
-      });
-    }
-
-    const deleteSql = 'DELETE FROM vehicles WHERE id = ?';
-    await db.promise().query(deleteSql, [vehicleId]);
-
-    res.json({ success: true, message: 'Vehicle removed from garage' });
-  } catch (error) {
-    console.error('Delete vehicle error:', error);
-    res.status(500).json({ success: false, message: 'Failed to delete vehicle' });
-  }
-});
-
 // ============ CREATE EVENT ============
 app.post('/api/events', auth, async (req, res) => {
   try {
@@ -548,25 +471,114 @@ app.get('/api/events', async (req, res) => {
   }
 });
 
+// Create uploads directory if it doesn't exist
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, `vehicle-${uniqueSuffix}${path.extname(file.originalname)}`);
+  }
+});
+
+const upload = multer({ 
+  storage: storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed!'));
+    }
+  }
+});
+
+// Serve uploaded files statically
+app.use('/uploads', express.static(uploadDir));
+
+// ============ ADD VEHICLE TO GARAGE (WITH IMAGE UPLOAD) ============
+app.post('/api/garage/vehicles', auth, upload.array('images', 10), async (req, res) => {
+  try {
+    const userId = req.userId; // From JWT auth middleware
+    const { make, model, year, color, description, mileage, vin, nickname } = req.body;
+
+    console.log('📥 Add vehicle request:', { userId, make, model, year });
+
+    if (!make || !model || !year) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Make, model, and year are required' 
+      });
+    }
+
+    // Get image URL from uploaded file
+    let imageUrl = null;
+    if (req.files && req.files.length > 0) {
+      // Use the first uploaded image
+      imageUrl = `/uploads/${req.files[0].filename}`;
+    }
+
+    const sql = `
+      INSERT INTO vehicles (user_id, make, model, year, color, description, mileage, vin, nickname, image_url)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+    
+    const [result] = await db.promise().query(sql, [
+      userId, make, model, year, color, description, mileage, vin, nickname, imageUrl
+    ]);
+
+    console.log('✅ Vehicle added successfully:', result.insertId);
+
+    res.status(201).json({ 
+      success: true, 
+      message: 'Vehicle added to garage',
+      vehicleId: result.insertId,
+      imageUrl: imageUrl
+    });
+  } catch (error) {
+    console.error('❌ Add vehicle error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to add vehicle',
+      error: error.message 
+    });
+  }
+});
+
+// Update GET garage endpoint to include image URLs
+app.get('/api/garage/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const sql = `
+      SELECT id, user_id, make, model, year, color, description, 
+             mileage, vin, nickname, image_url, created_at
+      FROM vehicles 
+      WHERE user_id = ? 
+      ORDER BY created_at DESC
+    `;
+    
+    const [vehicles] = await db.promise().query(sql, [userId]);
+    
+    console.log(`✅ Found ${vehicles.length} vehicles for user ${userId}`);
+    
+    res.json({ success: true, vehicles });
+  } catch (error) {
+    console.error('❌ Garage error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch garage' });
+  }
+});
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`✓ Server running on port ${PORT}`);
 });
 
-// Check your LoginSection.js onSubmit function
-// It should look like this:
-
-const onSubmit = async (e) => {
-  e.preventDefault();
-  
-  try {
-    const response = await api.login({
-      email: email,      // These should match the backend fields
-      password: password // These should match the backend fields
-    });
-    
-    // Handles success
-  } catch (error) {
-    console.error('Login error:', error);
-  }
-};
+console.log('✓ SERVER.JS COMPLETED - Line 556');
