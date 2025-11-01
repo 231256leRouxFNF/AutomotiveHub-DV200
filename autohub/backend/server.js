@@ -21,6 +21,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// ============ API ROUTES MUST COME FIRST ============
+
 // Test routes
 app.get('/', (req, res) => {
   res.send('API is working');
@@ -576,9 +578,44 @@ app.get('/api/garage/:userId', async (req, res) => {
   }
 });
 
+// ============ GET UNREAD NOTIFICATIONS COUNT ============
+app.get('/api/notifications/unread-count', auth, async (req, res) => {
+  try {
+    const userId = req.query.userId || req.userId;
+    
+    const sql = 'SELECT COUNT(*) as count FROM notifications WHERE userId = ? AND isRead = FALSE';
+    const [result] = await db.promise().query(sql, [userId]);
+    
+    res.json({ success: true, count: result[0].count });
+  } catch (error) {
+    console.error('Notifications error:', error);
+    res.json({ success: true, count: 0 }); // Return 0 on error
+  }
+});
+
+// ============ GET SOCIAL POSTS ============
+app.get('/api/social/posts', async (req, res) => {
+  try {
+    // For now, return empty array until you implement posts
+    res.json({ success: true, posts: [] });
+  } catch (error) {
+    console.error('Posts error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch posts' });
+  }
+});
+
+// ============ STATIC FILES AND FRONTEND SERVING COMES LAST ============
+// Only serve static files if you're serving the frontend from this backend
+// If frontend is on Vercel, REMOVE these lines:
+
+app.use(express.static(path.join(__dirname, '../frontend/build')));
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
+});
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`✓ Server running on port ${PORT}`);
 });
 
-console.log('✓ SERVER.JS COMPLETED - Line 556');
+console.log('✓ SERVER.JS COMPLETED - Line 596');
