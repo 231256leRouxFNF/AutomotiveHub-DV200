@@ -102,10 +102,13 @@ app.post('/api/register', async (req, res) => {
 // ============ LOGIN ROUTE ============
 app.post('/api/login', async (req, res) => {
   try {
+    console.log('📥 Login request body:', req.body); // Add this debug line
+    
     const { email, password } = req.body;
 
     // Validate input
     if (!email || !password) {
+      console.log('❌ Missing fields:', { email: !!email, password: !!password }); // Debug
       return res.status(400).json({ 
         success: false, 
         message: 'Email and password are required' 
