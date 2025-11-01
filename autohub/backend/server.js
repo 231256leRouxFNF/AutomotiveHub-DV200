@@ -310,6 +310,85 @@ app.get('/api/search', async (req, res) => {
   }
 });
 
+// ============ GET USER GARAGE ============
+app.get('/api/garage/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const sql = `
+      SELECT * FROM vehicles 
+      WHERE user_id = ? 
+      ORDER BY created_at DESC
+    `;
+    
+    const [vehicles] = await db.promise().query(sql, [userId]);
+    res.json({ success: true, vehicles });
+  } catch (error) {
+    console.error('Garage error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch garage' });
+  }
+});
+
+// ============ ADD VEHICLE TO GARAGE ============
+app.post('/api/garage', auth, async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { make, model, year, color, mileage, vin, nickname } = req.body;
+
+    if (!make || !model || !year) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Make, model, and year are required' 
+      });
+    }
+
+    const sql = `
+      INSERT INTO vehicles (user_id, make, model, year, color, mileage, vin, nickname)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+    
+    const [result] = await db.promise().query(sql, [
+      userId, make, model, year, color, mileage, vin, nickname
+    ]);
+
+    res.status(201).json({ 
+      success: true, 
+      message: 'Vehicle added to garage',
+      vehicleId: result.insertId 
+    });
+  } catch (error) {
+    console.error('Add vehicle error:', error);
+    res.status(500).json({ success: false, message: 'Failed to add vehicle' });
+  }
+});
+
+// ============ DELETE VEHICLE FROM GARAGE ============
+app.delete('/api/garage/:vehicleId', auth, async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { vehicleId } = req.params;
+
+    // Verify ownership
+    const checkSql = 'SELECT * FROM vehicles WHERE id = ? AND user_id = ?';
+    const [vehicles] = await db.promise().query(checkSql, [vehicleId, userId]);
+
+    if (vehicles.length === 0) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Vehicle not found or unauthorized' 
+      });
+    }
+
+    const deleteSql = 'DELETE FROM vehicles WHERE id = ?';
+    await db.promise().query(deleteSql, [vehicleId]);
+
+    res.json({ success: true, message: 'Vehicle removed from garage' });
+  } catch (error) {
+    console.error('Delete vehicle error:', error);
+    res.status(500).json({ success: false, message: 'Failed to delete vehicle' });
+  }
+});
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`✓ Server running on port ${PORT}`);
