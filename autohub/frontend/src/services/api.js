@@ -202,6 +202,34 @@ export const socialService = {
   }
 };
 
+// User/Profile endpoints
+export const userService = {
+  getProfile: async () => {
+    try {
+      const response = await api.get('/api/user/profile');
+      return response.data.user || null;
+    } catch (error) {
+      console.error('Failed to fetch profile:', error);
+      return null;
+    }
+  },
+
+  updateProfile: async (profileData) => {
+    const response = await api.put('/api/user/profile', profileData);
+    return response.data;
+  },
+
+  getUserById: async (userId) => {
+    try {
+      const response = await api.get(`/api/users/${userId}`);
+      return response.data.user || null;
+    } catch (error) {
+      console.error('Failed to fetch user:', error);
+      return null;
+    }
+  }
+};
+
 // Event endpoints
 export const eventService = {
   getAllEvents: async () => {
