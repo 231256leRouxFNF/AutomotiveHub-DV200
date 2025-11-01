@@ -23,7 +23,6 @@ import Compare from './pages/Compare';
 import SearchResults from './pages/SearchResults';
 import CategoryPage from './pages/CategoryPage';
 import AdminDashboard from './pages/AdminDashboard';
-import CreateEventWizard from './pages/CreateEventWizard'; // Import the new component
 import MyEvents from './pages/MyEvents'; // Import the new MyEvents component
 import EditProfilePage from './pages/EditProfilePage'; // Import the new EditProfilePage component
 import EditListingWizard from './pages/EditListingWizard'; // Import the new EditListingWizard component
@@ -77,7 +76,6 @@ function App() {
         <Route path="/search" element={<AuthWrapper><SearchResults /></AuthWrapper>} />
         <Route path="/category/:slug" element={<AuthWrapper><CategoryPage /></AuthWrapper>} />
         <Route path="/admin" element={<AuthWrapper><AdminDashboard /></AuthWrapper>} />
-        <Route path="/create-event" element={<AuthWrapper><CreateEventWizard /></AuthWrapper>} />
         <Route path="/profile/:id" element={<AuthWrapper><UserProfile /></AuthWrapper>} />
         <Route path="/profile/:id/edit" element={<AuthWrapper><EditProfilePage /></AuthWrapper>} />
         <Route path="/listing/:id/edit" element={<AuthWrapper><EditListingWizard /></AuthWrapper>} />

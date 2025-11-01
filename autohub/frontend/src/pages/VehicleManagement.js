@@ -44,30 +44,26 @@ const VehicleManagement = () => {
   
   const loadGarageData = async (userId) => {
     try {
-      console.log('📥 Loading garage data for user:', userId); // Add this
+      console.log('📥 Loading garage data for user:', userId);
 
-      const [stats, userVehicles] = await Promise.all([
-        garageService.getGarageStats(userId),
-        garageService.getUserVehicles(userId)
-      ]);
+      // Call the API
+      const userVehicles = await garageService.getUserVehicles(userId);
       
-      console.log('🚗 User vehicles response:', userVehicles); // Add this
+      console.log('🚗 Vehicles from API:', userVehicles);
       
-      const normalizedStats = {
-        totalVehicles: Number((stats && (stats.totalVehicles ?? stats.total_vehicles)) ?? 0),
-        featured: Number((stats && (stats.featured ?? stats.featured_count)) ?? 0),
-        upcomingEvents: Number((stats && (stats.upcomingEvents ?? stats.upcoming_events)) ?? 0)
-      };
-
-      setGarageStats(normalizedStats);
+      // userVehicles should already be an array from the updated service
+      const vehiclesArray = Array.isArray(userVehicles) ? userVehicles : [];
       
-      // Fix: Check if userVehicles has .vehicles property
-      const vehiclesArray = Array.isArray(userVehicles) 
-        ? userVehicles 
-        : (userVehicles?.vehicles || []);
-      
-      console.log('✅ Setting vehicles:', vehiclesArray); // Add this
+      console.log('✅ Setting vehicles:', vehiclesArray);
       setVehicles(vehiclesArray);
+
+      // Update stats
+      setGarageStats({
+        totalVehicles: vehiclesArray.length,
+        featured: 0,
+        upcomingEvents: 0
+      });
+
     } catch (error) {
       console.error('❌ Error loading garage data:', error);
       setGarageStats({ totalVehicles: 0, featured: 0, upcomingEvents: 0 });

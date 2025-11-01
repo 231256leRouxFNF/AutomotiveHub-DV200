@@ -257,28 +257,21 @@ export const socialService = {
 
 // ============ GARAGE SERVICES ============
 export const garageService = {
+  getUserVehicles: async (userId) => {
+    const response = await api.get(`/api/garage/${userId}`);
+    console.log('🔍 API Response:', response.data); // Add this debug line
+    
+    // The backend returns { success: true, vehicles: [...] }
+    return response.data.vehicles || []; // Return the vehicles array directly
+  },
+
   getGarageStats: async (userId) => {
     const response = await api.get(`/api/garage/stats/${userId}`);
-    return response.data;
-  },
-
-  getUserVehicles: async (userId) => {
-    const response = await api.get(`/api/garage/vehicles/${userId}`);
-    return response.data;
-  },
-
-  createVehicle: async (vehicleData) => {
-    const response = await api.post('/api/garage/vehicles', vehicleData);
-    return response.data;
-  },
-
-  updateVehicle: async (vehicleId, vehicleData) => {
-    const response = await api.put(`/api/garage/vehicles/${vehicleId}`, vehicleData);
-    return response.data;
+    return response.data || {};
   },
 
   deleteVehicle: async (vehicleId) => {
-    const response = await api.delete(`/api/garage/vehicles/${vehicleId}`);
+    const response = await api.delete(`/api/garage/${vehicleId}`);
     return response.data;
   }
 };
