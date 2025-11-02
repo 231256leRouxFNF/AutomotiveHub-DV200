@@ -598,14 +598,14 @@ app.get('/api/notifications/unread-count', auth, async (req, res) => {
 
 // ============ POSTS ENDPOINTS ============
 
-// Get all posts
+// Get all posts - FIX THE SQL QUERY
 app.get('/api/social/posts', async (req, res) => {
   try {
     const sql = `
       SELECT 
         p.*,
         u.username,
-        u.display_name,
+        p.display_name,
         (SELECT COUNT(*) FROM post_likes WHERE postId = p.id) as likes,
         (SELECT COUNT(*) FROM comments WHERE postId = p.id) as comment_count
       FROM posts p
@@ -627,6 +627,8 @@ app.get('/api/social/posts', async (req, res) => {
       const [comments] = await db.promise().query(commentsSql, [post.id]);
       post.comments = comments;
     }
+    
+    console.log('📤 Sending posts:', posts); // Debug log
     
     res.json({ success: true, posts });
   } catch (error) {

@@ -411,11 +411,21 @@ const CommunityFeed = () => {
               <div key={post.id} className="post-card">
                 <div className="post-header">
                   <div className="post-author">
-                    <img src={post.authorAvatar || '/default-avatar.png'} alt={post.display_name || post.username} className="author-avatar" />
+                    <img 
+                      src={post.avatar_url || '/default-avatar.png'} 
+                      alt={post.username} 
+                      className="author-avatar" 
+                    />
                     <div>
-                      <h4>{post.display_name || post.username}</h4>
+                      <h4>{post.username}</h4>
                       <span className="post-time">
-                        {new Date(post.created_at).toLocaleString()}
+                        {post.created_at ? new Date(post.created_at).toLocaleString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          hour: 'numeric',
+                          minute: '2-digit',
+                          hour12: true
+                        }) : 'Just now'}
                       </span>
                     </div>
                   </div>
@@ -443,7 +453,7 @@ const CommunityFeed = () => {
 
                 <div className="post-stats">
                   <span>{post.likes || 0} likes</span>
-                  <span>{post.comment_count || post.comments?.length || 0} comments</span>
+                  <span>{post.comment_count || 0} comments</span>
                 </div>
 
                 <div className="post-actions">
@@ -459,7 +469,7 @@ const CommunityFeed = () => {
                   <div className="comments-section">
                     {post.comments.map((comment) => (
                       <div key={comment.id} className="comment">
-                        <strong>{comment.display_name || comment.username}:</strong> {comment.content}
+                        <strong>{comment.username}:</strong> {comment.content}
                       </div>
                     ))}
                   </div>

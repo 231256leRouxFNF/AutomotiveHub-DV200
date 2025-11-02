@@ -32,15 +32,47 @@ const VehicleManagement = () => {
   
   // Get current user on component mount
   useEffect(() => {
-    const user = authService.getCurrentUser();
-    if (user) {
+    const fetchVehicles = async () => {
+      const user = authService.getCurrentUser();
+      console.log('👤 Current user:', user);
+      
+      if (!user || !user.id) {
+        console.log('❌ No user found, redirecting to login');
+        window.location.href = '/login';
+        return;
+      }
+
       setCurrentUser(user);
-      loadGarageData(user.id);
-    } else {
-      console.warn('No user found, redirecting to login');
-      // In production, redirect to login
-    }
-  }, []);
+
+      try {
+        setIsLoading(true);
+        console.log('📥 Fetching vehicles for user:', user.id);
+        
+        const userVehicles = await garageService.getUserVehicles(user.id);
+        console.log('✅ Vehicles fetched:', userVehicles);
+        
+        const vehiclesArray = Array.isArray(userVehicles) ? userVehicles : [];
+        console.log('🚗 Setting vehicles:', vehiclesArray);
+        
+        setVehicles(vehiclesArray);
+
+        setGarageStats({
+          totalVehicles: vehiclesArray.length,
+          featured: 0,
+          upcomingEvents: 0
+        });
+
+      } catch (error) {
+        console.error('❌ Error loading garage data:', error);
+        setGarageStats({ totalVehicles: 0, featured: 0, upcomingEvents: 0 });
+        setVehicles([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchVehicles();
+  }, []); // Remove user, navigate from dependencies
   
   const loadGarageData = async (userId) => {
     try {
@@ -404,3 +436,7 @@ const VehicleManagement = () => {
 };
 
 export default VehicleManagement;
+
+const postsList = await socialService.getPosts();
+console.log('📊 Posts response:', postsList);
+console.log('📊 First post:', postsList[0]);
