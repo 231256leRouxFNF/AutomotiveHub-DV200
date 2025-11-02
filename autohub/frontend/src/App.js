@@ -14,7 +14,7 @@ import HelpCenter from './pages/HelpCenter';
 import Terms from './pages/Terms';
 import Privacy from './pages/Privacy';
 import CreateListingWizard from './pages/CreateListingWizard';
-import MyListings from './pages/My
+import MyListings from './pages/MyListings';
 import SellerDashboard from './pages/SellerDashboard';
 import Orders from './pages/Orders';
 import Cart from './pages/Cart';
