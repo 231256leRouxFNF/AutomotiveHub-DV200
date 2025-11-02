@@ -153,6 +153,79 @@ export const socialService = {
   }
 };
 
+// Listing Service (Marketplace)
+export const listingService = {
+  getAllListings: async () => {
+    try {
+      const response = await api.get('/api/listings');
+      return response.data.listings || [];
+    } catch (error) {
+      console.error('Failed to fetch listings:', error);
+      return [];
+    }
+  },
+
+  getListingById: async (listingId) => {
+    try {
+      const response = await api.get(`/api/listings/${listingId}`);
+      return response.data.listing || null;
+    } catch (error) {
+      console.error('Failed to fetch listing:', error);
+      throw error;
+    }
+  },
+
+  createListing: async (listingData) => {
+    try {
+      const response = await api.post('/api/listings', listingData);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to create listing:', error);
+      throw error;
+    }
+  },
+
+  updateListing: async (listingId, listingData) => {
+    try {
+      const response = await api.put(`/api/listings/${listingId}`, listingData);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to update listing:', error);
+      throw error;
+    }
+  },
+
+  deleteListing: async (listingId) => {
+    try {
+      const response = await api.delete(`/api/listings/${listingId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to delete listing:', error);
+      throw error;
+    }
+  },
+
+  getUserListings: async (userId) => {
+    try {
+      const response = await api.get(`/api/listings/user/${userId}`);
+      return response.data.listings || [];
+    } catch (error) {
+      console.error('Failed to fetch user listings:', error);
+      return [];
+    }
+  },
+
+  searchListings: async (searchParams) => {
+    try {
+      const response = await api.get('/api/listings/search', { params: searchParams });
+      return response.data.listings || [];
+    } catch (error) {
+      console.error('Failed to search listings:', error);
+      return [];
+    }
+  }
+};
+
 // Notification Service
 export const notificationService = {
   getNotifications: async () => {
