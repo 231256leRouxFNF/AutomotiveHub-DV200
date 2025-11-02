@@ -436,7 +436,3 @@ const VehicleManagement = () => {
 };
 
 export default VehicleManagement;
-
-const postsList = await socialService.getPosts();
-console.log('📊 Posts response:', postsList);
-console.log('📊 First post:', postsList[0]);
