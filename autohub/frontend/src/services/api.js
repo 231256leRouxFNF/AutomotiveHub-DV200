@@ -153,4 +153,47 @@ export const socialService = {
   }
 };
 
+// Notification Service
+export const notificationService = {
+  getNotifications: async () => {
+    try {
+      const response = await api.get('/api/notifications');
+      return response.data.notifications || [];
+    } catch (error) {
+      console.error('Failed to fetch notifications:', error);
+      return [];
+    }
+  },
+
+  markAsRead: async (notificationId) => {
+    try {
+      const response = await api.put(`/api/notifications/${notificationId}/read`);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to mark notification as read:', error);
+      throw error;
+    }
+  },
+
+  markAllAsRead: async () => {
+    try {
+      const response = await api.put('/api/notifications/read-all');
+      return response.data;
+    } catch (error) {
+      console.error('Failed to mark all notifications as read:', error);
+      throw error;
+    }
+  },
+
+  deleteNotification: async (notificationId) => {
+    try {
+      const response = await api.delete(`/api/notifications/${notificationId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to delete notification:', error);
+      throw error;
+    }
+  }
+};
+
 export default api;
