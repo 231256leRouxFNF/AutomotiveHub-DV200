@@ -22,7 +22,7 @@ api.interceptors.request.use(
   }
 );
 
-// Auth Service
+// ============ 1. AUTH SERVICE ============
 export const authService = {
   login: async (credentials) => {
     const response = await api.post('/api/login', credentials);
@@ -60,7 +60,6 @@ export const authService = {
     return null;
   },
 
-  // ADD THIS FUNCTION - Fix for the error
   isAuthenticated: () => {
     const token = localStorage.getItem('token');
     const user = localStorage.getItem('user');
@@ -72,7 +71,7 @@ export const authService = {
   }
 };
 
-// Garage Service
+// ============ 2. GARAGE SERVICE ============
 export const garageService = {
   getUserVehicles: async (userId) => {
     try {
@@ -100,7 +99,7 @@ export const garageService = {
   }
 };
 
-// Event Service
+// ============ 3. EVENT SERVICE ============
 export const eventService = {
   getAllEvents: async () => {
     const response = await api.get('/api/events');
@@ -110,10 +109,15 @@ export const eventService = {
   createEvent: async (eventData) => {
     const response = await api.post('/api/events', eventData);
     return response.data;
+  },
+
+  deleteEvent: async (eventId) => {
+    const response = await api.delete(`/api/events/${eventId}`);
+    return response.data;
   }
 };
 
-// Social Service
+// ============ 4. SOCIAL SERVICE ============
 export const socialService = {
   getPosts: async () => {
     try {
@@ -153,7 +157,53 @@ export const socialService = {
   }
 };
 
-// Listing Service (Marketplace)
+// ============ 5. USER SERVICE ============
+export const userService = {
+  getProfile: async () => {
+    try {
+      const response = await api.get('/api/user/profile');
+      return response.data.user || null;
+    } catch (error) {
+      console.error('Failed to fetch user profile:', error);
+      throw error;
+    }
+  },
+
+  updateProfile: async (userData) => {
+    try {
+      const response = await api.put('/api/user/profile', userData);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to update profile:', error);
+      throw error;
+    }
+  },
+
+  uploadAvatar: async (imageFile) => {
+    try {
+      const formData = new FormData();
+      formData.append('avatar', imageFile);
+      
+      const response = await api.post('/api/user/avatar', formData);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to upload avatar:', error);
+      throw error;
+    }
+  },
+
+  changePassword: async (passwordData) => {
+    try {
+      const response = await api.put('/api/user/password', passwordData);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to change password:', error);
+      throw error;
+    }
+  }
+};
+
+// ============ 6. LISTING SERVICE (MARKETPLACE) ============
 export const listingService = {
   getAllListings: async () => {
     try {
@@ -222,49 +272,6 @@ export const listingService = {
     } catch (error) {
       console.error('Failed to search listings:', error);
       return [];
-    }
-  }
-};
-
-// Notification Service
-export const notificationService = {
-  getNotifications: async () => {
-    try {
-      const response = await api.get('/api/notifications');
-      return response.data.notifications || [];
-    } catch (error) {
-      console.error('Failed to fetch notifications:', error);
-      return [];
-    }
-  },
-
-  markAsRead: async (notificationId) => {
-    try {
-      const response = await api.put(`/api/notifications/${notificationId}/read`);
-      return response.data;
-    } catch (error) {
-      console.error('Failed to mark notification as read:', error);
-      throw error;
-    }
-  },
-
-  markAllAsRead: async () => {
-    try {
-      const response = await api.put('/api/notifications/read-all');
-      return response.data;
-    } catch (error) {
-      console.error('Failed to mark all notifications as read:', error);
-      throw error;
-    }
-  },
-
-  deleteNotification: async (notificationId) => {
-    try {
-      const response = await api.delete(`/api/notifications/${notificationId}`);
-      return response.data;
-    } catch (error) {
-      console.error('Failed to delete notification:', error);
-      throw error;
     }
   }
 };

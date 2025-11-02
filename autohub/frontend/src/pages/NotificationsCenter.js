@@ -4,18 +4,22 @@ import axios from 'axios';
 import { useEffect, useState } from 'react';
 import Footer from '../components/Footer';
 import './PageLayout.css';
-import { authService, notificationService } from '../services/api';
+import { authService } from '../services/api';
+
+// Use mock data for now - notifications not connected to backend yet
+const mockNotifications = [];
 
 const NotificationsCenter = () => {
-  const [notifications, setNotifications] = useState([]);
+  const [notifications, setNotifications] = useState(mockNotifications);
   const currentUser = authService.getCurrentUser();
   const userId = currentUser ? currentUser.id : null;
 
   const fetchNotifications = async () => {
     if (userId) {
       try {
-        const fetchedNotifications = await notificationService.getNotifications(userId);
-        setNotifications(fetchedNotifications);
+        // const fetchedNotifications = await notificationService.getNotifications(userId);
+        // setNotifications(fetchedNotifications);
+        setNotifications(mockNotifications); // Set to mock data for now
       } catch (error) {
         console.error('Error fetching notifications:', error);
       }
@@ -28,7 +32,7 @@ const NotificationsCenter = () => {
 
   const handleMarkAsRead = async (id) => {
     try {
-      await notificationService.markAsRead(id);
+      // await notificationService.markAsRead(id);
       setNotifications(prevNotifs =>
         prevNotifs.map(notif =>
           notif.id === id ? { ...notif, isRead: 1 } : notif
@@ -41,7 +45,7 @@ const NotificationsCenter = () => {
 
   const handleDeleteNotification = async (id) => {
     try {
-      await notificationService.deleteNotification(id);
+      // await notificationService.deleteNotification(id);
       setNotifications(prevNotifs => prevNotifs.filter(notif => notif.id !== id));
     } catch (error) {
       console.error('Error deleting notification:', error);

@@ -264,115 +264,272 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
+// ============ USER PROFILE ENDPOINTS ============
 
-// ============ GET USER PROFILE ============
 app.get('/api/user/profile', auth, async (req, res) => {
   try {
-    const userId = req.userId; // From auth middleware
-
-    const sql = `
-      SELECT u.id, u.username, u.email, u.role,
-             p.display_name, p.bio, p.avatar_url
-      FROM users u
-      LEFT JOIN profiles p ON u.id = p.user_id
-      WHERE u.id = ?
-    `;
+    const sql = 'SELECT id, username, email, display_name, avatar_url, created_at FROM users WHERE id = ?';
+    const [users] = await db.promise().query(sql, [req.userId]);
     
-    const [users] = await db.promise().query(sql, [userId]);
+    if (users.length === 0) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    
+    res.json({ success: true, user: users[0] });
+  } catch (error) {
+    console.error('Error fetching profile:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch profile' });
+  }
+});
+
+app.put('/api/user/profile', auth, async (req, res) => {
+  try {
+    const { display_name, email } = req.body;
+    
+    if (!display_name && !email) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'At least one field must be provided' 
+      });
+    }
+
+    const sql = 'UPDATE users SET display_name = ?, email = ? WHERE id = ?';
+    await db.promise().query(sql, [display_name, email, req.userId]);
+    
+    // Get updated user
+    const [users] = await db.promise().query(
+      'SELECT id, username, email, display_name, avatar_url FROM users WHERE id = ?', 
+      [req.userId]
+    );
+    
+    // Update localStorage
+    res.json({ 
+      success: true, 
+      message: 'Profile updated successfully',
+      user: users[0]
+    });
+  } catch (error) {
+    console.error('Error updating profile:', error);
+    res.status(500).json({ success: false, message: 'Failed to update profile' });
+  }
+});
+
+app.post('/api/user/avatar', auth, upload.single('avatar'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'No image uploaded' });
+    }
+
+    const avatarUrl = `/uploads/${req.file.filename}`;
+    const sql = 'UPDATE users SET avatar_url = ? WHERE id = ?';
+    await db.promise().query(sql, [avatarUrl, req.userId]);
+
+    res.json({ 
+      success: true, 
+      message: 'Avatar updated successfully',
+      avatar_url: avatarUrl
+    });
+  } catch (error) {
+    console.error('Error uploading avatar:', error);
+    res.status(500).json({ success: false, message: 'Failed to upload avatar' });
+  }
+});
+
+app.put('/api/user/password', auth, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Both current and new password are required' 
+      });
+    }
+
+    // Verify current password
+    const [users] = await db.promise().query('SELECT password FROM users WHERE id = ?', [req.userId]);
     
     if (users.length === 0) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
-    res.json({ success: true, user: users[0] });
+    const isValidPassword = await bcrypt.compare(currentPassword, users[0].password);
+    
+    if (!isValidPassword) {
+      return res.status(401).json({ success: false, message: 'Current password is incorrect' });
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await db.promise().query('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, req.userId]);
+
+    res.json({ success: true, message: 'Password changed successfully' });
   } catch (error) {
-    console.error('Profile error:', error);
-    res.status(500).json({ success: false, message: 'Failed to fetch profile' });
+    console.error('Error changing password:', error);
+    res.status(500).json({ success: false, message: 'Failed to change password' });
   }
 });
 
-// ============ UPDATE USER PROFILE ============
-app.put('/api/user/profile', auth, async (req, res) => {
-  try {
-    const userId = req.userId;
-    const { display_name, bio } = req.body;
+// ============ LISTINGS (MARKETPLACE) ENDPOINTS ============
 
-    const sql = 'UPDATE profiles SET display_name = ?, bio = ? WHERE user_id = ?';
-    await db.promise().query(sql, [display_name, bio, userId]);
-
-    res.json({ success: true, message: 'Profile updated successfully' });
-  } catch (error) {
-    console.error('Update error:', error);
-    res.status(500).json({ success: false, message: 'Failed to update profile' });
-  }
-});
-
-// ============ GET ALL LISTINGS ============
 app.get('/api/listings', async (req, res) => {
   try {
     const sql = `
-      SELECT l.*, u.username, p.display_name
+      SELECT l.*, u.username, u.display_name 
       FROM listings l
       JOIN users u ON l.userId = u.id
-      LEFT JOIN profiles p ON u.id = p.user_id
+      WHERE l.status = 'active'
       ORDER BY l.created_at DESC
-      LIMIT 50
     `;
-    
     const [listings] = await db.promise().query(sql);
     res.json({ success: true, listings });
   } catch (error) {
-    console.error('Listings error:', error);
+    console.error('Error fetching listings:', error);
     res.status(500).json({ success: false, message: 'Failed to fetch listings' });
   }
 });
 
-// ============ CREATE LISTING ============
+app.get('/api/listings/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const sql = `
+      SELECT l.*, u.username, u.display_name, u.email
+      FROM listings l
+      JOIN users u ON l.userId = u.id
+      WHERE l.id = ?
+    `;
+    const [listings] = await db.promise().query(sql, [id]);
+    
+    if (listings.length === 0) {
+      return res.status(404).json({ success: false, message: 'Listing not found' });
+    }
+    
+    res.json({ success: true, listing: listings[0] });
+  } catch (error) {
+    console.error('Error fetching listing:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch listing' });
+  }
+});
+
 app.post('/api/listings', auth, async (req, res) => {
   try {
-    const userId = req.userId;
-    const { title, description, price, category, make, model, year } = req.body;
-
-    if (!title || !price) {
-      return res.status(400).json({ success: false, message: 'Title and price are required' });
+    const { title, description, price, category, condition, images } = req.body;
+    
+    if (!title || !price || !category) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Title, price, and category are required' 
+      });
     }
 
     const sql = `
-      INSERT INTO listings (userId, title, description, price, category, make, model, year)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO listings (userId, title, description, price, category, \`condition\`, images, status) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'active')
     `;
     
     const [result] = await db.promise().query(sql, [
-      userId, title, description, price, category, make, model, year
+      req.userId, 
+      title, 
+      description || '', 
+      price, 
+      category, 
+      condition || 'used',
+      JSON.stringify(images || [])
     ]);
 
-    res.status(201).json({ 
+    res.json({ 
       success: true, 
       message: 'Listing created successfully',
-      listingId: result.insertId 
+      listingId: result.insertId
     });
   } catch (error) {
-    console.error('Create listing error:', error);
+    console.error('Error creating listing:', error);
     res.status(500).json({ success: false, message: 'Failed to create listing' });
   }
 });
 
-// ============ SEARCH LISTINGS ============
-app.get('/api/search', async (req, res) => {
+app.put('/api/listings/:id', auth, async (req, res) => {
   try {
-    const { q, category, maxPrice } = req.query;
+    const { id } = req.params;
+    const { title, description, price, category, condition, images } = req.body;
+
+    // Check ownership
+    const [listings] = await db.promise().query('SELECT * FROM listings WHERE id = ? AND userId = ?', [id, req.userId]);
     
-    let sql = `
-      SELECT l.*, u.username
-      FROM listings l
-      JOIN users u ON l.userId = u.id
-      WHERE 1=1
+    if (listings.length === 0) {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'You can only edit your own listings' 
+      });
+    }
+
+    const sql = `
+      UPDATE listings 
+      SET title = ?, description = ?, price = ?, category = ?, \`condition\` = ?, images = ?
+      WHERE id = ?
     `;
+    
+    await db.promise().query(sql, [
+      title, 
+      description, 
+      price, 
+      category, 
+      condition,
+      JSON.stringify(images || []),
+      id
+    ]);
+
+    res.json({ success: true, message: 'Listing updated successfully' });
+  } catch (error) {
+    console.error('Error updating listing:', error);
+    res.status(500).json({ success: false, message: 'Failed to update listing' });
+  }
+});
+
+app.delete('/api/listings/:id', auth, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Check ownership
+    const [listings] = await db.promise().query('SELECT * FROM listings WHERE id = ? AND userId = ?', [id, req.userId]);
+    
+    if (listings.length === 0) {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'You can only delete your own listings' 
+      });
+    }
+
+    await db.promise().query('DELETE FROM listings WHERE id = ?', [id]);
+    res.json({ success: true, message: 'Listing deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting listing:', error);
+    res.status(500).json({ success: false, message: 'Failed to delete listing' });
+  }
+});
+
+app.get('/api/listings/user/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const sql = 'SELECT * FROM listings WHERE userId = ? ORDER BY created_at DESC';
+    const [listings] = await db.promise().query(sql, [userId]);
+    res.json({ success: true, listings });
+  } catch (error) {
+    console.error('Error fetching user listings:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch user listings' });
+  }
+});
+
+app.get('/api/listings/search', async (req, res) => {
+  try {
+    const { query, category, minPrice, maxPrice } = req.query;
+    
+    let sql = 'SELECT l.*, u.username FROM listings l JOIN users u ON l.userId = u.id WHERE l.status = "active"';
     const params = [];
 
-    if (q) {
+    if (query) {
       sql += ' AND (l.title LIKE ? OR l.description LIKE ?)';
-      params.push(`%${q}%`, `%${q}%`);
+      params.push(`%${query}%`, `%${query}%`);
     }
 
     if (category) {
@@ -380,74 +537,23 @@ app.get('/api/search', async (req, res) => {
       params.push(category);
     }
 
+    if (minPrice) {
+      sql += ' AND l.price >= ?';
+      params.push(minPrice);
+    }
+
     if (maxPrice) {
       sql += ' AND l.price <= ?';
       params.push(maxPrice);
     }
 
-    sql += ' ORDER BY l.created_at DESC LIMIT 50';
+    sql += ' ORDER BY l.created_at DESC';
 
     const [listings] = await db.promise().query(sql, params);
     res.json({ success: true, listings });
   } catch (error) {
-    console.error('Search error:', error);
-    res.status(500).json({ success: false, message: 'Search failed' });
-  }
-});
-
-// ============ GET SINGLE LISTING ============
-app.get('/api/listings/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const sql = `
-      SELECT l.*, u.username, p.display_name, p.avatar_url
-      FROM listings l
-      JOIN users u ON l.userId = u.id
-      LEFT JOIN profiles p ON u.id = p.user_id
-      WHERE l.id = ?
-    `;
-    
-    const [listings] = await db.promise().query(sql, [id]);
-
-    if (listings.length === 0) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Listing not found' 
-      });
-    }
-
-    res.json({ success: true, listing: listings[0] });
-  } catch (error) {
-    console.error('Listing error:', error);
-    res.status(500).json({ success: false, message: 'Failed to fetch listing' });
-  }
-});
-
-// ============ DELETE LISTING ============
-app.delete('/api/listings/:id', auth, async (req, res) => {
-  try {
-    const userId = req.userId;
-    const { id } = req.params;
-
-    // Verify ownership
-    const checkSql = 'SELECT * FROM listings WHERE id = ? AND userId = ?';
-    const [listings] = await db.promise().query(checkSql, [id, userId]);
-
-    if (listings.length === 0) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Listing not found or unauthorized' 
-      });
-    }
-
-    const deleteSql = 'DELETE FROM listings WHERE id = ?';
-    await db.promise().query(deleteSql, [id]);
-
-    res.json({ success: true, message: 'Listing deleted successfully' });
-  } catch (error) {
-    console.error('Delete listing error:', error);
-    res.status(500).json({ success: false, message: 'Failed to delete listing' });
+    console.error('Error searching listings:', error);
+    res.status(500).json({ success: false, message: 'Failed to search listings' });
   }
 });
 
