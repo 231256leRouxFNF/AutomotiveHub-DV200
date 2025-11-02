@@ -598,14 +598,20 @@ app.get('/api/notifications/unread-count', auth, async (req, res) => {
 
 // ============ POSTS ENDPOINTS ============
 
-// Get all posts - FIX LINE 616
+// Get all posts - FIXED SQL QUERY
 app.get('/api/social/posts', async (req, res) => {
   try {
     const sql = `
       SELECT 
-        p.*,
+        p.id,
+        p.userId,
+        p.content,
+        p.image_url,
+        p.created_at,
+        p.updated_at,
         u.username,
         u.display_name,
+        u.email,
         (SELECT COUNT(*) FROM post_likes WHERE postId = p.id) as likes,
         (SELECT COUNT(*) FROM comments WHERE postId = p.id) as comment_count
       FROM posts p
@@ -628,12 +634,17 @@ app.get('/api/social/posts', async (req, res) => {
       post.comments = comments;
     }
     
-    console.log('📤 Sending posts:', posts.length); // Debug log
+    console.log('📤 Sending posts:', posts.length);
     
     res.json({ success: true, posts });
   } catch (error) {
-    console.error('Error fetching posts:', error);
-    res.status(500).json({ success: false, message: 'Failed to fetch posts' });
+    console.error('❌ Error fetching posts:', error);
+    console.error('❌ SQL Error:', error.sqlMessage); // More detailed error
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to fetch posts',
+      error: error.sqlMessage 
+    });
   }
 });
 

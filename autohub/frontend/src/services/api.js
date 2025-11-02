@@ -8,7 +8,7 @@ const api = axios.create({
   }
 });
 
-// Add request interceptor
+// Add request interceptor to include auth token
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
@@ -22,10 +22,19 @@ api.interceptors.request.use(
   }
 );
 
-// Auth Service - ESSENTIAL
+// Auth Service
 export const authService = {
   login: async (credentials) => {
     const response = await api.post('/api/login', credentials);
+    if (response.data.token) {
+      localStorage.setItem('token', response.data.token);
+      localStorage.setItem('user', JSON.stringify(response.data.user));
+    }
+    return response.data;
+  },
+
+  register: async (userData) => {
+    const response = await api.post('/api/register', userData);
     if (response.data.token) {
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
@@ -40,28 +49,49 @@ export const authService = {
 
   getCurrentUser: () => {
     const userStr = localStorage.getItem('user');
-    return userStr ? JSON.parse(userStr) : null;
-  }
-};
-
-// User Service - ESSENTIAL
-export const userService = {
-  getProfile: async () => {
-    const response = await api.get('/api/user/profile');
-    return response.data.user || null;
+    if (userStr) {
+      try {
+        return JSON.parse(userStr);
+      } catch (e) {
+        console.error('Error parsing user data:', e);
+        return null;
+      }
+    }
+    return null;
   },
 
-  updateProfile: async (profileData) => {
-    const response = await api.put('/api/user/profile', profileData);
-    return response.data;
+  // ADD THIS FUNCTION - Fix for the error
+  isAuthenticated: () => {
+    const token = localStorage.getItem('token');
+    const user = localStorage.getItem('user');
+    return Boolean(token && user);
+  },
+
+  getToken: () => {
+    return localStorage.getItem('token');
   }
 };
 
-// Garage Service - ESSENTIAL
+// Garage Service
 export const garageService = {
   getUserVehicles: async (userId) => {
-    const response = await api.get(`/api/garage/${userId}`);
-    return response.data.vehicles || [];
+    try {
+      const response = await api.get(`/api/garage/${userId}`);
+      return response.data.vehicles || [];
+    } catch (error) {
+      console.error('Failed to fetch vehicles:', error);
+      return [];
+    }
+  },
+
+  addVehicle: async (vehicleData) => {
+    const response = await api.post('/api/garage', vehicleData);
+    return response.data;
+  },
+
+  updateVehicle: async (vehicleId, vehicleData) => {
+    const response = await api.put(`/api/garage/${vehicleId}`, vehicleData);
+    return response.data;
   },
 
   deleteVehicle: async (vehicleId) => {
@@ -70,35 +100,7 @@ export const garageService = {
   }
 };
 
-// Listing Service - ESSENTIAL (Marketplace)
-export const listingService = {
-  getAllListings: async () => {
-    const response = await api.get('/api/listings');
-    return response.data.listings || [];
-  },
-
-  getListing: async (id) => {
-    const response = await api.get(`/api/listings/${id}`);
-    return response.data.listing || null;
-  },
-
-  createListing: async (listingData) => {
-    const response = await api.post('/api/listings', listingData);
-    return response.data;
-  },
-
-  deleteListing: async (id) => {
-    const response = await api.delete(`/api/listings/${id}`);
-    return response.data;
-  },
-
-  searchListings: async (query) => {
-    const response = await api.get('/api/search', { params: query });
-    return response.data.listings || [];
-  }
-};
-
-// Event Service - SIMPLE (Community)
+// Event Service
 export const eventService = {
   getAllEvents: async () => {
     const response = await api.get('/api/events');
@@ -111,19 +113,7 @@ export const eventService = {
   }
 };
 
-// Notification Service - SIMPLE (just count)
-export const notificationService = {
-  getUnreadCount: async (userId) => {
-    try {
-      const response = await api.get(`/api/notifications/unread-count?userId=${userId}`);
-      return response.data.count || 0;
-    } catch (error) {
-      return 0; // Return 0 if endpoint doesn't exist yet
-    }
-  }
-};
-
-// Social Service - Update createPost
+// Social Service
 export const socialService = {
   getPosts: async () => {
     try {
@@ -143,7 +133,6 @@ export const socialService = {
       formData.append('image', postData.image);
     }
 
-    // Don't set Content-Type header - let browser set it with boundary for multipart
     const response = await api.post('/api/social/posts', formData);
     return response.data;
   },
@@ -161,23 +150,6 @@ export const socialService = {
   deletePost: async (postId) => {
     const response = await api.delete(`/api/social/posts/${postId}`);
     return response.data;
-  }
-};
-
-// General Service - SIMPLE (dashboard stats, etc.)
-export const generalService = {
-  getDashboardStats: async () => {
-    try {
-      const response = await api.get('/api/dashboard/stats');
-      return response.data || {};
-    } catch (error) {
-      return {
-        totalVehicles: 0,
-        totalListings: 0,
-        totalEvents: 0,
-        activeUsers: 0
-      };
-    }
   }
 };
 
