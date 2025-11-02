@@ -49,10 +49,11 @@ const VehicleManagement = () => {
         console.log('📥 Fetching vehicles for user:', user.id);
         
         const userVehicles = await garageService.getUserVehicles(user.id);
-        console.log('✅ Vehicles fetched:', userVehicles);
+        console.log('✅ Vehicles response:', userVehicles);
+        console.log('✅ Is array?', Array.isArray(userVehicles));
         
         const vehiclesArray = Array.isArray(userVehicles) ? userVehicles : [];
-        console.log('🚗 Setting vehicles:', vehiclesArray);
+        console.log('🚗 Final vehicles array:', vehiclesArray);
         
         setVehicles(vehiclesArray);
 
@@ -64,6 +65,7 @@ const VehicleManagement = () => {
 
       } catch (error) {
         console.error('❌ Error loading garage data:', error);
+        console.error('❌ Error response:', error.response?.data);
         setGarageStats({ totalVehicles: 0, featured: 0, upcomingEvents: 0 });
         setVehicles([]);
       } finally {
