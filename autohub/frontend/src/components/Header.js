@@ -3,7 +3,6 @@ import { Link, useLocation } from 'react-router-dom';
 import Logo from './Logo';
 import SearchBox from './SearchBox';
 import './Header.css';
-import { authService, notificationService } from '../services/api';
 
 const Header = () => {
   const location = useLocation();
@@ -14,7 +13,6 @@ const Header = () => {
     const fetchUnreadCount = async () => {
       if (currentUser && currentUser.id) {
         try {
-          const count = await notificationService.getUnreadCount(currentUser.id);
           setUnreadCount(count);
         } catch (error) {
           console.error('Error fetching unread notification count:', error);

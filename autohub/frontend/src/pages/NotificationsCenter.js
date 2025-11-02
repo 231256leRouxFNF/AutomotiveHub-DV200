@@ -1,89 +1,84 @@
-import React from 'react';
-import Header from '../components/Header';
-import axios from 'axios';
-import { useEffect, useState } from 'react';
-import Footer from '../components/Footer';
-import './PageLayout.css';
-import { authService } from '../services/api';
-
-// Use mock data for now - notifications not connected to backend yet
-const mockNotifications = [];
+import React, { useState, useEffect } from 'react';
+import Navbar from '../components/Navbar';
+import './NotificationsCenter.css';
 
 const NotificationsCenter = () => {
-  const [notifications, setNotifications] = useState(mockNotifications);
-  const currentUser = authService.getCurrentUser();
-  const userId = currentUser ? currentUser.id : null;
-
-  const fetchNotifications = async () => {
-    if (userId) {
-      try {
-        // const fetchedNotifications = await notificationService.getNotifications(userId);
-        // setNotifications(fetchedNotifications);
-        setNotifications(mockNotifications); // Set to mock data for now
-      } catch (error) {
-        console.error('Error fetching notifications:', error);
-      }
-    }
-  };
+  const [notifications, setNotifications] = useState([]);
+  const [filter, setFilter] = useState('all');
 
   useEffect(() => {
-    fetchNotifications();
-  }, [userId]);
+    // Use mock data instead of API call
+    const mockNotifications = [
+      {
+        id: 1,
+        type: 'like',
+        message: 'John liked your post',
+        timestamp: new Date().toISOString(),
+        read: false
+      },
+      {
+        id: 2,
+        type: 'comment',
+        message: 'Sarah commented on your vehicle',
+        timestamp: new Date().toISOString(),
+        read: false
+      }
+    ];
+    
+    setNotifications(mockNotifications);
+  }, []);
 
-  const handleMarkAsRead = async (id) => {
-    try {
-      // await notificationService.markAsRead(id);
-      setNotifications(prevNotifs =>
-        prevNotifs.map(notif =>
-          notif.id === id ? { ...notif, isRead: 1 } : notif
-        )
-      );
-    } catch (error) {
-      console.error('Error marking notification as read:', error);
-    }
-  };
-
-  const handleDeleteNotification = async (id) => {
-    try {
-      // await notificationService.deleteNotification(id);
-      setNotifications(prevNotifs => prevNotifs.filter(notif => notif.id !== id));
-    } catch (error) {
-      console.error('Error deleting notification:', error);
-    }
-  };
+  const filteredNotifications = filter === 'all' 
+    ? notifications 
+    : notifications.filter(n => n.read === (filter === 'read'));
 
   return (
-    <div className="page-wrapper">
-      <Header />
-      <main className="page-container">
-        <h1 className="page-title">Notifications</h1>
-        <section className="notifications-section">
-          {notifications.length > 0 ? (
-            <ul className="notifications-list">
-              {notifications.map((notification) => (
-                <li key={notification.id} className={`notification-item ${notification.isRead ? 'read' : 'unread'}`}>
-                  <div className="notification-content">
-                    <p>{notification.message}</p>
-                    {notification.link && (
-                      <a href={notification.link} className="notification-link">View Details</a>
-                    )}
-                    <span className="notification-timestamp">{new Date(notification.created_at).toLocaleString()}</span>
-                  </div>
-                  <div className="notification-actions">
-                    {!notification.isRead && (
-                      <button onClick={() => handleMarkAsRead(notification.id)} className="mark-read-btn">Mark as Read</button>
-                    )}
-                    <button onClick={() => handleDeleteNotification(notification.id)} className="delete-btn">Delete</button>
-                  </div>
-                </li>
-              ))}
-            </ul>
+    <div className="notifications-page">
+      <Navbar />
+      <div className="notifications-container">
+        <h1>Notifications</h1>
+        
+        <div className="notification-filters">
+          <button 
+            className={filter === 'all' ? 'active' : ''} 
+            onClick={() => setFilter('all')}
+          >
+            All
+          </button>
+          <button 
+            className={filter === 'unread' ? 'active' : ''} 
+            onClick={() => setFilter('unread')}
+          >
+            Unread
+          </button>
+          <button 
+            className={filter === 'read' ? 'active' : ''} 
+            onClick={() => setFilter('read')}
+          >
+            Read
+          </button>
+        </div>
+
+        <div className="notifications-list">
+          {filteredNotifications.length === 0 ? (
+            <p className="no-notifications">No notifications yet</p>
           ) : (
-            <p className="no-notifications">No new notifications.</p>
+            filteredNotifications.map((notification) => (
+              <div 
+                key={notification.id} 
+                className={`notification-item ${notification.read ? 'read' : 'unread'}`}
+              >
+                <div className="notification-content">
+                  <p>{notification.message}</p>
+                  <span className="notification-time">
+                    {new Date(notification.timestamp).toLocaleString()}
+                  </span>
+                </div>
+              </div>
+            ))
           )}
-        </section>
-      </main>
-      <Footer />
+        </div>
+      </div>
     </div>
   );
 };
