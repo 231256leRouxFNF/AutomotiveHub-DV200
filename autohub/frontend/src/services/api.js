@@ -123,15 +123,47 @@ export const notificationService = {
   }
 };
 
-// Social Service - SIMPLE (just posts)
+// Social Service - COMPLETE
 export const socialService = {
   getPosts: async () => {
     try {
       const response = await api.get('/api/social/posts');
       return response.data.posts || [];
     } catch (error) {
-      return []; // Return empty array if endpoint doesn't exist yet
+      console.error('Failed to fetch posts:', error);
+      return [];
     }
+  },
+
+  createPost: async (postData) => {
+    const formData = new FormData();
+    formData.append('content', postData.content);
+    
+    if (postData.image) {
+      formData.append('image', postData.image);
+    }
+
+    const response = await api.post('/api/social/posts', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+    return response.data;
+  },
+
+  likePost: async (postId) => {
+    const response = await api.post(`/api/social/posts/${postId}/like`);
+    return response.data;
+  },
+
+  addComment: async (postId, content) => {
+    const response = await api.post(`/api/social/posts/${postId}/comments`, { content });
+    return response.data;
+  },
+
+  deletePost: async (postId) => {
+    const response = await api.delete(`/api/social/posts/${postId}`);
+    return response.data;
   }
 };
 

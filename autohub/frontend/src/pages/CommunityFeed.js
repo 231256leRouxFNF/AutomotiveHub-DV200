@@ -7,6 +7,8 @@ import './CommunityFeed.css';
 
 const CommunityFeed = () => {
   const [newPostContent, setNewPostContent] = useState('');
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
   const [communityStats, setCommunityStats] = useState([]);
   const [posts, setPosts] = useState([]);
   const [events, setEvents] = useState([]);
@@ -95,33 +97,129 @@ const CommunityFeed = () => {
     return <span className="icon">{icons[iconName] || '•'}</span>;
   };
 
+  const handleImageSelect = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        alert('Image size must be less than 5MB');
+        return;
+      }
+      
+      setSelectedImage(file);
+      
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeImage = () => {
+    setSelectedImage(null);
+    setImagePreview(null);
+  };
+
   const handlePostSubmit = async (e) => {
     e.preventDefault();
-    if (!newPostContent.trim()) return;
-    console.log('Post feature coming soon');
-    setNewPostContent('');
+    
+    if (!currentUser) {
+      alert('Please login to post');
+      navigate('/login');
+      return;
+    }
+
+    if (!newPostContent.trim()) {
+      alert('Please write something');
+      return;
+    }
+
+    try {
+      console.log('📤 Creating post...');
+      
+      const postData = {
+        content: newPostContent,
+        image: selectedImage
+      };
+
+      const response = await socialService.createPost(postData);
+      
+      if (response.success) {
+        alert('Post created successfully!');
+        setNewPostContent('');
+        setSelectedImage(null);
+        setImagePreview(null);
+        
+        // Refresh posts
+        const updatedPosts = await socialService.getPosts();
+        setPosts(updatedPosts);
+      }
+    } catch (error) {
+      console.error('❌ Error creating post:', error);
+      alert('Failed to create post. Please try again.');
+    }
   };
 
-  const handleLike = (postId) => {
-    console.log('Like feature coming soon');
+  const handleLike = async (postId) => {
+    if (!currentUser) {
+      alert('Please login to like posts');
+      navigate('/login');
+      return;
+    }
+
+    try {
+      await socialService.likePost(postId);
+      
+      // Refresh posts
+      const updatedPosts = await socialService.getPosts();
+      setPosts(updatedPosts);
+    } catch (error) {
+      console.error('❌ Error liking post:', error);
+    }
   };
 
-  const handleEditPost = (postId, currentContent) => {
-    setEditingPostId(postId);
-    setEditContent(currentContent);
-  };
-
-  const handleDeletePost = (postId) => {
-    console.log('Delete feature coming soon');
-  };
-
-  const handleAddComment = (postId, comment) => {
+  const handleAddComment = async (postId, comment) => {
     if (!comment?.trim()) return;
-    console.log('Comment feature coming soon');
-    setCommentDrafts(prev => ({
-      ...prev,
-      [postId]: ''
-    }));
+
+    if (!currentUser) {
+      alert('Please login to comment');
+      navigate('/login');
+      return;
+    }
+
+    try {
+      await socialService.addComment(postId, comment);
+      
+      // Clear comment draft
+      setCommentDrafts(prev => ({
+        ...prev,
+        [postId]: ''
+      }));
+      
+      // Refresh posts
+      const updatedPosts = await socialService.getPosts();
+      setPosts(updatedPosts);
+    } catch (error) {
+      console.error('❌ Error adding comment:', error);
+    }
+  };
+
+  const handleDeletePost = async (postId) => {
+    if (!window.confirm('Are you sure you want to delete this post?')) {
+      return;
+    }
+
+    try {
+      await socialService.deletePost(postId);
+      
+      // Refresh posts
+      const updatedPosts = await socialService.getPosts();
+      setPosts(updatedPosts);
+    } catch (error) {
+      console.error('❌ Error deleting post:', error);
+      alert('Failed to delete post');
+    }
   };
 
   // Event Modal Functions
@@ -269,9 +367,37 @@ const CommunityFeed = () => {
                 placeholder="What's on your mind?"
                 rows="4"
               />
-              <button type="submit" className="btn primary-btn">
-                Post
-              </button>
+              
+              {/* Image Preview */}
+              {imagePreview && (
+                <div className="image-preview">
+                  <img src={imagePreview} alt="Preview" />
+                  <button 
+                    type="button" 
+                    className="remove-image-btn"
+                    onClick={removeImage}
+                  >
+                    {renderIcon('x')} Remove
+                  </button>
+                </div>
+              )}
+              
+              <div className="post-actions-row">
+                <label htmlFor="post-image" className="upload-image-btn">
+                  📷 Add Photo
+                  <input
+                    type="file"
+                    id="post-image"
+                    accept="image/*"
+                    onChange={handleImageSelect}
+                    style={{ display: 'none' }}
+                  />
+                </label>
+                
+                <button type="submit" className="btn primary-btn">
+                  Post
+                </button>
+              </div>
             </form>
           </div>
 
@@ -285,30 +411,39 @@ const CommunityFeed = () => {
               <div key={post.id} className="post-card">
                 <div className="post-header">
                   <div className="post-author">
-                    <img src={post.authorAvatar || '/default-avatar.png'} alt={post.author} className="author-avatar" />
+                    <img src={post.authorAvatar || '/default-avatar.png'} alt={post.display_name || post.username} className="author-avatar" />
                     <div>
-                      <h4>{post.author}</h4>
-                      <span className="post-time">{post.timestamp}</span>
+                      <h4>{post.display_name || post.username}</h4>
+                      <span className="post-time">
+                        {new Date(post.created_at).toLocaleString()}
+                      </span>
                     </div>
                   </div>
+                  
+                  {currentUser && currentUser.id === post.userId && (
+                    <button 
+                      className="delete-post-btn"
+                      onClick={() => handleDeletePost(post.id)}
+                    >
+                      {renderIcon('x')}
+                    </button>
+                  )}
                 </div>
                 
                 <div className="post-content">
-                  {editingPostId === post.id ? (
-                    <textarea
-                      value={editContent}
-                      onChange={(e) => setEditContent(e.target.value)}
-                      rows="4"
+                  <p>{post.content}</p>
+                  {post.image_url && (
+                    <img 
+                      src={`https://automotivehub-dv200-1.onrender.com${post.image_url}`} 
+                      alt="Post" 
+                      className="post-image" 
                     />
-                  ) : (
-                    <p>{post.content}</p>
                   )}
-                  {post.image && <img src={post.image} alt="Post" className="post-image" />}
                 </div>
 
                 <div className="post-stats">
                   <span>{post.likes || 0} likes</span>
-                  <span>{post.comments?.length || 0} comments</span>
+                  <span>{post.comment_count || post.comments?.length || 0} comments</span>
                 </div>
 
                 <div className="post-actions">
@@ -322,9 +457,9 @@ const CommunityFeed = () => {
 
                 {post.comments && post.comments.length > 0 && (
                   <div className="comments-section">
-                    {post.comments.map((comment, idx) => (
-                      <div key={idx} className="comment">
-                        <strong>{comment.author}:</strong> {comment.text}
+                    {post.comments.map((comment) => (
+                      <div key={comment.id} className="comment">
+                        <strong>{comment.display_name || comment.username}:</strong> {comment.content}
                       </div>
                     ))}
                   </div>
@@ -345,7 +480,7 @@ const CommunityFeed = () => {
                 )}
               </div>
             ))
-          )}
+          }
         </main>
 
         {/* Right Sidebar */}

@@ -572,14 +572,183 @@ app.get('/api/notifications/unread-count', auth, async (req, res) => {
   }
 });
 
-// ============ GET SOCIAL POSTS ============
+// ============ POSTS ENDPOINTS ============
+
+// Get all posts
 app.get('/api/social/posts', async (req, res) => {
   try {
-    // For now, return empty array until you implement posts
-    res.json({ success: true, posts: [] });
+    const sql = `
+      SELECT 
+        p.*,
+        u.username,
+        u.display_name,
+        (SELECT COUNT(*) FROM post_likes WHERE postId = p.id) as likes,
+        (SELECT COUNT(*) FROM comments WHERE postId = p.id) as comment_count
+      FROM posts p
+      JOIN users u ON p.userId = u.id
+      ORDER BY p.created_at DESC
+    `;
+    
+    const [posts] = await db.promise().query(sql);
+    
+    // Get comments for each post
+    for (let post of posts) {
+      const commentsSql = `
+        SELECT c.*, u.username, u.display_name
+        FROM comments c
+        JOIN users u ON c.userId = u.id
+        WHERE c.postId = ?
+        ORDER BY c.created_at ASC
+      `;
+      const [comments] = await db.promise().query(commentsSql, [post.id]);
+      post.comments = comments;
+    }
+    
+    res.json({ success: true, posts });
   } catch (error) {
-    console.error('Posts error:', error);
+    console.error('Error fetching posts:', error);
     res.status(500).json({ success: false, message: 'Failed to fetch posts' });
+  }
+});
+
+// Create new post (with image upload)
+app.post('/api/social/posts', auth, upload.single('image'), async (req, res) => {
+  try {
+    const { content } = req.body;
+    const userId = req.userId;
+    
+    if (!content || !content.trim()) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Post content is required' 
+      });
+    }
+
+    // Handle image upload
+    let imageUrl = null;
+    if (req.file) {
+      imageUrl = `/uploads/${req.file.filename}`;
+    }
+
+    const sql = 'INSERT INTO posts (userId, content, image_url) VALUES (?, ?, ?)';
+    const [result] = await db.promise().query(sql, [userId, content, imageUrl]);
+
+    // Fetch the created post with user info
+    const getPostSql = `
+      SELECT 
+        p.*,
+        u.username,
+        u.display_name,
+        0 as likes,
+        0 as comment_count
+      FROM posts p
+      JOIN users u ON p.userId = u.id
+      WHERE p.id = ?
+    `;
+    const [posts] = await db.promise().query(getPostSql, [result.insertId]);
+    const newPost = posts[0];
+    newPost.comments = [];
+
+    res.json({ 
+      success: true, 
+      message: 'Post created successfully',
+      post: newPost
+    });
+  } catch (error) {
+    console.error('Error creating post:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to create post' 
+    });
+  }
+});
+
+// Like/Unlike a post
+app.post('/api/social/posts/:postId/like', auth, async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const userId = req.userId;
+
+    // Check if already liked
+    const checkSql = 'SELECT * FROM post_likes WHERE postId = ? AND userId = ?';
+    const [existing] = await db.promise().query(checkSql, [postId, userId]);
+
+    if (existing.length > 0) {
+      // Unlike
+      await db.promise().query('DELETE FROM post_likes WHERE postId = ? AND userId = ?', [postId, userId]);
+      res.json({ success: true, message: 'Post unliked', liked: false });
+    } else {
+      // Like
+      await db.promise().query('INSERT INTO post_likes (postId, userId) VALUES (?, ?)', [postId, userId]);
+      res.json({ success: true, message: 'Post liked', liked: true });
+    }
+  } catch (error) {
+    console.error('Error toggling like:', error);
+    res.status(500).json({ success: false, message: 'Failed to toggle like' });
+  }
+});
+
+// Add comment to post
+app.post('/api/social/posts/:postId/comments', auth, async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const { content } = req.body;
+    const userId = req.userId;
+
+    if (!content || !content.trim()) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Comment content is required' 
+      });
+    }
+
+    const sql = 'INSERT INTO comments (postId, userId, content) VALUES (?, ?, ?)';
+    const [result] = await db.promise().query(sql, [postId, userId, content]);
+
+    // Fetch the created comment with user info
+    const getCommentSql = `
+      SELECT c.*, u.username, u.display_name
+      FROM comments c
+      JOIN users u ON c.userId = u.id
+      WHERE c.id = ?
+    `;
+    const [comments] = await db.promise().query(getCommentSql, [result.insertId]);
+
+    res.json({ 
+      success: true, 
+      message: 'Comment added',
+      comment: comments[0]
+    });
+  } catch (error) {
+    console.error('Error adding comment:', error);
+    res.status(500).json({ success: false, message: 'Failed to add comment' });
+  }
+});
+
+// Delete post
+app.delete('/api/social/posts/:postId', auth, async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const userId = req.userId;
+
+    // Check if user owns the post
+    const checkSql = 'SELECT * FROM posts WHERE id = ? AND userId = ?';
+    const [posts] = await db.promise().query(checkSql, [postId, userId]);
+
+    if (posts.length === 0) {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'You can only delete your own posts' 
+      });
+    }
+
+    // Delete post (cascade will delete likes and comments)
+    await db.promise().query('DELETE FROM posts WHERE id = ?', [postId]);
+
+    res.json({ success: true, message: 'Post deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting post:', error);
+    res.status(500).json({ success: false, message: 'Failed to delete post' });
   }
 });
 

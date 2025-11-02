@@ -612,6 +612,80 @@
   cursor: not-allowed;
 }
 
+/* Image Upload Styles */
+.post-actions-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.upload-image-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: 1px solid #393D47;
+  color: #F4F4F6;
+  padding: 9px 24px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.upload-image-btn:hover {
+  border-color: #636AE8;
+  color: #636AE8;
+}
+
+.image-preview {
+  position: relative;
+  margin-bottom: 16px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.image-preview img {
+  width: 100%;
+  max-height: 300px;
+  object-fit: cover;
+  display: block;
+}
+
+.remove-image-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: rgba(0, 0, 0, 0.7);
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.remove-image-btn:hover {
+  background: rgba(0, 0, 0, 0.9);
+}
+
+.delete-post-btn {
+  background: transparent;
+  border: none;
+  color: #8C8D8B;
+  cursor: pointer;
+  padding: 4px;
+  transition: color 0.2s;
+}
+
+.delete-post-btn:hover {
+  color: #ff4444;
+}
+
 /* RESPONSIVE STYLES */
 @media (max-width: 1200px) {
   .community-container {
