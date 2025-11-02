@@ -54,6 +54,31 @@ const upload = multer({
 // Serve uploaded files statically
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// ============ AUTHENTICATION MIDDLEWARE ============
+const auth = (req, res, next) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1]; // Bearer TOKEN
+    
+    if (!token) {
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Authentication required' 
+      });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+    req.userId = decoded.userId;
+    req.username = decoded.username;
+    next();
+  } catch (error) {
+    console.error('Auth error:', error);
+    return res.status(401).json({ 
+      success: false, 
+      message: 'Invalid or expired token' 
+    });
+  }
+};
+
 // ============ API ROUTES MUST COME FIRST ============
 
 // Test routes
