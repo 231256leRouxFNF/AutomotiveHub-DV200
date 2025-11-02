@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { trackUserAction } from '../services/analytics';
 
 // Create axios instance with backend URL
 const api = axios.create({
@@ -69,6 +70,13 @@ export const authService = {
   getToken: () => {
     return localStorage.getItem('token');
   }
+};
+
+// After successful login:
+const handleLogin = async (credentials) => {
+  const result = await authService.login(credentials);
+  trackUserAction.login(); // Track login event
+  // ...rest of code
 };
 
 // ============ 2. GARAGE SERVICE ============

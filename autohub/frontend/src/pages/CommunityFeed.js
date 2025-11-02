@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { socialService, authService, eventService } from '../services/api';
+import { trackUserAction } from '../services/analytics';
 import Header from '../components/Header';
 import communityData from '../data/community.json';
 import { useNavigate } from 'react-router-dom';
 import './CommunityFeed.css';
+import SEO from '../components/SEO';
 
 const CommunityFeed = () => {
   const [newPostContent, setNewPostContent] = useState('');
@@ -144,6 +146,7 @@ const CommunityFeed = () => {
       };
 
       const response = await socialService.createPost(postData);
+      trackUserAction.createPost(); // Track post creation
       
       if (response.success) {
         alert('Post created successfully!');
@@ -170,6 +173,7 @@ const CommunityFeed = () => {
 
     try {
       await socialService.likePost(postId);
+      trackUserAction.likePost(); // Track like
       
       // Refresh posts
       const updatedPosts = await socialService.getPosts();
@@ -301,314 +305,322 @@ const CommunityFeed = () => {
   }
 
   return (
-    <div className="community-feed">
-      <Header />
-      
-      <div className="community-container">
-        {/* Sidebar */}
-        <aside className="community-sidebar">
-          <div className="sidebar-section">
-            <h3 className="sidebar-title">Explore Communities</h3>
-            <nav className="sidebar-nav">
-              {sidebarLinks.map((link, index) => (
-                <button
-                  key={index}
-                  className={`sidebar-link ${link.active ? 'active' : ''}`}
-                >
-                  {renderIcon(link.icon)}
-                  <span>{link.label}</span>
-                </button>
-              ))}
-            </nav>
-          </div>
-
-          {/* Upcoming Events */}
-          <div className="sidebar-section">
-            <div className="sidebar-header">
-              <h3 className="sidebar-title">Upcoming Events ({events.length})</h3>
-              
+    <>
+      <SEO 
+        title="Community Feed"
+        description="Connect with car enthusiasts, share your rides, and engage with the automotive community on AutoHub."
+        keywords="car community, automotive social, car posts, vehicle sharing"
+        url="https://automotivehub-dv200.vercel.app/community"
+      />
+      <div className="community-feed">
+        <Header />
+        
+        <div className="community-container">
+          {/* Sidebar */}
+          <aside className="community-sidebar">
+            <div className="sidebar-section">
+              <h3 className="sidebar-title">Explore Communities</h3>
+              <nav className="sidebar-nav">
+                {sidebarLinks.map((link, index) => (
+                  <button
+                    key={index}
+                    className={`sidebar-link ${link.active ? 'active' : ''}`}
+                  >
+                    {renderIcon(link.icon)}
+                    <span>{link.label}</span>
+                  </button>
+                ))}
+              </nav>
             </div>
 
-              <div>
-                <button className="create-event-btn" onClick={openEventModal}>
-                {renderIcon('plus')} Create
-              </button>
+            {/* Upcoming Events */}
+            <div className="sidebar-section">
+              <div className="sidebar-header">
+                <h3 className="sidebar-title">Upcoming Events ({events.length})</h3>
+                
               </div>
 
-            {events && events.length > 0 ? (
-              events.slice(0, 3).map((event) => (
-                <div key={event.id} className="event-preview">
-                  <div className="event-date">
-                    {event.date ? new Date(event.date).toLocaleDateString() : 'TBD'}
-                  </div>
-                  <div className="event-title">{event.title || 'Untitled Event'}</div>
-                  <div className="event-location">{event.location || 'Location TBD'}</div>
-                </div>
-              ))
-            ) : (
-              <div className="no-events">
-                <p>No upcoming events</p>
-                <button className="btn primary-btn" onClick={openEventModal}>
-                  Create First Event
+                <div>
+                  <button className="create-event-btn" onClick={openEventModal}>
+                  {renderIcon('plus')} Create
                 </button>
-              </div>
-            )}
-          </div>
-        </aside>
+                </div>
 
-        {/* Main Feed */}
-        <main className="community-main">
-          <div className="post-composer">
-            <h2>Share with the community</h2>
-            <form onSubmit={handlePostSubmit}>
-              <textarea
-                value={newPostContent}
-                onChange={(e) => setNewPostContent(e.target.value)}
-                placeholder="What's on your mind?"
-                rows="4"
-              />
-              
-              {/* Image Preview */}
-              {imagePreview && (
-                <div className="image-preview">
-                  <img src={imagePreview} alt="Preview" />
-                  <button 
-                    type="button" 
-                    className="remove-image-btn"
-                    onClick={removeImage}
-                  >
-                    {renderIcon('x')} Remove
+              {events && events.length > 0 ? (
+                events.slice(0, 3).map((event) => (
+                  <div key={event.id} className="event-preview">
+                    <div className="event-date">
+                      {event.date ? new Date(event.date).toLocaleDateString() : 'TBD'}
+                    </div>
+                    <div className="event-title">{event.title || 'Untitled Event'}</div>
+                    <div className="event-location">{event.location || 'Location TBD'}</div>
+                  </div>
+                ))
+              ) : (
+                <div className="no-events">
+                  <p>No upcoming events</p>
+                  <button className="btn primary-btn" onClick={openEventModal}>
+                    Create First Event
                   </button>
                 </div>
               )}
-              
-              <div className="post-actions-row">
-                <label htmlFor="post-image" className="upload-image-btn">
-                  📷 Add Photo
-                  <input
-                    type="file"
-                    id="post-image"
-                    accept="image/*"
-                    onChange={handleImageSelect}
-                    style={{ display: 'none' }}
-                  />
-                </label>
-                
-                <button type="submit" className="btn primary-btn">
-                  Post
-                </button>
-              </div>
-            </form>
-          </div>
-
-          {/* Display Posts */}
-          {!posts || posts.length === 0 ? (
-            <div className="no-posts">
-              <p>No posts yet. Be the first to share!</p>
             </div>
-          ) : (
-            posts.map((post) => (
-              <div key={post.id} className="post-card">
-                <div className="post-header">
-                  <div className="post-author">
-                    <img 
-                      src={post.avatar_url || '/default-avatar.png'} 
-                      alt={post.username} 
-                      className="author-avatar" 
-                    />
-                    <div>
-                      <h4>{post.username}</h4>
-                      <span className="post-time">
-                        {post.created_at ? new Date(post.created_at).toLocaleString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          hour: 'numeric',
-                          minute: '2-digit',
-                          hour12: true
-                        }) : 'Just now'}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  {currentUser && currentUser.id === post.userId && (
-                    <button 
-                      className="delete-post-btn"
-                      onClick={() => handleDeletePost(post.id)}
-                    >
-                      {renderIcon('x')}
-                    </button>
-                  )}
-                </div>
-                
-                <div className="post-content">
-                  <p>{post.content}</p>
-                  {post.image_url && (
-                    <img 
-                      src={`https://automotivehub-dv200-1.onrender.com${post.image_url}`} 
-                      alt="Post" 
-                      className="post-image" 
-                    />
-                  )}
-                </div>
+          </aside>
 
-                <div className="post-stats">
-                  <span>{post.likes || 0} likes</span>
-                  <span>{post.comment_count || 0} comments</span>
-                </div>
-
-                <div className="post-actions">
-                  <button onClick={() => handleLike(post.id)}>
-                    {renderIcon('heart')} Like
-                  </button>
-                  <button onClick={() => setCommentDrafts({...commentDrafts, [post.id]: ''})}>
-                    {renderIcon('message')} Comment
-                  </button>
-                </div>
-
-                {post.comments && post.comments.length > 0 && (
-                  <div className="comments-section">
-                    {post.comments.map((comment) => (
-                      <div key={comment.id} className="comment">
-                        <strong>{comment.username}:</strong> {comment.content}
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {commentDrafts[post.id] !== undefined && (
-                  <div className="comment-input">
-                    <input
-                      type="text"
-                      value={commentDrafts[post.id] || ''}
-                      onChange={(e) => setCommentDrafts({...commentDrafts, [post.id]: e.target.value})}
-                      placeholder="Write a comment..."
-                    />
-                    <button onClick={() => handleAddComment(post.id, commentDrafts[post.id])}>
-                      Post
-                    </button>
-                  </div>
-                )}
-              </div>
-            ))
-          )}
-        </main>
-
-        {/* Right Sidebar */}
-        <aside className="community-right-sidebar">
-          <div className="sidebar-section">
-            <h3 className="sidebar-title">Community Stats</h3>
-            <div className="stats-grid">
-              <div className="stat-item">
-                <div className="stat-value">{posts?.length || 0}</div>
-                <div className="stat-label">Posts</div>
-              </div>
-              <div className="stat-item">
-                <div className="stat-value">{events?.length || 0}</div>
-                <div className="stat-label">Events</div>
-              </div>
-            </div>
-          </div>
-
-          {communitySnapshots && communitySnapshots.length > 0 && (
-            <div className="sidebar-section">
-              <h3 className="sidebar-title">Community Highlights</h3>
-              {communitySnapshots.map((snapshot, index) => (
-                <div key={index} className="snapshot-item">
-                  <img src={snapshot.image} alt={snapshot.title} />
-                  <p>{snapshot.title}</p>
-                </div>
-              ))}
-            </div>
-          )}
-        </aside>
-      </div>
-
-      {/* Create Event Modal */}
-      {showEventModal && (
-        <div className="modal-overlay" onClick={closeEventModal}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>Create Event</h2>
-              <button className="modal-close" onClick={closeEventModal}>
-                {renderIcon('x')}
-              </button>
-            </div>
-            
-            <form onSubmit={handleEventSubmit} className="event-form">
-              <div className="form-group">
-                <label htmlFor="title">Event Title *</label>
-                <input
-                  type="text"
-                  id="title"
-                  name="title"
-                  value={eventFormData.title}
-                  onChange={handleEventInputChange}
-                  placeholder="e.g., Weekend Car Meet"
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="description">Description</label>
+          {/* Main Feed */}
+          <main className="community-main">
+            <div className="post-composer">
+              <h2>Share with the community</h2>
+              <form onSubmit={handlePostSubmit}>
                 <textarea
-                  id="description"
-                  name="description"
-                  value={eventFormData.description}
-                  onChange={handleEventInputChange}
-                  placeholder="Tell us about your event..."
+                  value={newPostContent}
+                  onChange={(e) => setNewPostContent(e.target.value)}
+                  placeholder="What's on your mind?"
                   rows="4"
                 />
-              </div>
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="date">Date *</label>
-                  <input
-                    type="date"
-                    id="date"
-                    name="date"
-                    value={eventFormData.date}
-                    onChange={handleEventInputChange}
-                    required
-                  />
+                
+                {/* Image Preview */}
+                {imagePreview && (
+                  <div className="image-preview">
+                    <img src={imagePreview} alt="Preview" />
+                    <button 
+                      type="button" 
+                      className="remove-image-btn"
+                      onClick={removeImage}
+                    >
+                      {renderIcon('x')} Remove
+                    </button>
+                  </div>
+                )}
+                
+                <div className="post-actions-row">
+                  <label htmlFor="post-image" className="upload-image-btn">
+                    📷 Add Photo
+                    <input
+                      type="file"
+                      id="post-image"
+                      accept="image/*"
+                      onChange={handleImageSelect}
+                      style={{ display: 'none' }}
+                    />
+                  </label>
+                  
+                  <button type="submit" className="btn primary-btn">
+                    Post
+                  </button>
                 </div>
+              </form>
+            </div>
 
+            {/* Display Posts */}
+            {!posts || posts.length === 0 ? (
+              <div className="no-posts">
+                <p>No posts yet. Be the first to share!</p>
+              </div>
+            ) : (
+              posts.map((post) => (
+                <div key={post.id} className="post-card">
+                  <div className="post-header">
+                    <div className="post-author">
+                      <img 
+                        src={post.avatar_url || '/default-avatar.png'} 
+                        alt={post.username} 
+                        className="author-avatar" 
+                      />
+                      <div>
+                        <h4>{post.username}</h4>
+                        <span className="post-time">
+                          {post.created_at ? new Date(post.created_at).toLocaleString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            hour: 'numeric',
+                            minute: '2-digit',
+                            hour12: true
+                          }) : 'Just now'}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    {currentUser && currentUser.id === post.userId && (
+                      <button 
+                        className="delete-post-btn"
+                        onClick={() => handleDeletePost(post.id)}
+                      >
+                        {renderIcon('x')}
+                      </button>
+                    )}
+                  </div>
+                  
+                  <div className="post-content">
+                    <p>{post.content}</p>
+                    {post.image_url && (
+                      <img 
+                        src={`https://automotivehub-dv200-1.onrender.com${post.image_url}`} 
+                        alt="Post" 
+                        className="post-image" 
+                      />
+                    )}
+                  </div>
+
+                  <div className="post-stats">
+                    <span>{post.likes || 0} likes</span>
+                    <span>{post.comment_count || 0} comments</span>
+                  </div>
+
+                  <div className="post-actions">
+                    <button onClick={() => handleLike(post.id)}>
+                      {renderIcon('heart')} Like
+                    </button>
+                    <button onClick={() => setCommentDrafts({...commentDrafts, [post.id]: ''})}>
+                      {renderIcon('message')} Comment
+                    </button>
+                  </div>
+
+                  {post.comments && post.comments.length > 0 && (
+                    <div className="comments-section">
+                      {post.comments.map((comment) => (
+                        <div key={comment.id} className="comment">
+                          <strong>{comment.username}:</strong> {comment.content}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {commentDrafts[post.id] !== undefined && (
+                    <div className="comment-input">
+                      <input
+                        type="text"
+                        value={commentDrafts[post.id] || ''}
+                        onChange={(e) => setCommentDrafts({...commentDrafts, [post.id]: e.target.value})}
+                        placeholder="Write a comment..."
+                      />
+                      <button onClick={() => handleAddComment(post.id, commentDrafts[post.id])}>
+                        Post
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
+          </main>
+
+          {/* Right Sidebar */}
+          <aside className="community-right-sidebar">
+            <div className="sidebar-section">
+              <h3 className="sidebar-title">Community Stats</h3>
+              <div className="stats-grid">
+                <div className="stat-item">
+                  <div className="stat-value">{posts?.length || 0}</div>
+                  <div className="stat-label">Posts</div>
+                </div>
+                <div className="stat-item">
+                  <div className="stat-value">{events?.length || 0}</div>
+                  <div className="stat-label">Events</div>
+                </div>
+              </div>
+            </div>
+
+            {communitySnapshots && communitySnapshots.length > 0 && (
+              <div className="sidebar-section">
+                <h3 className="sidebar-title">Community Highlights</h3>
+                {communitySnapshots.map((snapshot, index) => (
+                  <div key={index} className="snapshot-item">
+                    <img src={snapshot.image} alt={snapshot.title} />
+                    <p>{snapshot.title}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </aside>
+        </div>
+
+        {/* Create Event Modal */}
+        {showEventModal && (
+          <div className="modal-overlay" onClick={closeEventModal}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h2>Create Event</h2>
+                <button className="modal-close" onClick={closeEventModal}>
+                  {renderIcon('x')}
+                </button>
+              </div>
+              
+              <form onSubmit={handleEventSubmit} className="event-form">
                 <div className="form-group">
-                  <label htmlFor="location">Location *</label>
+                  <label htmlFor="title">Event Title *</label>
                   <input
                     type="text"
-                    id="location"
-                    name="location"
-                    value={eventFormData.location}
+                    id="title"
+                    name="title"
+                    value={eventFormData.title}
                     onChange={handleEventInputChange}
-                    placeholder="e.g., Central Park"
+                    placeholder="e.g., Weekend Car Meet"
                     required
                   />
                 </div>
-              </div>
 
-              <div className="modal-actions">
-                <button 
-                  type="button" 
-                  className="btn secondary-btn" 
-                  onClick={closeEventModal}
-                  disabled={isSubmittingEvent}
-                >
-                  Cancel
-                </button>
-                <button 
-                  type="submit" 
-                  className="btn primary-btn"
-                  disabled={isSubmittingEvent}
-                >
-                  {isSubmittingEvent ? 'Creating...' : 'Create Event'}
-                </button>
-              </div>
-            </form>
+                <div className="form-group">
+                  <label htmlFor="description">Description</label>
+                  <textarea
+                    id="description"
+                    name="description"
+                    value={eventFormData.description}
+                    onChange={handleEventInputChange}
+                    placeholder="Tell us about your event..."
+                    rows="4"
+                  />
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="date">Date *</label>
+                    <input
+                      type="date"
+                      id="date"
+                      name="date"
+                      value={eventFormData.date}
+                      onChange={handleEventInputChange}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="location">Location *</label>
+                    <input
+                      type="text"
+                      id="location"
+                      name="location"
+                      value={eventFormData.location}
+                      onChange={handleEventInputChange}
+                      placeholder="e.g., Central Park"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="modal-actions">
+                  <button 
+                    type="button" 
+                    className="btn secondary-btn" 
+                    onClick={closeEventModal}
+                    disabled={isSubmittingEvent}
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="submit" 
+                    className="btn primary-btn"
+                    disabled={isSubmittingEvent}
+                  >
+                    {isSubmittingEvent ? 'Creating...' : 'Create Event'}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </>
   );
 };
 

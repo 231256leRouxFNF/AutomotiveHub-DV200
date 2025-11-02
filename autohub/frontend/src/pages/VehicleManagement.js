@@ -6,6 +6,7 @@ import VehicleCard from '../components/VehicleCard';
 import api from '../services/api';
 import { garageService } from '../services/api';
 import { authService } from '../services/api';
+import { trackUserAction } from '../services/analytics';
 import './VehicleManagement.css';
 
 const VehicleManagement = () => {
@@ -224,6 +225,7 @@ const VehicleManagement = () => {
     if (window.confirm(`Are you sure you want to delete ${vehicle.year} ${vehicle.make} ${vehicle.model}?`)) {
       try {
         const result = await garageService.deleteVehicle(vehicle.id);
+        trackUserAction.deleteVehicle(); // Track delete vehicle
         if (result.success) {
           alert('Vehicle deleted successfully!');
           loadGarageData(currentUser.id);

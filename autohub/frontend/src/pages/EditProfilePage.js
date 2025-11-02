@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { authService } from '../services/api'; // Corrected import
 import './EditProfilePage.css';
+import SEO from '../components/SEO'; // ADD THIS
 
 const EditProfilePage = () => {
   const { id } = useParams(); // Get user ID from URL parameters
@@ -96,60 +97,68 @@ const EditProfilePage = () => {
   }
 
   return (
-    <div className="edit-profile-container">
-      <h2>Edit Your Profile</h2>
-      <form onSubmit={handleSubmit} className="edit-profile-form">
-        <div className="form-group">
-          <label htmlFor="display_name">Display Name:</label>
-          <input
-            type="text"
-            id="display_name"
-            name="display_name"
-            value={profile.display_name || ''}
-            onChange={handleChange}
-          />
-        </div>
-
-        <div className="form-group">
-          <label htmlFor="bio">Bio:</label>
-          <textarea
-            id="bio"
-            name="bio"
-            value={profile.bio || ''}
-            onChange={handleChange}
-          ></textarea>
-        </div>
-
-        <div className="form-group">
-          <label htmlFor="location">Location:</label>
-          <input
-            type="text"
-            id="location"
-            name="location"
-            value={profile.location || ''}
-            onChange={handleChange}
-          />
-        </div>
-
-        <div className="form-group avatar-upload-group">
-          <label htmlFor="avatar">Profile Picture:</label>
-          <div className="avatar-preview">
-            {profile.avatar_url && (
-              <img src={profile.avatar_url} alt="Current Avatar" className="current-avatar" />
-            )}
+    <>
+      <SEO 
+        title="Edit Profile - AutoHub"
+        description="Update your AutoHub profile, manage your account settings, and customize your experience."
+        keywords="edit profile, account settings, user profile"
+        url="https://automotivehub-dv200.vercel.app/profile/edit"
+      />
+      <div className="edit-profile-container">
+        <h2>Edit Your Profile</h2>
+        <form onSubmit={handleSubmit} className="edit-profile-form">
+          <div className="form-group">
+            <label htmlFor="display_name">Display Name:</label>
             <input
-              type="file"
-              id="avatar"
-              name="avatar"
-              accept="image/*"
-              onChange={handleAvatarChange}
+              type="text"
+              id="display_name"
+              name="display_name"
+              value={profile.display_name || ''}
+              onChange={handleChange}
             />
           </div>
-        </div>
 
-        <button type="submit" className="save-profile-button">Save Changes</button>
-      </form>
-    </div>
+          <div className="form-group">
+            <label htmlFor="bio">Bio:</label>
+            <textarea
+              id="bio"
+              name="bio"
+              value={profile.bio || ''}
+              onChange={handleChange}
+            ></textarea>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="location">Location:</label>
+            <input
+              type="text"
+              id="location"
+              name="location"
+              value={profile.location || ''}
+              onChange={handleChange}
+            />
+          </div>
+
+          <div className="form-group avatar-upload-group">
+            <label htmlFor="avatar">Profile Picture:</label>
+            <div className="avatar-preview">
+              {profile.avatar_url && (
+                <img src={profile.avatar_url} alt="Current Avatar" className="current-avatar" />
+              )}
+              <input
+                type="file"
+                id="avatar"
+                name="avatar"
+                accept="image/*"
+                onChange={handleAvatarChange}
+              />
+            </div>
+          </div>
+
+          <button type="submit" className="save-profile-button">Save Changes</button>
+        </form>
+      </div>
+    </>
   );
 };
 
