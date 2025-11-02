@@ -1,11 +1,10 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { HelmetProvider } from 'react-helmet-async'; // ADD THIS
+import { HelmetProvider } from 'react-helmet-async';
 import { authService } from './services/api';
-import { initGA, logPageView } from './services/analytics'; // ADD THIS
+import { initGA, logPageView } from './services/analytics';
 
 // Import pages
-import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import CommunityFeed from './pages/CommunityFeed';
@@ -15,6 +14,7 @@ import ListingDetails from './pages/ListingDetails';
 import EditListingWizard from './pages/EditListingWizard';
 import NotificationsCenter from './pages/NotificationsCenter';
 import SearchResults from './pages/SearchResults';
+import EditProfilePage from './pages/EditProfilePage';
 
 // Analytics wrapper component
 const AnalyticsWrapper = ({ children }) => {
@@ -38,6 +38,17 @@ const ProtectedRoute = ({ children }) => {
   return children;
 };
 
+// Home redirect component
+const HomeRedirect = () => {
+  const isAuthenticated = authService.isAuthenticated();
+  
+  if (isAuthenticated) {
+    return <Navigate to="/community" replace />;
+  }
+  
+  return <Navigate to="/login" replace />;
+};
+
 function App() {
   useEffect(() => {
     // Initialize Google Analytics
@@ -49,8 +60,10 @@ function App() {
       <Router>
         <AnalyticsWrapper>
           <Routes>
+            {/* Home Route - Smart Redirect */}
+            <Route path="/" element={<HomeRedirect />} />
+            
             {/* Public Routes */}
-            <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             
@@ -95,13 +108,21 @@ function App() {
                 </ProtectedRoute>
               } 
             />
+            <Route 
+              path="/profile/edit" 
+              element={
+                <ProtectedRoute>
+                  <EditProfilePage />
+                </ProtectedRoute>
+              } 
+            />
             
             {/* Other routes */}
             <Route path="/listing/:id" element={<ListingDetails />} />
             <Route path="/edit-listing/:id" element={<EditListingWizard />} />
             
             {/* Catch all */}
-            <Route path="*" element={<Navigate to="/" replace />} />
+            <Route path="*" element={<Navigate to="/login" replace />} />
           </Routes>
         </AnalyticsWrapper>
       </Router>
