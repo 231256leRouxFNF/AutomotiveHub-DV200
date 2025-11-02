@@ -152,54 +152,37 @@ app.post('/api/register', async (req, res) => {
 // ============ LOGIN ROUTE ============
 app.post('/api/login', async (req, res) => {
   try {
-    console.log('📥 Login request body:', req.body);
-    
-    const { email, username, identifier, password } = req.body;
-    
-    // Supports email, username, or identifier field
-    const loginField = identifier || email || username;
+    const { identifier, password } = req.body;
 
-    // Validate input
-    if (!loginField || !password) {
-      console.log('❌ Missing fields:', { loginField: !!loginField, password: !!password });
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Email/username and password are required' 
-      });
-    }
+    console.log('Login attempt:', { identifier }); // Debug log
 
-    // Searchesfor user via email OR username
+    // Check if identifier is email or username
     const sql = 'SELECT * FROM users WHERE email = ? OR username = ?';
-    const [users] = await db.promise().query(sql, [loginField, loginField]);
+    const [users] = await db.promise().query(sql, [identifier, identifier]);
 
     if (users.length === 0) {
       return res.status(401).json({ 
         success: false, 
-        message: 'Invalid email/username or password' 
+        message: 'Invalid credentials' 
       });
     }
 
     const user = users[0];
 
-    // Compares password
+    // Verify password
     const isValidPassword = await bcrypt.compare(password, user.password);
 
     if (!isValidPassword) {
       return res.status(401).json({ 
         success: false, 
-        message: 'Invalid email/username or password' 
+        message: 'Invalid credentials' 
       });
     }
 
-    // Fetches user profile
-    const profileSql = 'SELECT * FROM profiles WHERE user_id = ?';
-    const [profiles] = await db.promise().query(profileSql, [user.id]);
-    const profile = profiles[0] || {};
-
     // Generate JWT token
     const token = jwt.sign(
-      { id: user.id, username: user.username, email: user.email },
-      process.env.JWT_SECRET,
+      { userId: user.id, username: user.username },
+      process.env.JWT_SECRET || 'your-secret-key',
       { expiresIn: '7d' }
     );
 
@@ -211,18 +194,14 @@ app.post('/api/login', async (req, res) => {
         id: user.id,
         username: user.username,
         email: user.email,
-        display_name: profile.display_name || user.username,
-        avatar_url: profile.avatar_url,
-        bio: profile.bio
+        display_name: user.display_name
       }
     });
-
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ 
       success: false, 
-      message: 'Login failed',
-      error: error.message 
+      message: 'Server error during login' 
     });
   }
 });

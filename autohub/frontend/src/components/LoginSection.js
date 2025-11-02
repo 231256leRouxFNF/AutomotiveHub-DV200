@@ -30,10 +30,14 @@ const LoginSection = () => {
       return;
     }
 
-    console.log('Login data being sent:', { identifier: formData.identifier, password: formData.password }); // Debugging line
+    console.log('Login data being sent:', formData); // Log the complete object
 
     try {
-      const result = await authService.login(formData.identifier, formData.password);
+      // ✅ FIX: Pass the credentials as an object
+      const result = await authService.login({
+        identifier: formData.identifier,
+        password: formData.password
+      });
       
       if (result.success) {
         alert('Login successful! Welcome to AutoHub.');
@@ -43,7 +47,7 @@ const LoginSection = () => {
       }
     } catch (error) {
       console.error('Login error:', error);
-      const msg = error.message || 'Invalid credentials or server unavailable';
+      const msg = error.response?.data?.message || error.message || 'Invalid credentials or server unavailable';
       alert(msg);
     }
   };
