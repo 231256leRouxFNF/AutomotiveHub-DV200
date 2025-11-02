@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import Navbar from '../components/Navbar';
+import Header from '../components/Header';
 import './NotificationsCenter.css';
 
 const NotificationsCenter = () => {
@@ -7,7 +7,6 @@ const NotificationsCenter = () => {
   const [filter, setFilter] = useState('all');
 
   useEffect(() => {
-    // Use mock data instead of API call
     const mockNotifications = [
       {
         id: 1,
@@ -34,7 +33,7 @@ const NotificationsCenter = () => {
 
   return (
     <div className="notifications-page">
-      <Navbar />
+      <Header />
       <div className="notifications-container">
         <h1>Notifications</h1>
         
