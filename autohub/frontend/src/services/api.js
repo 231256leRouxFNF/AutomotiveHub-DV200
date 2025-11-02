@@ -108,6 +108,11 @@ export const eventService = {
   getAllEvents: async () => {
     const response = await api.get('/api/events');
     return response.data.events || [];
+  },
+
+  createEvent: async (eventData) => {
+    const response = await api.post('/api/events', eventData);
+    return response.data;
   }
 };
 

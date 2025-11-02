@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { socialService, authService, eventService } from '../services/api';
 import Header from '../components/Header';
-import communityData from '../data/community.json'; // This has your mock posts
+import communityData from '../data/community.json';
 import { useNavigate } from 'react-router-dom';
 import './CommunityFeed.css';
 
@@ -16,6 +16,17 @@ const CommunityFeed = () => {
   const [commentDrafts, setCommentDrafts] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // Event creation modal state
+  const [showEventModal, setShowEventModal] = useState(false);
+  const [eventFormData, setEventFormData] = useState({
+    title: '',
+    description: '',
+    date: '',
+    location: ''
+  });
+  const [isSubmittingEvent, setIsSubmittingEvent] = useState(false);
+  
   const currentUser = authService.getCurrentUser?.();
   const navigate = useNavigate();
 
@@ -27,16 +38,13 @@ const CommunityFeed = () => {
         setError(null);
         console.log('📥 Fetching community feed data...');
         
-        // Fetch events from API
         const eventsList = await eventService.getAllEvents();
         console.log('✅ Events fetched:', eventsList);
         setEvents(eventsList);
         
-        // Fetch posts from API (if empty, use mock data)
         const postsList = await socialService.getPosts();
         console.log('✅ Posts fetched:', postsList);
         
-        // Use mock data from community.json if no posts from API
         if (postsList.length === 0 && communityData.posts) {
           console.log('📦 Using mock posts from community.json');
           setPosts(communityData.posts);
@@ -44,7 +52,6 @@ const CommunityFeed = () => {
           setPosts(postsList);
         }
 
-        // Load mock community stats and snapshots
         if (communityData.stats) {
           setCommunityStats(communityData.stats);
         }
@@ -56,7 +63,6 @@ const CommunityFeed = () => {
         console.error('❌ Error fetching community data:', error);
         setError(error.message);
         
-        // Fallback to mock data on error
         if (communityData.posts) {
           setPosts(communityData.posts);
         }
@@ -82,7 +88,9 @@ const CommunityFeed = () => {
       'heart': '❤️',
       'message': '💬',
       'share': '↗️',
-      'more': '⋯'
+      'more': '⋯',
+      'plus': '➕',
+      'x': '✖️'
     };
     return <span className="icon">{icons[iconName] || '•'}</span>;
   };
@@ -116,6 +124,64 @@ const CommunityFeed = () => {
     }));
   };
 
+  // Event Modal Functions
+  const openEventModal = () => {
+    if (!currentUser) {
+      alert('Please login to create an event');
+      navigate('/login');
+      return;
+    }
+    setShowEventModal(true);
+  };
+
+  const closeEventModal = () => {
+    setShowEventModal(false);
+    setEventFormData({
+      title: '',
+      description: '',
+      date: '',
+      location: ''
+    });
+  };
+
+  const handleEventInputChange = (e) => {
+    const { name, value } = e.target;
+    setEventFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleEventSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!eventFormData.title || !eventFormData.date || !eventFormData.location) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
+    try {
+      setIsSubmittingEvent(true);
+      console.log('📤 Creating event:', eventFormData);
+      
+      const response = await eventService.createEvent(eventFormData);
+      
+      if (response.success) {
+        alert('Event created successfully!');
+        closeEventModal();
+        
+        // Refresh events list
+        const updatedEvents = await eventService.getAllEvents();
+        setEvents(updatedEvents);
+      }
+    } catch (error) {
+      console.error('❌ Error creating event:', error);
+      alert('Failed to create event. Please try again.');
+    } finally {
+      setIsSubmittingEvent(false);
+    }
+  };
+
   const sidebarLinks = [
     { label: 'All Discussions', icon: 'message-square', active: true },
     { label: 'Build Logs', icon: 'car' },
@@ -129,7 +195,7 @@ const CommunityFeed = () => {
     return (
       <div className="community-feed">
         <Header />
-        <div className="loading" style={{ padding: '2rem', textAlign: 'center', color: 'white' }}>
+        <div className="loading">
           Loading community feed...
         </div>
       </div>
@@ -159,10 +225,20 @@ const CommunityFeed = () => {
           </div>
 
           {/* Upcoming Events */}
-          {events && events.length > 0 && (
-            <div className="sidebar-section">
+          <div className="sidebar-section">
+            <div className="sidebar-header">
               <h3 className="sidebar-title">Upcoming Events ({events.length})</h3>
-              {events.slice(0, 3).map((event) => (
+              
+            </div>
+
+              <div>
+                <button className="create-event-btn" onClick={openEventModal}>
+                {renderIcon('plus')} Create
+              </button>
+              </div>
+
+            {events && events.length > 0 ? (
+              events.slice(0, 3).map((event) => (
                 <div key={event.id} className="event-preview">
                   <div className="event-date">
                     {event.date ? new Date(event.date).toLocaleDateString() : 'TBD'}
@@ -170,9 +246,16 @@ const CommunityFeed = () => {
                   <div className="event-title">{event.title || 'Untitled Event'}</div>
                   <div className="event-location">{event.location || 'Location TBD'}</div>
                 </div>
-              ))}
-            </div>
-          )}
+              ))
+            ) : (
+              <div className="no-events">
+                <p>No upcoming events</p>
+                <button className="btn primary-btn" onClick={openEventModal}>
+                  Create First Event
+                </button>
+              </div>
+            )}
+          </div>
         </aside>
 
         {/* Main Feed */}
@@ -237,7 +320,6 @@ const CommunityFeed = () => {
                   </button>
                 </div>
 
-                {/* Comments Section */}
                 {post.comments && post.comments.length > 0 && (
                   <div className="comments-section">
                     {post.comments.map((comment, idx) => (
@@ -248,7 +330,6 @@ const CommunityFeed = () => {
                   </div>
                 )}
 
-                {/* Comment Input */}
                 {commentDrafts[post.id] !== undefined && (
                   <div className="comment-input">
                     <input
@@ -283,7 +364,6 @@ const CommunityFeed = () => {
             </div>
           </div>
 
-          {/* Community Snapshots */}
           {communitySnapshots && communitySnapshots.length > 0 && (
             <div className="sidebar-section">
               <h3 className="sidebar-title">Community Highlights</h3>
@@ -297,6 +377,92 @@ const CommunityFeed = () => {
           )}
         </aside>
       </div>
+
+      {/* Create Event Modal */}
+      {showEventModal && (
+        <div className="modal-overlay" onClick={closeEventModal}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Create Event</h2>
+              <button className="modal-close" onClick={closeEventModal}>
+                {renderIcon('x')}
+              </button>
+            </div>
+            
+            <form onSubmit={handleEventSubmit} className="event-form">
+              <div className="form-group">
+                <label htmlFor="title">Event Title *</label>
+                <input
+                  type="text"
+                  id="title"
+                  name="title"
+                  value={eventFormData.title}
+                  onChange={handleEventInputChange}
+                  placeholder="e.g., Weekend Car Meet"
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="description">Description</label>
+                <textarea
+                  id="description"
+                  name="description"
+                  value={eventFormData.description}
+                  onChange={handleEventInputChange}
+                  placeholder="Tell us about your event..."
+                  rows="4"
+                />
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="date">Date *</label>
+                  <input
+                    type="date"
+                    id="date"
+                    name="date"
+                    value={eventFormData.date}
+                    onChange={handleEventInputChange}
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="location">Location *</label>
+                  <input
+                    type="text"
+                    id="location"
+                    name="location"
+                    value={eventFormData.location}
+                    onChange={handleEventInputChange}
+                    placeholder="e.g., Central Park"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="modal-actions">
+                <button 
+                  type="button" 
+                  className="btn secondary-btn" 
+                  onClick={closeEventModal}
+                  disabled={isSubmittingEvent}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="btn primary-btn"
+                  disabled={isSubmittingEvent}
+                >
+                  {isSubmittingEvent ? 'Creating...' : 'Create Event'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
