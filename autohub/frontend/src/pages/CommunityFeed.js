@@ -480,7 +480,7 @@ const CommunityFeed = () => {
                 )}
               </div>
             ))
-          }
+          )}
         </main>
 
         {/* Right Sidebar */}
