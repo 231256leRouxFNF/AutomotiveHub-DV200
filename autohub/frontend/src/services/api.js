@@ -123,7 +123,7 @@ export const notificationService = {
   }
 };
 
-// Social Service - COMPLETE
+// Social Service - Update createPost
 export const socialService = {
   getPosts: async () => {
     try {
@@ -143,11 +143,8 @@ export const socialService = {
       formData.append('image', postData.image);
     }
 
-    const response = await api.post('/api/social/posts', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
-    });
+    // Don't set Content-Type header - let browser set it with boundary for multipart
+    const response = await api.post('/api/social/posts', formData);
     return response.data;
   },
 
