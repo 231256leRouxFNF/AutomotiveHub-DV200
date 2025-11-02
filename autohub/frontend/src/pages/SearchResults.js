@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { useLocation, Link } from 'react-router-dom';
-import { generalService } from '../services/api';
 import './PageLayout.css';
 import './SearchResults.css'; // Assuming you'll create this for styling
 
@@ -24,7 +23,6 @@ const SearchResults = () => {
       try {
         setLoading(true);
         setError(null);
-        const data = await generalService.searchAll(searchTerm);
         setListings(data.listings || []);
         setEvents(data.events || []);
       } catch (err) {

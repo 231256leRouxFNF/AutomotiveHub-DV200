@@ -3,7 +3,6 @@ import {
   userService, 
   vehicleService, 
   socialService, 
-  generalService,
   authService 
 } from '../../services/api';
 
@@ -20,7 +19,6 @@ const ApiExample = () => {
     setLoading(true);
     setError('');
     try {
-      const result = await generalService.testConnection();
       setConnectionStatus(`✅ ${result}`);
     } catch (error) {
       setConnectionStatus('❌ Connection failed');
