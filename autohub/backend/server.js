@@ -21,6 +21,39 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadDir = path.join(__dirname, 'uploads');
+    // Create uploads directory if it doesn't exist
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({ 
+  storage: storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
+  },
+  fileFilter: function (req, file, cb) {
+    // Accept images only
+    if (!file.originalname.match(/\.(jpg|jpeg|png|gif|webp)$/)) {
+      return cb(new Error('Only image files are allowed!'), false);
+    }
+    cb(null, true);
+  }
+});
+
+// Serve uploaded files statically
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // ============ API ROUTES MUST COME FIRST ============
 
 // Test routes
@@ -208,6 +241,31 @@ app.post('/api/login', async (req, res) => {
 
 // ============ AUTH MIDDLEWARE ============
 const { auth } = require('./middleware/auth');
+
+// Authentication middleware
+const auth = (req, res, next) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1]; // Bearer TOKEN
+    
+    if (!token) {
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Authentication required' 
+      });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+    req.userId = decoded.userId;
+    req.username = decoded.username;
+    next();
+  } catch (error) {
+    console.error('Auth error:', error);
+    return res.status(401).json({ 
+      success: false, 
+      message: 'Invalid or expired token' 
+    });
+  }
+};
 
 // ============ GET USER PROFILE ============
 app.get('/api/user/profile', auth, async (req, res) => {
@@ -451,38 +509,6 @@ app.get('/api/events', async (req, res) => {
     res.status(500).json({ success: false, message: 'Failed to fetch events' });
   }
 });
-
-// Create uploads directory if it doesn't exist
-const uploadDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, `vehicle-${uniqueSuffix}${path.extname(file.originalname)}`);
-  }
-});
-
-const upload = multer({ 
-  storage: storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith('image/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only image files are allowed!'));
-    }
-  }
-});
-
-// Serve uploaded files statically
-app.use('/uploads', express.static(uploadDir));
 
 // ============ ADD VEHICLE TO GARAGE (WITH IMAGE UPLOAD) ============
 app.post('/api/garage/vehicles', auth, upload.array('images', 10), async (req, res) => {
@@ -757,4 +783,4 @@ app.listen(PORT, () => {
   console.log(`✓ Server running on port ${PORT}`);
 });
 
-console.log('✓ SERVER.JS COMPLETED - Line 596');
+console.log('✓ SERVER.JS COMPLETED - Line 761');
