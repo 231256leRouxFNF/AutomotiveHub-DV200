@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { authService } from '../services/api'; // ADD THIS
 import Logo from './Logo';
 import SearchBox from './SearchBox';
 import './Header.css';
@@ -13,6 +14,8 @@ const Header = () => {
     const fetchUnreadCount = async () => {
       if (currentUser && currentUser.id) {
         try {
+          // Mock notification count since notificationService is removed
+          const count = 0; // FIX: Define count variable
           setUnreadCount(count);
         } catch (error) {
           console.error('Error fetching unread notification count:', error);
