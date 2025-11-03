@@ -8,16 +8,24 @@ const listingController = {
       const { title, description, price, make, model, year, userId } = req.body;
       
       // Upload images to Cloudinary
-      const imageUrls = [];
+      const uploadedImages = [];
       if (req.files && req.files.length > 0) {
         for (const file of req.files) {
           const result = await cloudinary.uploader.upload(file.path, {
             folder: 'autohub/listings',
             resource_type: 'auto'
           });
-          imageUrls.push(result.secure_url);
+          uploadedImages.push(result);
         }
       }
+
+      // In createListing function, ensure images are properly formatted
+      const imageUrls = uploadedImages.map(img => ({
+        url: img.secure_url,
+        public_id: img.public_id
+      }));
+
+      const imageUrlsJson = JSON.stringify(imageUrls);
 
       // Insert listing into database with Cloudinary URLs
       const query = `
@@ -33,7 +41,7 @@ const listingController = {
         model, 
         year, 
         userId,
-        JSON.stringify(imageUrls) // Store as JSON array
+        imageUrlsJson // Store as JSON array
       ]);
 
       res.status(201).json({
@@ -94,11 +102,17 @@ const listingController = {
       const [totalCountResult] = await Listing.query(countSql, params);
       const totalCount = totalCountResult[0].totalCount;
       
+      // Ensure images are parsed correctly before sending
+      const formattedListings = listings.map(listing => ({
+        ...listing,
+        images: typeof listing.images === 'string' ? JSON.parse(listing.images) : listing.images
+      }));
+      
       res.status(200).json({ 
         totalCount,
         limit: parsedLimit,
         offset: parsedOffset,
-        listings
+        listings: formattedListings
       });
     } catch (err) {
       console.error('Error fetching all listings:', err);
