@@ -34,8 +34,9 @@ export const authService = {
     return response.data;
   },
 
-  register: async (userData) => {
-    const response = await api.post('/api/register', userData);
+ register: async (userData) => {
+    console.log('Sending to backend:', userData); // Debug log
+    const response = await api.post('/api/register', userData); // Changed back to /api/register
     if (response.data.token) {
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
@@ -70,13 +71,6 @@ export const authService = {
   getToken: () => {
     return localStorage.getItem('token');
   }
-};
-
-// After successful login:
-const handleLogin = async (credentials) => {
-  const result = await authService.login(credentials);
-  trackUserAction.login(); // Track login event
-  // ...rest of code
 };
 
 // ============ 2. GARAGE SERVICE ============

@@ -141,7 +141,14 @@ const LoginSection = () => {
             
             <div className="signup-section">
               <span className="signup-text">Don't have an account? </span>
-              <Link to="/RegistrationPage" className="signup-link">Sign Up</Link>
+              <button 
+                type="button" 
+                className="signup-link" 
+                onClick={() => navigate('/register')}
+                style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', textDecoration: 'underline' }}
+              >
+                Sign Up
+              </button>
             </div>
           </form>
         </div>

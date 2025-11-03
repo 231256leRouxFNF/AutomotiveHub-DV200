@@ -44,28 +44,36 @@ const RegisterForm = () => {
     setIsLoading(true);
     
     try {
-      const result = await authService.register(
-        formData.username,
-        formData.email,
-        formData.password
-      );
+      console.log('Sending registration data:', {
+        username: formData.username,
+        email: formData.email,
+        password: formData.password
+      });
+
+      // ✅ FIX: Pass as ONE object, not three separate parameters
+      const result = await authService.register({
+        username: formData.username,
+        email: formData.email,
+        password: formData.password
+      });
       
-      if (result.success) {
+      if (result.success || result.token) {
         alert('Registration successful! Welcome to AutoHub!');
-        // User is automatically logged in after registration
         navigate('/vehicle-management');
       } else {
         setErrors({ general: result.message || 'Registration failed' });
       }
     } catch (error) {
       console.error('Registration error:', error);
+      console.error('Error response:', error.response?.data);
+      
       let errorMessage = 'Registration failed. Please try again.';
 
-      if (error instanceof Error) {
-        errorMessage = error.message;
-      } else if (typeof error === 'string') {
-        errorMessage = error;
-      } else if (error && typeof error === 'object' && error.message) {
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.message) {
         errorMessage = error.message;
       }
 
@@ -157,8 +165,8 @@ const RegisterForm = () => {
           />
           <span>
             I agree to AutoHub's{" "}
-            <a href="#">Terms of Service</a> and{" "}
-            <a href="#">Privacy Policy</a>.
+            <a href="/terms" target="_blank" rel="noopener noreferrer">Terms of Service</a> and{" "}
+            <a href="/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>.
           </span>
         </label>
 
