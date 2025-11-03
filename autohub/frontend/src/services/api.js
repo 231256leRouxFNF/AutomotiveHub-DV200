@@ -116,6 +116,12 @@ export const eventService = {
   deleteEvent: async (eventId) => {
     const response = await api.delete(`/api/events/${eventId}`);
     return response.data;
+  },
+
+  // Add this new function for admin
+  updateEventStatus: async (eventId, status) => {
+    const response = await api.patch(`/api/events/${eventId}/status`, { status });
+    return response.data;
   }
 };
 

@@ -15,6 +15,7 @@ import EditListingWizard from './pages/EditListingWizard';
 import NotificationsCenter from './pages/NotificationsCenter';
 import SearchResults from './pages/SearchResults';
 import EditProfilePage from './pages/EditProfilePage';
+import AdminPanel from './pages/AdminPanel';
 
 // Analytics wrapper component
 const AnalyticsWrapper = ({ children }) => {
@@ -100,6 +101,16 @@ function App() {
               element={
                 <ProtectedRoute>
                   <EditProfilePage />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* Admin Route */}
+            <Route 
+              path="/admin" 
+              element={
+                <ProtectedRoute>
+                  <AdminPanel />
                 </ProtectedRoute>
               } 
             />
