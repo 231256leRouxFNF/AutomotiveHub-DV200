@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import SEO from '../components/SEO'; // ADD THIS
 import Header from '../components/Header';
 import Footer from '../components/Footer';
@@ -32,6 +33,8 @@ const VehicleManagement = () => {
   const [currentUser, setCurrentUser] = useState(null);
   const [imageFile, setImageFile] = useState(null);
   
+  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
   // Get current user on component mount
   useEffect(() => {
     const fetchVehicles = async () => {
@@ -262,6 +265,14 @@ const VehicleManagement = () => {
     // Fallback to placeholder
     return '/images/placeholder-car.jpg';
   };
+
+  if (isLoading) {
+    return <div className="garage-loading">Loading your garage...</div>;
+  }
+
+  if (error) {
+    return <div className="garage-error">{error}</div>;
+  }
 
   return (
     <>
