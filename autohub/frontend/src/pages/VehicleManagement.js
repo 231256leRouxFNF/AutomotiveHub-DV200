@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import SEO from '../components/SEO'; // ADD THIS
+import SEO from '../components/SEO';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import StatCard from '../components/StatCard';
@@ -29,6 +29,7 @@ const VehicleManagement = () => {
   
   const [vehicles, setVehicles] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null); // ADD THIS LINE
   const [isDragOver, setIsDragOver] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [imageFile, setImageFile] = useState(null);
@@ -51,6 +52,7 @@ const VehicleManagement = () => {
 
       try {
         setIsLoading(true);
+        setError(null);
         console.log('📥 Fetching vehicles for user:', user.id);
         
         const userVehicles = await garageService.getUserVehicles(user.id);
@@ -71,6 +73,7 @@ const VehicleManagement = () => {
       } catch (error) {
         console.error('❌ Error loading garage data:', error);
         console.error('❌ Error response:', error.response?.data);
+        setError('Failed to load vehicles');
         setGarageStats({ totalVehicles: 0, featured: 0, upcomingEvents: 0 });
         setVehicles([]);
       } finally {
@@ -84,6 +87,7 @@ const VehicleManagement = () => {
   const loadGarageData = async (userId) => {
     try {
       console.log('📥 Loading garage data for user:', userId);
+      setError(null);
 
       // Call the API
       const userVehicles = await garageService.getUserVehicles(userId);
@@ -105,6 +109,7 @@ const VehicleManagement = () => {
 
     } catch (error) {
       console.error('❌ Error loading garage data:', error);
+      setError('Failed to load vehicles');
       setGarageStats({ totalVehicles: 0, featured: 0, upcomingEvents: 0 });
       setVehicles([]);
     }
@@ -182,13 +187,13 @@ const VehicleManagement = () => {
         form.append('images', imageFile);
       }
 
-      console.log(' Submitting vehicle:', { make: formData.make, model: formData.model });
+      console.log('🚀 Submitting vehicle:', { make: formData.make, model: formData.model });
 
       const { data: result } = await api.post('/api/garage/vehicles', form, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
 
-      console.log(' Response:', result);
+      console.log('✅ Response:', result);
 
       if (result && result.success) {
         alert('Vehicle added successfully!');
@@ -201,7 +206,7 @@ const VehicleManagement = () => {
           imageUrl: ''
         });
         setImageFile(null);
-        loadGarageData(currentUser.id);
+        await loadGarageData(currentUser.id);
       } else {
         alert(result.message || 'Failed to add vehicle');
       }
@@ -225,21 +230,39 @@ const VehicleManagement = () => {
     });
   };
   
-  const handleDeleteVehicle = async (vehicle) => {
-    if (window.confirm(`Are you sure you want to delete ${vehicle.year} ${vehicle.make} ${vehicle.model}?`)) {
-      try {
-        const result = await garageService.deleteVehicle(vehicle.id);
-        trackUserAction.deleteVehicle(); // Track delete vehicle
-        if (result.success) {
-          alert('Vehicle deleted successfully!');
-          loadGarageData(currentUser.id);
-        } else {
-          alert(result.message || 'Failed to delete vehicle');
+  const handleDeleteVehicle = async (vehicleId) => {
+    if (!window.confirm(`Are you sure you want to delete this vehicle?`)) {
+      return;
+    }
+
+    try {
+      console.log('🗑️ Deleting vehicle:', vehicleId);
+      
+      const token = localStorage.getItem('token');
+      
+      const response = await axios.delete(`${API_URL}/api/vehicles/${vehicleId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
         }
-      } catch (error) {
-        console.error('Error deleting vehicle:', error);
-        alert('Failed to delete vehicle. Please try again.');
-      }
+      });
+
+      console.log('✅ Delete response:', response.data);
+      
+      trackUserAction.deleteVehicle();
+      alert('Vehicle deleted successfully!');
+      
+      // Remove from state immediately
+      setVehicles(vehicles.filter(v => v.id !== vehicleId));
+      
+      // Update stats
+      setGarageStats(prev => ({
+        ...prev,
+        totalVehicles: prev.totalVehicles - 1
+      }));
+      
+    } catch (error) {
+      console.error('❌ Error deleting vehicle:', error);
+      alert(`Failed to delete vehicle: ${error.response?.data?.message || error.message}`);
     }
   };
 
@@ -266,12 +289,14 @@ const VehicleManagement = () => {
     return '/images/placeholder-car.jpg';
   };
 
-  if (isLoading) {
-    return <div className="garage-loading">Loading your garage...</div>;
-  }
-
-  if (error) {
-    return <div className="garage-error">{error}</div>;
+  if (isLoading && vehicles.length === 0) {
+    return (
+      <div className="vehicle-management">
+        <Header />
+        <div className="garage-loading">Loading your garage...</div>
+        <Footer />
+      </div>
+    );
   }
 
   return (
@@ -285,9 +310,21 @@ const VehicleManagement = () => {
       <div className="vehicle-management">
         <Header />
 
-        {/* Main Content */}
         <main className="garage-main">
           <h1 className="garage-title">My Garage</h1>
+
+          {error && (
+            <div className="error-message" style={{
+              background: '#fee',
+              color: '#c00',
+              padding: '12px 16px',
+              borderRadius: '8px',
+              marginBottom: '20px',
+              textAlign: 'center'
+            }}>
+              {error}
+            </div>
+          )}
 
           {/* Stats Cards */}
           <div className="stats-container">
@@ -464,7 +501,7 @@ const VehicleManagement = () => {
                     key={vehicle.id}
                     vehicle={vehicle}
                     onEdit={handleEditVehicle}
-                    onDelete={handleDeleteVehicle}
+                    onDelete={() => handleDeleteVehicle(vehicle.id)}
                   />
                 ))
               ) : (
