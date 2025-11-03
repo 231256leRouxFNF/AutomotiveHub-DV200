@@ -51,5 +51,15 @@ db.connect((err) => {
   }
 });
 
+const getVehicles = async (req, res) => {
+  console.log('Fetching vehicles for user:', req.user?.id);
+  try {
+    // your existing query code
+    console.log('Vehicles found:', vehicles.length);
+  } catch (error) {
+    console.error('Error fetching vehicles:', error);
+  }
+};
+
 // Export the connection
 module.exports = db;

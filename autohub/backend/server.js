@@ -18,6 +18,7 @@ console.log('✓ DB loaded');
 
 // Import route files
 const authRoutes = require('./routes/authRoutes');
+const vehicleRoutes = require('./routes/vehicleRoutes');
 
 const app = express();
 
@@ -86,6 +87,7 @@ const auth = (req, res, next) => {
 
 // Auth routes
 app.use('/api/auth', authRoutes);
+app.use('/api/vehicles', vehicleRoutes);
 
 // Test routes
 app.get('/', (req, res) => {
