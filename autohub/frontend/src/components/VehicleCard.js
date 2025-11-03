@@ -5,30 +5,31 @@ import './VehicleCard.css';
 const VehicleCard = ({ vehicle, onEdit, onDelete }) => {
   const [imageError, setImageError] = useState(false);
   
-  // Get the correct image URL
-  const getImageUrl = () => {
-    // If vehicle has image_url from Cloudinary, use it directly
-    if (vehicle.image_url && vehicle.image_url.startsWith('http')) {
-      return vehicle.image_url;
-    }
+  // Parse images from Cloudinary
+  const getImageUrl = (imageData) => {
+    if (!imageData) return null; // Return null instead of placeholder
     
-    // If vehicle has images JSON field
-    if (vehicle.images) {
-      try {
-        const images = typeof vehicle.images === 'string' ? JSON.parse(vehicle.images) : vehicle.images;
-        if (Array.isArray(images) && images.length > 0) {
-          return images[0].url || images[0];
-        }
-      } catch (e) {
-        console.error('Error parsing images:', e);
+    try {
+      // If it's already a URL string
+      if (typeof imageData === 'string' && imageData.startsWith('http')) {
+        return imageData;
       }
+      
+      // If it's JSON string, parse it
+      const images = typeof imageData === 'string' ? JSON.parse(imageData) : imageData;
+      
+      if (Array.isArray(images) && images.length > 0) {
+        return images[0].url || images[0];
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error parsing image:', error);
+      return null;
     }
-    
-    // Fallback to placeholder
-    return '/images/placeholder-car.jpg';
   };
 
-  const imageUrl = getImageUrl();
+  const imageUrl = getImageUrl(vehicle.image_url || vehicle.images);
 
   const handleImageError = () => {
     console.log('Image failed to load:', imageUrl);
@@ -37,18 +38,14 @@ const VehicleCard = ({ vehicle, onEdit, onDelete }) => {
 
   return (
     <div className="vehicle-card">
-      <div className="vehicle-image">
-        {!imageError && imageUrl ? (
-          <img 
-            src={imageUrl} 
-            alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
-            onError={handleImageError}
-          />
-        ) : (
-          <img src="/images/placeholder-car.jpg" alt="Placeholder" />
-        )}
-      </div>
-      
+      {imageUrl && !imageError && (
+        <img 
+          src={imageUrl} 
+          alt={`${vehicle.make} ${vehicle.model}`}
+          className="vehicle-image"
+          onError={handleImageError}
+        />
+      )}
       <div className="vehicle-info">
         <h3 className="vehicle-title">{vehicle.year} {vehicle.make} {vehicle.model}</h3>
         <p className="vehicle-color">Color: {vehicle.color}</p>
@@ -61,6 +58,14 @@ const VehicleCard = ({ vehicle, onEdit, onDelete }) => {
           </span>
         </div>
       </div>
+      {onDelete && (
+        <button 
+          className="delete-btn" 
+          onClick={() => onDelete(vehicle.id)}
+        >
+          Delete
+        </button>
+      )}
     </div>
   );
 };
