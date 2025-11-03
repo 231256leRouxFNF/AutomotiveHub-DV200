@@ -3,7 +3,7 @@ import { socialService, authService, eventService } from '../services/api';
 import { trackUserAction } from '../services/analytics';
 import Header from '../components/Header';
 import communityData from '../data/community.json';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import './CommunityFeed.css';
 import SEO from '../components/SEO';
 

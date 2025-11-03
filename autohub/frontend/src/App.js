@@ -1,11 +1,10 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { authService } from './services/api';
 import { initGA, logPageView } from './services/analytics';
 
 // Import pages
-// import LandingPage from './pages/LandingPage'; // REMOVE THIS LINE
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import CommunityFeed from './pages/CommunityFeed';
@@ -51,7 +50,7 @@ function App() {
         <AnalyticsWrapper>
           <Routes>
             {/* Public Routes */}
-            <Route path="/" element={<Navigate to="/login" replace />} /> {/* CHANGED: Redirect to login */}
+            <Route path="/" element={<CommunityFeed />} /> {/* CHANGED: CommunityFeed as landing page */}
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             
