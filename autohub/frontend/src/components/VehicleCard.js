@@ -3,87 +3,86 @@ import './VehicleCard.css';
 
 const VehicleCard = ({ vehicle, onDelete }) => {
   const getImageUrl = (vehicle) => {
-    console.log('Vehicle data:', vehicle);
+    console.log('🔍 Vehicle data:', vehicle);
     
-    // Check for image_url field (Cloudinary URL)
+    // Primary: Check for image_url field (Cloudinary URL from database)
     if (vehicle.image_url) {
-      console.log('Image URL found:', vehicle.image_url);
+      console.log('✅ Using image_url:', vehicle.image_url);
       return vehicle.image_url;
     }
     
-    // Check for images field (JSON)
-    if (vehicle.images) {
-      try {
-        const images = typeof vehicle.images === 'string' ? JSON.parse(vehicle.images) : vehicle.images;
-        console.log('Parsed images:', images);
-        if (Array.isArray(images) && images.length > 0) {
-          const url = images[0].url || images[0].secure_url || images[0];
-          console.log('Extracted image URL:', url);
-          return url;
-        }
-      } catch (error) {
-        console.error('Error parsing images:', error);
-      }
-    }
-    
-    console.log('No image found for vehicle:', vehicle.id);
+    console.log('⚠️ No image found for vehicle:', vehicle.id);
     return null;
   };
 
   const imageUrl = getImageUrl(vehicle);
 
   const handleDelete = () => {
-    if (onDelete) {
-      onDelete(vehicle.id);
+    if (window.confirm(`Are you sure you want to delete ${vehicle.make} ${vehicle.model}?`)) {
+      if (onDelete) {
+        onDelete(vehicle.id);
+      }
     }
   };
 
   return (
     <div className="vehicle-card">
-      {imageUrl ? (
-        <div className="vehicle-image-container">
+      <div className="vehicle-card-image">
+        {imageUrl ? (
           <img 
             src={imageUrl} 
             alt={`${vehicle.make} ${vehicle.model}`}
-            className="vehicle-image"
             onError={(e) => {
-              console.error('Image failed to load:', imageUrl);
-              e.target.style.display = 'none';
-              e.target.parentElement.innerHTML = '<div class="vehicle-no-image"><span>📷</span><p>Image Error</p></div>';
+              console.error('❌ Image failed to load:', imageUrl);
+              e.target.onerror = null;
+              e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100"%3E%3Crect fill="%23ddd" width="100" height="100"/%3E%3Ctext fill="%23999" x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3ENo Image%3C/text%3E%3C/svg%3E';
             }}
             onLoad={() => {
-              console.log('Image loaded successfully:', imageUrl);
+              console.log('✅ Image loaded successfully:', imageUrl);
             }}
           />
-        </div>
-      ) : (
-        <div className="vehicle-no-image">
-          <span>📷</span>
-          <p>No Image</p>
-        </div>
-      )}
-      
-      <div className="vehicle-info">
-        <h3>{vehicle.make} {vehicle.model}</h3>
-        <p className="vehicle-year">{vehicle.year}</p>
-        {vehicle.color && <p className="vehicle-color">Color: {vehicle.color}</p>}
-        {vehicle.description && (
-          <p className="vehicle-description">{vehicle.description}</p>
+        ) : (
+          <div className="vehicle-no-image">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+              <circle cx="12" cy="13" r="4"/>
+            </svg>
+            <p>No Image Available</p>
+          </div>
         )}
       </div>
       
-      <div className="vehicle-actions">
-        <button 
-          className="vehicle-delete-btn" 
-          onClick={handleDelete}
-          aria-label="Delete vehicle"
-        >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-            <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
-            <path fillRule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
-          </svg>
-          Delete
-        </button>
+      <div className="vehicle-card-content">
+        <div className="vehicle-card-header">
+          <h3 className="vehicle-title">{vehicle.make} {vehicle.model}</h3>
+          <span className="vehicle-year">{vehicle.year}</span>
+        </div>
+        
+        <div className="vehicle-card-details">
+          {vehicle.color && (
+            <div className="vehicle-detail-item">
+              <span className="detail-label">Color:</span>
+              <span className="detail-value">{vehicle.color}</span>
+            </div>
+          )}
+          
+          {vehicle.description && (
+            <p className="vehicle-description">{vehicle.description}</p>
+          )}
+        </div>
+        
+        <div className="vehicle-card-footer">
+          <button 
+            className="btn-delete" 
+            onClick={handleDelete}
+            aria-label="Delete vehicle"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/>
+            </svg>
+            Delete Vehicle
+          </button>
+        </div>
       </div>
     </div>
   );

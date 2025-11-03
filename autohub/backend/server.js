@@ -644,6 +644,14 @@ app.post('/api/garage/vehicles', auth, upload.single('images'), async (req, res)
       });
     }
 
+    // Validate userId exists
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'User authentication required'
+      });
+    }
+
     let imageUrl = null;
     
     // If file uploaded, use Cloudinary
@@ -657,7 +665,6 @@ app.post('/api/garage/vehicles', auth, upload.single('images'), async (req, res)
         imageUrl = result.secure_url;
         
         // Delete local file after upload
-        const fs = require('fs');
         fs.unlinkSync(req.file.path);
         
         console.log('✅ Image uploaded to Cloudinary:', imageUrl);
@@ -667,11 +674,13 @@ app.post('/api/garage/vehicles', auth, upload.single('images'), async (req, res)
       }
     }
 
-    // Use INSERT query that matches your database schema
+    // FIXED: Remove created_at since it has DEFAULT CURRENT_TIMESTAMP
     const query = `
-      INSERT INTO vehicles (user_id, make, model, year, color, description, image_url, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
+      INSERT INTO vehicles (user_id, make, model, year, color, description, image_url)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
+
+    console.log('🔍 Executing query with values:', [userId, make, model, year, color, description, imageUrl]);
 
     const [result] = await db.promise().query(query, [
       userId,
@@ -694,11 +703,12 @@ app.post('/api/garage/vehicles', auth, upload.single('images'), async (req, res)
 
   } catch (error) {
     console.error('❌ Error adding vehicle:', error);
-    console.error('❌ Error details:', error.message);
+    console.error('❌ SQL Error:', error.sqlMessage);
+    console.error('❌ Error code:', error.code);
     res.status(500).json({
       success: false,
       message: 'Failed to add vehicle',
-      error: error.message
+      error: error.sqlMessage || error.message
     });
   }
 });
