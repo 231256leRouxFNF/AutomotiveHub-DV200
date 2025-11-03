@@ -240,6 +240,31 @@ const VehicleManagement = () => {
     }
   };
 
+  // When rendering vehicle images
+  const getImageUrl = (imageData) => {
+    if (!imageData) return '/images/placeholder.jpg';
+    
+    try {
+      // If it's already a URL, return it
+      if (typeof imageData === 'string' && imageData.startsWith('http')) {
+        return imageData;
+      }
+      
+      // If it's JSON string, parse it
+      const images = typeof imageData === 'string' ? JSON.parse(imageData) : imageData;
+      
+      // Return first image URL
+      if (Array.isArray(images) && images.length > 0) {
+        return images[0].url || images[0];
+      }
+      
+      return '/images/placeholder.jpg';
+    } catch (error) {
+      console.error('Error parsing image data:', error);
+      return '/images/placeholder.jpg';
+    }
+  };
+
   return (
     <>
       <SEO 
