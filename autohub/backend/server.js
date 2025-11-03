@@ -627,40 +627,63 @@ app.get('/api/events', async (req, res) => {
 // ============ ADD VEHICLE TO GARAGE (WITH IMAGE UPLOAD) ============
 app.post('/api/garage/vehicles', auth, upload.single('images'), async (req, res) => {
   try {
+    console.log('📥 Add vehicle request:', {
+      body: req.body,
+      userId: req.userId,
+      file: req.file ? 'Present' : 'None'
+    });
+
     const { make, model, year, color, description } = req.body;
     const userId = req.userId;
+
+    // Validate required fields
+    if (!make || !model || !year) {
+      return res.status(400).json({
+        success: false,
+        message: 'Make, model, and year are required'
+      });
+    }
 
     let imageUrl = null;
     
     // If file uploaded, use Cloudinary
     if (req.file) {
-      const cloudinary = require('./config/cloudinary');
-      const result = await cloudinary.uploader.upload(req.file.path, {
-        folder: 'autohub/garage',
-        resource_type: 'auto'
-      });
-      imageUrl = result.secure_url;
-      
-      // Delete local file after upload
-      const fs = require('fs');
-      fs.unlinkSync(req.file.path);
+      try {
+        const cloudinary = require('./config/cloudinary');
+        const result = await cloudinary.uploader.upload(req.file.path, {
+          folder: 'autohub/garage',
+          resource_type: 'auto'
+        });
+        imageUrl = result.secure_url;
+        
+        // Delete local file after upload
+        const fs = require('fs');
+        fs.unlinkSync(req.file.path);
+        
+        console.log('✅ Image uploaded to Cloudinary:', imageUrl);
+      } catch (cloudinaryError) {
+        console.error('❌ Cloudinary error:', cloudinaryError);
+        // Continue without image rather than failing completely
+      }
     }
 
+    // Use INSERT query that matches your database schema
     const query = `
-      INSERT INTO vehicles (make, model, year, color, description, user_id, image_url, images, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
+      INSERT INTO vehicles (user_id, make, model, year, color, description, image_url, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
     `;
 
     const [result] = await db.promise().query(query, [
+      userId,
       make,
       model,
       year,
-      color,
-      description,
-      userId,
-      imageUrl, // Store Cloudinary URL
-      imageUrl ? JSON.stringify([imageUrl]) : null // Also store as JSON array
+      color || null,
+      description || null,
+      imageUrl
     ]);
+
+    console.log('✅ Vehicle added with ID:', result.insertId);
 
     res.json({
       success: true,
@@ -671,6 +694,7 @@ app.post('/api/garage/vehicles', auth, upload.single('images'), async (req, res)
 
   } catch (error) {
     console.error('❌ Error adding vehicle:', error);
+    console.error('❌ Error details:', error.message);
     res.status(500).json({
       success: false,
       message: 'Failed to add vehicle',
