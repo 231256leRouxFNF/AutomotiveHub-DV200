@@ -230,39 +230,35 @@ const VehicleManagement = () => {
     });
   };
   
+  // Update the handleDeleteVehicle function
   const handleDeleteVehicle = async (vehicleId) => {
-    if (!window.confirm(`Are you sure you want to delete this vehicle?`)) {
+    if (!window.confirm('Are you sure you want to delete this vehicle from your garage?')) {
       return;
     }
 
     try {
-      console.log('🗑️ Deleting vehicle:', vehicleId);
-      
       const token = localStorage.getItem('token');
-      
-      const response = await axios.delete(`${API_URL}/api/vehicles/${vehicleId}`, {
+      const response = await fetch(`${API_URL}/api/garage/vehicles/${vehicleId}`, {
+        method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
 
-      console.log('✅ Delete response:', response.data);
-      
-      trackUserAction.deleteVehicle();
-      alert('Vehicle deleted successfully!');
-      
-      // Remove from state immediately
-      setVehicles(vehicles.filter(v => v.id !== vehicleId));
-      
-      // Update stats
-      setGarageStats(prev => ({
-        ...prev,
-        totalVehicles: prev.totalVehicles - 1
-      }));
-      
+      const data = await response.json();
+
+      if (data.success) {
+        alert('Vehicle deleted successfully');
+        // Reload garage data
+        if (currentUser) {
+          await loadGarageData(currentUser.id);
+        }
+      } else {
+        alert(data.message || 'Failed to delete vehicle');
+      }
     } catch (error) {
-      console.error('❌ Error deleting vehicle:', error);
-      alert(`Failed to delete vehicle: ${error.response?.data?.message || error.message}`);
+      console.error('Error deleting vehicle:', error);
+      alert('Failed to delete vehicle');
     }
   };
 

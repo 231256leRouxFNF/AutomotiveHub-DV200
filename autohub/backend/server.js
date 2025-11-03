@@ -959,6 +959,19 @@ app.delete('/api/garage/vehicles/:id', auth, async (req, res) => {
   }
 });
 
+// Add this debug endpoint after your other routes
+app.get('/api/debug/vehicle/:id', async (req, res) => {
+  try {
+    const [vehicles] = await db.promise().query(
+      'SELECT * FROM vehicles WHERE id = ?',
+      [req.params.id]
+    );
+    res.json(vehicles[0]);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`✓ Server running on port ${PORT}`);
