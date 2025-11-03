@@ -45,15 +45,7 @@ const VehicleCard = ({ vehicle, onEdit, onDelete }) => {
             onError={handleImageError}
           />
         ) : (
-          <div className="no-image-placeholder">
-            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-              <path d="M24 44C35.0457 44 44 35.0457 44 24C44 12.9543 35.0457 4 24 4C12.9543 4 4 12.9543 4 24C4 35.0457 12.9543 44 24 44Z" fill="#393D47"/>
-              <path d="M16 20C16 18.8954 16.8954 18 18 18C19.1046 18 20 18.8954 20 20C20 21.1046 19.1046 22 18 22C16.8954 22 16 21.1046 16 20Z" fill="#8C8D8B"/>
-              <path d="M28 20C28 18.8954 28.8954 18 30 18C31.1046 18 32 18.8954 32 20C32 21.1046 31.1046 22 30 22C28.8954 22 28 21.1046 28 20Z" fill="#8C8D8B"/>
-              <path d="M16 30C16 28.8954 16.8954 28 18 28H30C31.1046 28 32 28.8954 32 30C32 31.1046 31.1046 32 30 32H18C16.8954 32 16 31.1046 16 30Z" fill="#8C8D8B"/>
-            </svg>
-            <p>No Image</p>
-          </div>
+          <img src="/images/placeholder-car.jpg" alt="Placeholder" />
         )}
       </div>
       
