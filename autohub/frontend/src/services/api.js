@@ -76,27 +76,31 @@ export const authService = {
 // ============ 2. GARAGE SERVICE ============
 export const garageService = {
   getUserVehicles: async (userId) => {
-    try {
-      const response = await api.get(`/api/garage/${userId}`);
-      return response.data.vehicles || [];
-    } catch (error) {
-      console.error('Failed to fetch vehicles:', error);
-      return [];
-    }
+    const response = await api.get(`/api/vehicles/user/${userId}`);
+    return response.data.vehicles || [];
+  },
+
+  uploadVehicleImage: async (formData) => {
+    const response = await api.post('/api/vehicles/upload-image', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+    return response.data;
   },
 
   addVehicle: async (vehicleData) => {
-    const response = await api.post('/api/garage', vehicleData);
+    const response = await api.post('/api/vehicles', vehicleData);
     return response.data;
   },
 
   updateVehicle: async (vehicleId, vehicleData) => {
-    const response = await api.put(`/api/garage/${vehicleId}`, vehicleData);
+    const response = await api.put(`/api/vehicles/${vehicleId}`, vehicleData);
     return response.data;
   },
 
   deleteVehicle: async (vehicleId) => {
-    const response = await api.delete(`/api/garage/${vehicleId}`);
+    const response = await api.delete(`/api/vehicles/${vehicleId}`);
     return response.data;
   }
 };
