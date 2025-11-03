@@ -7,30 +7,25 @@ const VehicleCard = ({ vehicle, onEdit, onDelete }) => {
   
   // Get the correct image URL
   const getImageUrl = () => {
-    // If it's a Cloudinary URL, use it directly
-    if (vehicle.image_url?.includes('cloudinary')) {
+    // If vehicle has image_url from Cloudinary, use it directly
+    if (vehicle.image_url && vehicle.image_url.startsWith('http')) {
       return vehicle.image_url;
     }
     
-    // If it's a local path, construct the full URL
-    if (vehicle.image_url?.startsWith('/uploads')) {
-      return `http://localhost:5000${vehicle.image_url}`;
-    }
-    
-    // If images is a JSON array (new Cloudinary format)
+    // If vehicle has images JSON field
     if (vehicle.images) {
       try {
-        const imagesArray = typeof vehicle.images === 'string' 
-          ? JSON.parse(vehicle.images) 
-          : vehicle.images;
-        return imagesArray[0] || null;
+        const images = typeof vehicle.images === 'string' ? JSON.parse(vehicle.images) : vehicle.images;
+        if (Array.isArray(images) && images.length > 0) {
+          return images[0].url || images[0];
+        }
       } catch (e) {
         console.error('Error parsing images:', e);
       }
     }
     
-    // Fallback
-    return vehicle.primary_image || null;
+    // Fallback to placeholder
+    return '/images/placeholder-car.jpg';
   };
 
   const imageUrl = getImageUrl();

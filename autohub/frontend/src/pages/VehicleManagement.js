@@ -241,28 +241,26 @@ const VehicleManagement = () => {
   };
 
   // When rendering vehicle images
-  const getImageUrl = (imageData) => {
-    if (!imageData) return '/images/placeholder.jpg';
-    
-    try {
-      // If it's already a URL, return it
-      if (typeof imageData === 'string' && imageData.startsWith('http')) {
-        return imageData;
-      }
-      
-      // If it's JSON string, parse it
-      const images = typeof imageData === 'string' ? JSON.parse(imageData) : imageData;
-      
-      // Return first image URL
-      if (Array.isArray(images) && images.length > 0) {
-        return images[0].url || images[0];
-      }
-      
-      return '/images/placeholder.jpg';
-    } catch (error) {
-      console.error('Error parsing image data:', error);
-      return '/images/placeholder.jpg';
+  const getImageUrl = (vehicle) => {
+    // If vehicle has image_url from Cloudinary, use it directly
+    if (vehicle.image_url && vehicle.image_url.startsWith('http')) {
+      return vehicle.image_url;
     }
+    
+    // If vehicle has images JSON field
+    if (vehicle.images) {
+      try {
+        const images = typeof vehicle.images === 'string' ? JSON.parse(vehicle.images) : vehicle.images;
+        if (Array.isArray(images) && images.length > 0) {
+          return images[0].url || images[0];
+        }
+      } catch (e) {
+        console.error('Error parsing images:', e);
+      }
+    }
+    
+    // Fallback to placeholder
+    return '/images/placeholder-car.jpg';
   };
 
   return (
