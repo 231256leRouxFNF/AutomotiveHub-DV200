@@ -5,6 +5,7 @@ import { authService } from './services/api';
 import { initGA, logPageView } from './services/analytics';
 
 // Import pages
+// import LandingPage from './pages/LandingPage'; // REMOVE THIS LINE
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import CommunityFeed from './pages/CommunityFeed';
@@ -38,17 +39,6 @@ const ProtectedRoute = ({ children }) => {
   return children;
 };
 
-// Home redirect component
-const HomeRedirect = () => {
-  const isAuthenticated = authService.isAuthenticated();
-  
-  if (isAuthenticated) {
-    return <Navigate to="/community" replace />;
-  }
-  
-  return <Navigate to="/login" replace />;
-};
-
 function App() {
   useEffect(() => {
     // Initialize Google Analytics
@@ -60,10 +50,8 @@ function App() {
       <Router>
         <AnalyticsWrapper>
           <Routes>
-            {/* Home Route - Smart Redirect */}
-            <Route path="/" element={<HomeRedirect />} />
-            
             {/* Public Routes */}
+            <Route path="/" element={<Navigate to="/login" replace />} /> {/* CHANGED: Redirect to login */}
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             
@@ -121,7 +109,7 @@ function App() {
             <Route path="/listing/:id" element={<ListingDetails />} />
             <Route path="/edit-listing/:id" element={<EditListingWizard />} />
             
-            {/* Catch all */}
+            {/* Catch all - redirect to login */}
             <Route path="*" element={<Navigate to="/login" replace />} />
           </Routes>
         </AnalyticsWrapper>
