@@ -1,79 +1,65 @@
-import React from 'react';
+import React, { useState } from 'react';
 import api from '../services/api';
 import './VehicleCard.css';
 
 const VehicleCard = ({ vehicle, onEdit, onDelete }) => {
-  console.log(' VehicleCard vehicle data:', vehicle); // Add this line
-
-  const handleImageError = (e) => {
-    console.log(' Image failed to load:', e.target.src); // Add this line
-    e.target.src = 'https://via.placeholder.com/300x200/393D47/8C8D8B?text=No+Image';
+  const [imageError, setImageError] = useState(false);
+  
+  // Get the correct image URL
+  const getImageUrl = () => {
+    // If it's a Cloudinary URL, use it directly
+    if (vehicle.image_url?.includes('cloudinary')) {
+      return vehicle.image_url;
+    }
+    
+    // If it's a local path, construct the full URL
+    if (vehicle.image_url?.startsWith('/uploads')) {
+      return `http://localhost:5000${vehicle.image_url}`;
+    }
+    
+    // If images is a JSON array (new Cloudinary format)
+    if (vehicle.images) {
+      try {
+        const imagesArray = typeof vehicle.images === 'string' 
+          ? JSON.parse(vehicle.images) 
+          : vehicle.images;
+        return imagesArray[0] || null;
+      } catch (e) {
+        console.error('Error parsing images:', e);
+      }
+    }
+    
+    // Fallback
+    return vehicle.primary_image || null;
   };
 
-  const resolveImageSrc = () => {
-    const candidate = (
-      vehicle.image_url ||
-      vehicle.imageUrl ||
-      vehicle.primary_image ||
-      vehicle.image ||
-      (Array.isArray(vehicle.images) && vehicle.images[0]) ||
-      ''
-    );
+  const imageUrl = getImageUrl();
 
-    console.log('🖼️ Image candidate:', candidate); // Add this line
-
-    if (!candidate) {
-      return 'https://via.placeholder.com/300x200/393D47/8C8D8B?text=No+Image';
-    }
-
-    const src = String(candidate);
-    
-    if (src.startsWith('http://') || src.startsWith('https://') || src.startsWith('data:')) {
-      return src;
-    }
-    
-    const baseURL = process.env.REACT_APP_API_URL || 'https://automotivehub-dv200-1.onrender.com';
-    if (src.startsWith('/uploads')) {
-      const resolved = `${baseURL}${src}`;
-      console.log('✅ Resolved image URL:', resolved); // Add this line
-      return resolved;
-    }
-    
-    return src;
+  const handleImageError = () => {
+    console.log('Image failed to load:', imageUrl);
+    setImageError(true);
   };
 
   return (
     <div className="vehicle-card">
-      <div className="vehicle-image-container">
-        <img
-          src={resolveImageSrc()}
-          alt={`${vehicle.make} ${vehicle.model}`}
-          className="vehicle-image"
-          onError={handleImageError}
-        />
-        <div className="vehicle-actions">
-          <button
-            className="action-btn edit-btn"
-            onClick={() => onEdit && onEdit(vehicle)}
-            title="Edit Vehicle"
-          >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M11.013 1.68701C11.5047 1.19524 12.2953 1.19524 12.787 1.68701L14.313 3.21301C14.8048 3.70478 14.8048 4.49522 14.313 4.98699L13.0669 6.23309L9.76689 2.93309L11.013 1.68701Z" fill="white"/>
-              <path d="M8.99989 4.20008L12.2999 7.50008L5.16656 14.6334H1.86656V11.3334L8.99989 4.20008Z" fill="white"/>
+      <div className="vehicle-image">
+        {!imageError && imageUrl ? (
+          <img 
+            src={imageUrl} 
+            alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
+            onError={handleImageError}
+          />
+        ) : (
+          <div className="no-image-placeholder">
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+              <path d="M24 44C35.0457 44 44 35.0457 44 24C44 12.9543 35.0457 4 24 4C12.9543 4 4 12.9543 4 24C4 35.0457 12.9543 44 24 44Z" fill="#393D47"/>
+              <path d="M16 20C16 18.8954 16.8954 18 18 18C19.1046 18 20 18.8954 20 20C20 21.1046 19.1046 22 18 22C16.8954 22 16 21.1046 16 20Z" fill="#8C8D8B"/>
+              <path d="M28 20C28 18.8954 28.8954 18 30 18C31.1046 18 32 18.8954 32 20C32 21.1046 31.1046 22 30 22C28.8954 22 28 21.1046 28 20Z" fill="#8C8D8B"/>
+              <path d="M16 30C16 28.8954 16.8954 28 18 28H30C31.1046 28 32 28.8954 32 30C32 31.1046 31.1046 32 30 32H18C16.8954 32 16 31.1046 16 30Z" fill="#8C8D8B"/>
             </svg>
-          </button>
-          <button
-            className="action-btn delete-btn"
-            onClick={() => onDelete && onDelete(vehicle)}
-            title="Delete Vehicle"
-          >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M6.66656 2.66675C6.66656 2.29871 6.96519 2.00008 7.33322 2.00008H8.66656C9.03459 2.00008 9.33322 2.29871 9.33322 2.66675V3.33341H6.66656V2.66675Z" fill="white"/>
-              <path d="M2.66656 4.66675C2.29852 4.66675 1.99989 4.96537 1.99989 5.33341C1.99989 5.70145 2.29852 6.00008 2.66656 6.00008H13.3332C13.7013 6.00008 13.9999 5.70145 13.9999 5.33341C13.9999 4.96537 13.7013 4.66675 13.3332 4.66675H2.66656Z" fill="white"/>
-              <path d="M4.66656 7.33341C4.29852 7.33341 3.99989 7.63204 3.99989 8.00008V12.0001C3.99989 12.7365 4.59651 13.3334 5.33322 13.3334H10.6666C11.4033 13.3334 11.9999 12.7365 11.9999 12.0001V8.00008C11.9999 7.63204 11.7013 7.33341 11.3332 7.33341C10.9652 7.33341 10.6666 7.63204 10.6666 8.00008V12.0001H5.33322V8.00008C5.33322 7.63204 5.03459 7.33341 4.66656 7.33341Z" fill="white"/>
-            </svg>
-          </button>
-        </div>
+            <p>No Image</p>
+          </div>
+        )}
       </div>
       
       <div className="vehicle-info">

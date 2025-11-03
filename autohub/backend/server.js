@@ -621,50 +621,56 @@ app.get('/api/events', async (req, res) => {
 });
 
 // ============ ADD VEHICLE TO GARAGE (WITH IMAGE UPLOAD) ============
-app.post('/api/garage/vehicles', auth, upload.array('images', 10), async (req, res) => {
+app.post('/api/garage/vehicles', auth, upload.single('images'), async (req, res) => {
   try {
-    const userId = req.userId; // From JWT auth middleware
-    const { make, model, year, color, description, mileage, vin, nickname } = req.body;
+    const { make, model, year, color, description } = req.body;
+    const userId = req.userId;
 
-    console.log('📥 Add vehicle request:', { userId, make, model, year });
-
-    if (!make || !model || !year) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Make, model, and year are required' 
-      });
-    }
-
-    // Get image URL from uploaded file
     let imageUrl = null;
-    if (req.files && req.files.length > 0) {
-      // Use the first uploaded image
-      imageUrl = `/uploads/${req.files[0].filename}`;
+    
+    // If file uploaded, use Cloudinary
+    if (req.file) {
+      const cloudinary = require('./config/cloudinary');
+      const result = await cloudinary.uploader.upload(req.file.path, {
+        folder: 'autohub/garage',
+        resource_type: 'auto'
+      });
+      imageUrl = result.secure_url;
+      
+      // Delete local file after upload
+      const fs = require('fs');
+      fs.unlinkSync(req.file.path);
     }
 
-    const sql = `
-      INSERT INTO vehicles (user_id, make, model, year, color, description, mileage, vin, nickname, image_url)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    const query = `
+      INSERT INTO vehicles (make, model, year, color, description, user_id, image_url, images, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
     `;
-    
-    const [result] = await db.promise().query(sql, [
-      userId, make, model, year, color, description, mileage, vin, nickname, imageUrl
+
+    const [result] = await db.promise().query(query, [
+      make,
+      model,
+      year,
+      color,
+      description,
+      userId,
+      imageUrl, // Store Cloudinary URL
+      imageUrl ? JSON.stringify([imageUrl]) : null // Also store as JSON array
     ]);
 
-    console.log('✅ Vehicle added successfully:', result.insertId);
-
-    res.status(201).json({ 
-      success: true, 
-      message: 'Vehicle added to garage',
+    res.json({
+      success: true,
+      message: 'Vehicle added successfully',
       vehicleId: result.insertId,
       imageUrl: imageUrl
     });
+
   } catch (error) {
-    console.error('❌ Add vehicle error:', error);
-    res.status(500).json({ 
-      success: false, 
+    console.error('❌ Error adding vehicle:', error);
+    res.status(500).json({
+      success: false,
       message: 'Failed to add vehicle',
-      error: error.message 
+      error: error.message
     });
   }
 });
@@ -898,6 +904,54 @@ app.delete('/api/social/posts/:postId', auth, async (req, res) => {
   } catch (error) {
     console.error('Error deleting post:', error);
     res.status(500).json({ success: false, message: 'Failed to delete post' });
+  }
+});
+
+// ============ DELETE VEHICLE FROM GARAGE ============
+app.delete('/api/garage/vehicles/:id', auth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.userId;
+
+    console.log('🗑️ Delete vehicle request:', { id, userId });
+
+    // Check if vehicle exists and belongs to the user
+    const checkSql = 'SELECT * FROM vehicles WHERE id = ? AND user_id = ?';
+    const [vehicles] = await db.promise().query(checkSql, [id, userId]);
+
+    if (vehicles.length === 0) {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'Vehicle not found or you do not have permission to delete it' 
+      });
+    }
+
+    // Delete the vehicle's image file if it exists
+    const vehicle = vehicles[0];
+    if (vehicle.image_url) {
+      const imagePath = path.join(__dirname, vehicle.image_url);
+      if (fs.existsSync(imagePath)) {
+        fs.unlinkSync(imagePath);
+        console.log('✅ Deleted image file:', imagePath);
+      }
+    }
+
+    // Delete vehicle from database
+    await db.promise().query('DELETE FROM vehicles WHERE id = ?', [id]);
+
+    console.log('✅ Vehicle deleted successfully');
+
+    res.json({ 
+      success: true, 
+      message: 'Vehicle deleted successfully' 
+    });
+  } catch (error) {
+    console.error('❌ Delete vehicle error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to delete vehicle',
+      error: error.message 
+    });
   }
 });
 
