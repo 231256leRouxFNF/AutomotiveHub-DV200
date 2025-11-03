@@ -1,40 +1,56 @@
-
 const Listing = require('../models/Listing');
+const cloudinary = require('../config/cloudinary');
 
 const listingController = {
   // Create a new listing
-  createListing: (req, res) => {
-    const { title, description, price, category, condition, year, make, model, mileage, location } = req.body;
-    const userId = req.userId; // userId from auth middleware
-
-    if (!req.files || req.files.length === 0) {
-      return res.status(400).json({ success: false, message: 'At least one image is required' });
-    }
-
-    const imageUrls = req.files.map(file => `/uploads/${file.filename}`);
-
-    const newListing = {
-      userId,
-      title,
-      description,
-      price,
-      category,
-      condition,
-      year,
-      make,
-      model,
-      mileage,
-      location,
-      imageUrls: JSON.stringify(imageUrls), // Store as JSON string
-    };
-
-    Listing.create(newListing, (err, result) => {
-      if (err) {
-        console.error('Error creating listing:', err);
-        return res.status(500).json({ success: false, message: 'Failed to create listing' });
+  createListing: async (req, res) => {
+    try {
+      const { title, description, price, make, model, year, userId } = req.body;
+      
+      // Upload images to Cloudinary
+      const imageUrls = [];
+      if (req.files && req.files.length > 0) {
+        for (const file of req.files) {
+          const result = await cloudinary.uploader.upload(file.path, {
+            folder: 'autohub/listings',
+            resource_type: 'auto'
+          });
+          imageUrls.push(result.secure_url);
+        }
       }
-      res.status(201).json({ success: true, message: 'Listing created successfully', listingId: result.insertId });
-    });
+
+      // Insert listing into database with Cloudinary URLs
+      const query = `
+        INSERT INTO listings (title, description, price, make, model, year, userId, images)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `;
+      
+      const [result] = await db.execute(query, [
+        title, 
+        description, 
+        price, 
+        make, 
+        model, 
+        year, 
+        userId,
+        JSON.stringify(imageUrls) // Store as JSON array
+      ]);
+
+      res.status(201).json({
+        success: true,
+        message: 'Listing created successfully',
+        listingId: result.insertId,
+        images: imageUrls
+      });
+
+    } catch (error) {
+      console.error('Error creating listing:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Error creating listing',
+        error: error.message 
+      });
+    }
   },
 
   // Get all listings
@@ -167,19 +183,39 @@ const listingController = {
   },
 
   // Delete a listing
-  deleteListing: (req, res) => {
-    const { id } = req.params;
+  deleteListing: async (req, res) => {
+    try {
+      const { listingId } = req.params;
 
-    Listing.delete(id, (err, result) => {
-      if (err) {
-        console.error('Error deleting listing:', err);
-        return res.status(500).json({ success: false, message: 'Failed to delete listing' });
+      // Get listing images first
+      const [listing] = await db.execute(
+        'SELECT images FROM listings WHERE id = ?',
+        [listingId]
+      );
+
+      // Delete images from Cloudinary
+      if (listing[0]?.images) {
+        const images = JSON.parse(listing[0].images);
+        for (const imageUrl of images) {
+          // Extract public_id from Cloudinary URL
+          const publicId = imageUrl.split('/').slice(-2).join('/').split('.')[0];
+          await cloudinary.uploader.destroy(`autohub/listings/${publicId}`);
+        }
       }
-      if (result.affectedRows === 0) {
-        return res.status(404).json({ success: false, message: 'Listing not found' });
-      }
-      res.status(200).json({ success: true, message: 'Listing deleted successfully' });
-    });
+
+      // Delete listing from database
+      await db.execute('DELETE FROM listings WHERE id = ?', [listingId]);
+
+      res.json({ success: true, message: 'Listing deleted successfully' });
+
+    } catch (error) {
+      console.error('Error deleting listing:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Error deleting listing',
+        error: error.message 
+      });
+    }
   },
 
   // Get related listings
