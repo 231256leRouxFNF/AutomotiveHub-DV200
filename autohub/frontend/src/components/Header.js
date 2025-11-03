@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { authService } from '../services/api'; // ADD THIS
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { authService } from '../services/api';
 import Logo from './Logo';
 import SearchBox from './SearchBox';
 import './Header.css';
 
 const Header = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [unreadCount, setUnreadCount] = useState(0);
   const currentUser = authService.getCurrentUser();
 
@@ -14,8 +15,7 @@ const Header = () => {
     const fetchUnreadCount = async () => {
       if (currentUser && currentUser.id) {
         try {
-          // Mock notification count since notificationService is removed
-          const count = 0; // FIX: Define count variable
+          const count = 0;
           setUnreadCount(count);
         } catch (error) {
           console.error('Error fetching unread notification count:', error);
@@ -25,10 +25,28 @@ const Header = () => {
 
     fetchUnreadCount();
 
-    // Optional: Poll for new notifications every X seconds
-    const intervalId = setInterval(fetchUnreadCount, 30000); // Poll every 30 seconds
+    const intervalId = setInterval(fetchUnreadCount, 30000);
     return () => clearInterval(intervalId);
   }, [currentUser]);
+
+  const handleLogout = async () => {
+    try {
+      // Call backend logout endpoint (optional but good practice)
+      await fetch('http://localhost:5000/api/auth/logout', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      // Clear local storage and redirect
+      localStorage.removeItem('token');
+      localStorage.removeItem('userId');
+      navigate('/login');
+    }
+  };
 
   const mainNavItems = [
     { path: '/community', label: 'Community' },
@@ -59,7 +77,7 @@ const Header = () => {
     {
       label: 'Account',
       items: [
-        { path: '/profile', label: 'Profile' },
+        { path: `/profile/${currentUser?.id}`, label: 'Profile' },
         { path: '/messages', label: 'Messages' },
         { path: '/notifications', label: 'Notifications' },
         { path: '/settings', label: 'Settings' }
@@ -125,7 +143,10 @@ const Header = () => {
                 </div>
               </Link>
               <Link to="/settings" className="icon-link"><div className="settings-icon">⚙️</div></Link>
-              <Link to="/profile" className="icon-link"><div className="avatar">👤</div></Link>
+              <div className="profile-icon" onClick={() => navigate(`/profile/${currentUser.id}`)}>
+                👤
+              </div>
+              <button onClick={handleLogout} className="logout-button">Logout</button>
             </>
           ) : null}
         </div>

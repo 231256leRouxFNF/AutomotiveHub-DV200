@@ -16,6 +16,9 @@ console.log('✓ Dotenv loaded');
 const db = require('./config/db');
 console.log('✓ DB loaded');
 
+// Import route files
+const authRoutes = require('./routes/authRoutes');
+
 const app = express();
 
 app.use(cors());
@@ -80,6 +83,9 @@ const auth = (req, res, next) => {
 };
 
 // ============ API ROUTES MUST COME FIRST ============
+
+// Auth routes
+app.use('/api/auth', authRoutes);
 
 // Test routes
 app.get('/', (req, res) => {
