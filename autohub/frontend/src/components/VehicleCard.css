@@ -123,6 +123,44 @@
   line-height: 16px;
 }
 
+/* Add these styles */
+.vehicle-actions {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #E5E7EB;
+  display: flex;
+  gap: 8px;
+}
+
+.vehicle-delete-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background-color: #EF4444;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.vehicle-delete-btn:hover {
+  background-color: #DC2626;
+  transform: translateY(-1px);
+}
+
+.vehicle-delete-btn:active {
+  transform: translateY(0);
+}
+
+.vehicle-delete-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .vehicle-actions {
