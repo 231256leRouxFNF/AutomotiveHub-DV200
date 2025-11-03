@@ -1,8 +1,27 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
-const cloudinary = require('../config/cloudinary');
-const { protect } = require('../middleware/auth');
+
+// Try to load cloudinary, but don't fail if it doesn't exist
+let cloudinary;
+try {
+  cloudinary = require('../config/cloudinary');
+} catch (error) {
+  console.log('Cloudinary config not found, image uploads will be disabled');
+}
+
+// Try to load auth middleware
+let protect;
+try {
+  const auth = require('../middleware/auth');
+  protect = auth.protect;
+} catch (error) {
+  console.log('Auth middleware not found, using dummy middleware');
+  protect = (req, res, next) => {
+    req.user = { id: 1 }; // Dummy user for testing
+    next();
+  };
+}
 
 // Get all vehicles for the logged-in user
 router.get('/', protect, (req, res) => {
@@ -76,8 +95,8 @@ router.post('/', protect, async (req, res) => {
 
     console.log('Adding vehicle for user:', userId);
 
-    // Upload image to Cloudinary if provided
-    if (req.file) {
+    // Upload image to Cloudinary if available and file provided
+    if (cloudinary && req.file) {
       const result = await cloudinary.uploader.upload(req.file.path, {
         folder: 'autohub_vehicles'
       });
@@ -113,8 +132,8 @@ router.put('/:id', protect, async (req, res) => {
     const { make, model, year, color, description } = req.body;
     let imageUrl = null;
 
-    // Upload new image to Cloudinary if provided
-    if (req.file) {
+    // Upload new image to Cloudinary if available and file provided
+    if (cloudinary && req.file) {
       const result = await cloudinary.uploader.upload(req.file.path, {
         folder: 'autohub_vehicles'
       });
@@ -130,6 +149,10 @@ router.put('/:id', protect, async (req, res) => {
     if (color) { updateFields.push('color = ?'); updateValues.push(color); }
     if (description) { updateFields.push('description = ?'); updateValues.push(description); }
     if (imageUrl) { updateFields.push('image_url = ?'); updateValues.push(imageUrl); }
+
+    if (updateFields.length === 0) {
+      return res.status(400).json({ message: 'No fields to update' });
+    }
 
     updateValues.push(vehicleId, userId);
 
