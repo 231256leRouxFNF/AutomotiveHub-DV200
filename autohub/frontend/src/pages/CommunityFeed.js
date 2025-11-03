@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { socialService, authService, eventService } from '../services/api';
 import { trackUserAction } from '../services/analytics';
 import Header from '../components/Header';
