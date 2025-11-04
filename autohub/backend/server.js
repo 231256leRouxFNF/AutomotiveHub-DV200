@@ -1,33 +1,34 @@
 console.log('🚀 SERVER.JS STARTED - Line 1');
 
+// ============ LOAD ENVIRONMENT VARIABLES FIRST ============
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '.env') });
+console.log('✓ Dotenv loaded');
+console.log('✓ JWT_SECRET exists:', !!process.env.JWT_SECRET);
+
 const express = require('express');
 const cors = require('cors');
 const app = express();
 
 // Middleware
 app.use(cors());
-// INCREASE THE LIMIT HERE - Add this BEFORE other body parsers
-app.use(express.json({ limit: '50mb' })); // Increased from default 100kb
+app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 
-// Make sure JWT_SECRET is loaded
+// NOW check JWT_SECRET after dotenv is loaded
 if (!process.env.JWT_SECRET) {
-  console.error('❌ JWT_SECRET is not set! Authentication will fail!');
+  console.error('❌ JWT_SECRET is not set in .env file!');
+  console.error('💡 Create a .env file in the backend folder with: JWT_SECRET=your_secret_key_here');
   process.exit(1);
 }
 
 console.log('✅ JWT_SECRET is set');
 
-const path = require('path');
 const multer = require('multer');
 const fs = require('fs');
-
-// ALWAYS load environment variables first
-require('dotenv').config({ path: path.resolve(__dirname, '.env') });
-console.log('✓ Dotenv loaded');
 
 // Now import db AFTER environment is loaded
 const db = require('./config/db');
@@ -82,7 +83,8 @@ const auth = (req, res, next) => {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
-    // Make sure we're setting the user correctly
+    // CHANGED: Set both userId and user object
+    req.userId = decoded.id || decoded.userId;
     req.user = {
       id: decoded.id || decoded.userId,
       email: decoded.email,
@@ -100,7 +102,7 @@ const auth = (req, res, next) => {
 
 // ============ API ROUTES MUST COME FIRST ============
 
-// Auth routes
+// Auth routes - MUST be before any other /api/auth routes
 app.use('/api/auth', authRoutes);
 // Mount routes
 app.use('/api/vehicles', vehicleRoutes);
@@ -227,84 +229,6 @@ app.post('/api/register', async (req, res) => {
       success: false, 
       message: 'Failed to register user',
       error: error.message 
-    });
-  }
-});
-
-// ============ LOGIN ROUTE ============
-app.post('/api/auth/login', async (req, res) => {
-  try {
-    console.log('📥 LOGIN REQUEST:', req.body);
-    
-    const { email, password } = req.body;
-
-    // Validate input
-    if (!email || !password) {
-      console.log('❌ Missing credentials');
-      return res.status(400).json({ 
-        success: false,
-        error: 'Email and password are required' 
-      });
-    }
-
-    console.log('🔍 Looking up user:', email);
-
-    // Find user
-    const [users] = await db.promise().query(
-      'SELECT * FROM users WHERE email = ?',
-      [email]
-    );
-
-    if (users.length === 0) {
-      console.log('❌ User not found');
-      return res.status(401).json({ 
-        success: false,
-        error: 'Invalid email or password' 
-      });
-    }
-
-    const user = users[0];
-    console.log('✅ User found:', user.email);
-
-    // Check password
-    const isValidPassword = await bcrypt.compare(password, user.password);
-    
-    if (!isValidPassword) {
-      console.log('❌ Invalid password');
-      return res.status(401).json({ 
-        success: false,
-        error: 'Invalid email or password' 
-      });
-    }
-
-    console.log('✅ Password valid');
-
-    // Generate token
-    const token = jwt.sign(
-      { id: user.id, email: user.email },
-      process.env.JWT_SECRET,
-      { expiresIn: '7d' }
-    );
-
-    console.log('✅ Token generated');
-
-    // Return user data without password
-    const { password: _, ...userWithoutPassword } = user;
-
-    res.json({
-      success: true,
-      token,
-      user: userWithoutPassword,
-      message: 'Login successful'
-    });
-
-    console.log('✅ Login successful for:', user.email);
-  } catch (error) {
-    console.error('❌ Login error:', error);
-    res.status(500).json({ 
-      success: false,
-      error: 'Login failed',
-      details: error.message 
     });
   }
 });
@@ -805,7 +729,7 @@ app.get('/api/posts', async (req, res) => {
       FROM posts p 
       JOIN users u ON p.userId = u.id 
       LEFT JOIN post_likes pl ON p.id = pl.postId
-      LEFT JOIN comments c ON p.id = c.postId
+      LEFT JOIN comments c ON p.id = c.post_id
       GROUP BY p.id
       ORDER BY p.created_at DESC`
     );
@@ -924,14 +848,14 @@ app.post('/api/social/posts/:postId/comments', auth, async (req, res) => {
       });
     }
 
-    const sql = 'INSERT INTO comments (postId, userId, content) VALUES (?, ?, ?)';
+    const sql = 'INSERT INTO comments (post_id, user_id, content) VALUES (?, ?, ?)';
     const [result] = await db.promise().query(sql, [postId, userId, content]);
 
     // Fetch the created comment with user info
     const getCommentSql = `
       SELECT c.*, u.username, u.display_name
       FROM comments c
-      JOIN users u ON c.userId = u.id
+      JOIN users u ON c.user_id = u.id
       WHERE c.id = ?
     `;
     const [comments] = await db.promise().query(getCommentSql, [result.insertId]);

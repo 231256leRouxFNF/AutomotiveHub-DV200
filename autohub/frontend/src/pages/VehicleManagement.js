@@ -36,9 +36,9 @@ const VehicleManagement = () => {
   const [isDragOver, setIsDragOver] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 
-  // ⚠️ REPLACE THESE WITH YOUR CLOUDINARY CREDENTIALS
-  const CLOUDINARY_CLOUD_NAME = 'dipwvhvz0';
-  const CLOUDINARY_UPLOAD_PRESET = 'autohub'; // Changed from YOUR_UPLOAD_PRESET_NAME
+  // ✅ Using Cloudinary credentials from environment variables
+  const CLOUDINARY_CLOUD_NAME = process.env.REACT_APP_CLOUDINARY_CLOUD_NAME || 'dipwvhvz0';
+  const CLOUDINARY_UPLOAD_PRESET = process.env.REACT_APP_CLOUDINARY_UPLOAD_PRESET || 'autohub';
 
   const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 

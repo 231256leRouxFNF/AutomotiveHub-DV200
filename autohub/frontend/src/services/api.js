@@ -385,4 +385,6 @@ export const listingService = {
   }
 };
 
+export const loginUser = authService.login; // Points to the correct function
+
 export default api;

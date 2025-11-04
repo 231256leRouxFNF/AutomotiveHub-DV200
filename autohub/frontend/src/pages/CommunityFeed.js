@@ -174,14 +174,17 @@ const CommunityFeed = () => {
       if (selectedImage) {
         console.log('📸 Uploading image to Cloudinary...');
         
+        const CLOUDINARY_CLOUD_NAME = process.env.REACT_APP_CLOUDINARY_CLOUD_NAME || 'dipwvhvz0';
+        const CLOUDINARY_UPLOAD_PRESET = process.env.REACT_APP_CLOUDINARY_UPLOAD_PRESET || 'autohub';
+        
         const formData = new FormData();
         formData.append('file', selectedImage);
-        formData.append('upload_preset', 'autohub_posts'); // Use your upload preset
-        formData.append('cloud_name', 'dqxun6u3d');
+        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+        formData.append('cloud_name', CLOUDINARY_CLOUD_NAME);
         
         try {
           const cloudinaryResponse = await fetch(
-            `https://api.cloudinary.com/v1_1/dqxun6u3d/image/upload`,
+            `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
             {
               method: 'POST',
               body: formData
