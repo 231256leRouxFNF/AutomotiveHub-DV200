@@ -10,9 +10,9 @@ import './CommunityFeed.css';
 import SEO from '../components/SEO';
 
 const CommunityFeed = () => {
-  // Use mock posts as default state
+  // Start with mock posts, then add real posts from database
   const [posts, setPosts] = useState(mockPosts);
-  const [loading, setLoading] = useState(false); // Set to false since we have mock data
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [events, setEvents] = useState([]);
   const [communityStats, setCommunityStats] = useState(null);
@@ -35,11 +35,39 @@ const CommunityFeed = () => {
   const currentUser = authService.getCurrentUser?.();
   const navigate = useNavigate();
 
-  // Fetch additional data (events, stats) but keep mock posts
+  // Fetch real posts from database and merge with mock posts
   useEffect(() => {
     const fetchData = async () => {
       try {
+        setLoading(true);
         console.log('📥 Fetching community data...');
+        
+        // Fetch real posts from database
+        const realPosts = await socialService.getPosts();
+        console.log('✅ Real posts fetched:', realPosts);
+        
+        // Process real posts
+        const processedRealPosts = realPosts.map(post => ({
+          id: `real-${post.id}`, // Prefix to distinguish from mock posts
+          user: {
+            username: post.username || post.user?.username || 'Anonymous',
+            profile_image: post.user_profile_image || post.user?.profile_image || 
+                          `https://ui-avatars.com/api/?name=${encodeURIComponent(post.username || 'User')}&background=667eea&color=fff&size=48`
+          },
+          content: post.content,
+          image: post.image_url || post.image || null,
+          likes: parseInt(post.likes) || 0,
+          comments: parseInt(post.comments_count) || 0,
+          created_at: formatTimeAgo(post.created_at),
+          isLiked: post.is_liked || false,
+          isRealPost: true // Flag to identify real posts
+        }));
+
+        // Merge real posts with mock posts (real posts first, then mock posts)
+        const allPosts = [...processedRealPosts, ...mockPosts];
+        
+        console.log('📊 Total posts (real + mock):', allPosts.length);
+        setPosts(allPosts);
         
         // Fetch events
         const eventsList = await eventService.getAllEvents();
@@ -54,9 +82,13 @@ const CommunityFeed = () => {
           setCommunitySnapshots(communityData.snapshots);
         }
         
+        setLoading(false);
       } catch (error) {
         console.error('❌ Error fetching community data:', error);
         // Keep mock posts even on error
+        setPosts(mockPosts);
+        setLoading(false);
+        
         if (communityData.stats) {
           setCommunityStats(communityData.stats);
         }
@@ -64,7 +96,23 @@ const CommunityFeed = () => {
     };
 
     fetchData();
-  }, []);
+  }, []); // Only fetch once on mount
+
+  // Helper function to format time ago
+  const formatTimeAgo = (timestamp) => {
+    if (!timestamp) return 'Just now';
+    
+    const now = new Date();
+    const postDate = new Date(timestamp);
+    const diffInSeconds = Math.floor((now - postDate) / 1000);
+    
+    if (diffInSeconds < 60) return 'Just now';
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`;
+    if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)} days ago`;
+    
+    return postDate.toLocaleDateString();
+  };
 
   const renderIcon = (iconName) => {
     const icons = {
@@ -122,62 +170,77 @@ const CommunityFeed = () => {
     }
 
     try {
-      console.log('📤 Creating post...');
+      console.log('📤 Creating post with image...');
       
-      // Create new post object
-      const newPost = {
-        id: posts.length + 1,
-        user: {
-          username: currentUser.username,
-          profile_image: `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.username)}&background=667eea&color=fff&size=48`
-        },
-        content: newPostContent,
-        image: imagePreview, // Use the preview image
-        likes: 0,
-        comments: 0,
-        created_at: "Just now"
-      };
-
-      // Add to posts array at the beginning
-      setPosts([newPost, ...posts]);
+      let imageUrl = null;
       
-      // Clear form
-      setNewPostContent('');
-      setSelectedImage(null);
-      setImagePreview(null);
-      
-      alert('Post created successfully!');
-      
-      // Cloudinary upload (if image is selected)
+      // Upload image to Cloudinary if selected
       if (selectedImage) {
         const formData = new FormData();
         formData.append('file', selectedImage);
-        formData.append('upload_preset', 'your_upload_preset'); // Replace with your upload preset
-
-        // Upload to Cloudinary
-        const cloudinaryResponse = await fetch(
-          `https://api.cloudinary.com/v1_1/${process.env.REACT_APP_CLOUDINARY_CLOUD_NAME}/image/upload`,
-          {
-            method: 'POST',
-            body: formData,
+        formData.append('upload_preset', 'autohub_posts');
+        
+        try {
+          const cloudinaryResponse = await fetch(
+            `https://api.cloudinary.com/v1_1/${process.env.REACT_APP_CLOUDINARY_CLOUD_NAME || 'YOUR_CLOUD_NAME'}/image/upload`,
+            {
+              method: 'POST',
+              body: formData,
+            }
+          );
+          
+          if (!cloudinaryResponse.ok) {
+            throw new Error('Cloudinary upload failed');
           }
-        );
-
-        const cloudinaryData = await cloudinaryResponse.json();
-        console.log('☁️ Cloudinary response:', cloudinaryData);
-
-        if (cloudinaryData.secure_url) {
-          // Update post with Cloudinary image URL
-          const updatedPost = {
-            ...newPost,
-            image: cloudinaryData.secure_url
-          };
-
-          // Prepend updated post to posts
-          setPosts(prevPosts => [updatedPost, ...prevPosts]);
-        } else {
-          alert('Image uploaded to Cloudinary, but URL retrieval failed.');
+          
+          const cloudinaryData = await cloudinaryResponse.json();
+          imageUrl = cloudinaryData.secure_url;
+          console.log('✅ Image uploaded to Cloudinary:', imageUrl);
+        } catch (uploadError) {
+          console.error('❌ Cloudinary upload failed:', uploadError);
+          alert('Failed to upload image. Posting without image...');
+          // Continue without image
         }
+      }
+      
+      // Create post in database
+      const postData = {
+        content: newPostContent,
+        image_url: imageUrl,
+        user_id: currentUser.id,
+      };
+      
+      const response = await socialService.createPost(postData);
+      
+      if (response.success || response.post) {
+        console.log('✅ Post created successfully:', response);
+        
+        // Create new post object for UI
+        const newPost = {
+          id: `real-${response.post?.id || Date.now()}`,
+          user: {
+            username: currentUser.username,
+            profile_image: currentUser.profile_image || 
+                          `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.username)}&background=667eea&color=fff&size=48`
+          },
+          content: newPostContent,
+          image: imageUrl,
+          likes: 0,
+          comments: 0,
+          created_at: "Just now",
+          isLiked: false,
+          isRealPost: true
+        };
+
+        // Add to posts array at the beginning (before mock posts)
+        setPosts([newPost, ...posts]);
+        
+        // Clear form
+        setNewPostContent('');
+        setSelectedImage(null);
+        setImagePreview(null);
+        
+        alert('Post created successfully! 🎉 All users can now see it.');
       }
       
     } catch (error) {
@@ -186,18 +249,43 @@ const CommunityFeed = () => {
     }
   };
 
-  const handleLike = (postId) => {
-    // Update likes count locally
-    setPosts(posts.map(post => {
-      if (post.id === postId) {
-        return {
-          ...post,
-          likes: post.likes + 1,
-          isLiked: true
-        };
+  const handleLike = async (postId) => {
+    // Check if it's a real post (from database)
+    const post = posts.find(p => p.id === postId);
+    
+    if (post?.isRealPost) {
+      // For real posts, send like to backend
+      try {
+        const realPostId = postId.replace('real-', ''); // Remove prefix
+        await socialService.likePost(realPostId);
+        
+        // Update UI
+        setPosts(posts.map(p => {
+          if (p.id === postId) {
+            return {
+              ...p,
+              likes: p.isLiked ? p.likes - 1 : p.likes + 1,
+              isLiked: !p.isLiked
+            };
+          }
+          return p;
+        }));
+      } catch (error) {
+        console.error('Failed to like post:', error);
       }
-      return post;
-    }));
+    } else {
+      // For mock posts, just update UI locally
+      setPosts(posts.map(p => {
+        if (p.id === postId) {
+          return {
+            ...p,
+            likes: p.isLiked ? p.likes - 1 : p.likes + 1,
+            isLiked: !p.isLiked
+          };
+        }
+        return p;
+      }));
+    }
   };
 
   // Event Modal Functions
@@ -370,52 +458,77 @@ const CommunityFeed = () => {
             </div>
 
             {/* Display Posts */}
-            {posts.map((post) => (
-              <div key={post.id} className="post-card">
-                {/* User Profile Header */}
-                <div className="post-header">
-                  <img 
-                    src={post.user.profile_image} 
-                    alt={post.user.username}
-                    className="user-avatar"
-                  />
-                  <div className="user-info">
-                    <h4 className="username">{post.user.username}</h4>
-                    <span className="post-time">{post.created_at}</span>
-                  </div>
-                </div>
-
-                {/* Post Content */}
-                <div className="post-content">
-                  <p>{post.content}</p>
-                  
-                  {post.image && (
-                    <img 
-                      src={post.image} 
-                      alt="Post"
-                      className="post-image"
-                      loading="lazy"
-                    />
-                  )}
-                </div>
-
-                {/* Post Actions */}
-                <div className="post-actions">
-                  <button 
-                    className={`action-btn ${post.isLiked ? 'liked' : ''}`}
-                    onClick={() => handleLike(post.id)}
-                  >
-                    {renderIcon('heart')} {post.likes}
-                  </button>
-                  <button className="action-btn">
-                    {renderIcon('message')} {post.comments}
-                  </button>
-                  <button className="action-btn">
-                    {renderIcon('share')} Share
-                  </button>
-                </div>
+            {loading ? (
+              <div className="loading-container">
+                <div className="loading-spinner">Loading posts...</div>
               </div>
-            ))}
+            ) : (
+              <div className="posts-list">
+                {posts.length === 0 ? (
+                  <div className="no-posts">
+                    <p>No posts yet. Be the first to share!</p>
+                  </div>
+                ) : (
+                  posts.map((post) => (
+                    <div key={post.id} className="post-card">
+                      {/* Post badge for real vs mock */}
+                      {post.isRealPost && (
+                        <div className="post-badge">🔴 Live</div>
+                      )}
+                      
+                      {/* User Profile Header */}
+                      <div className="post-header">
+                        <img 
+                          src={post.user.profile_image} 
+                          alt={post.user.username}
+                          className="user-avatar"
+                          onError={(e) => {
+                            e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(post.user.username)}&background=667eea&color=fff`;
+                          }}
+                        />
+                        <div className="user-info">
+                          <h4 className="username">{post.user.username}</h4>
+                          <span className="post-time">{post.created_at}</span>
+                        </div>
+                      </div>
+
+                      {/* Post Content */}
+                      <div className="post-content">
+                        <p>{post.content}</p>
+                        
+                        {post.image && (
+                          <img 
+                            src={post.image} 
+                            alt="Post content"
+                            className="post-image"
+                            loading="lazy"
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                            }}
+                          />
+                        )}
+                      </div>
+
+                      {/* Post Actions */}
+                      <div className="post-actions">
+                        <button 
+                          className={`action-btn ${post.isLiked ? 'liked' : ''}`}
+                          onClick={() => handleLike(post.id)}
+                        >
+                          {renderIcon('heart')} {post.likes}
+                        </button>
+                        <button className="action-btn">
+                          {renderIcon('message')} {post.comments}
+                        </button>
+                        <button className="action-btn">
+                          {renderIcon('share')} Share
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
           </main>
 
           {/* Right Sidebar */}
