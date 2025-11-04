@@ -80,7 +80,10 @@ const Marketplace = () => {
 
           const featuredToUse = (incomingFeatured.length ? incomingFeatured : fallbackFeatured).map((item, idx) => ({
             ...item,
-            image: item.image || featuredImages[idx % featuredImages.length] // Use existing image if available
+            // Prefer local images first, then try database
+            image: featuredImages[idx % featuredImages.length] || 
+                   item.image || 
+                   (item.imageUrls && JSON.parse(item.imageUrls)[0])
           }));
 
           const listingsToUse = (incomingListings.length ? incomingListings : fallbackListings).map((item, idx) => ({
