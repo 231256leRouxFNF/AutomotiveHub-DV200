@@ -72,6 +72,21 @@ router.get('/search', (req, res) => {
   });
 });
 
+// Get vehicles for specific user (public route for viewing other users' garages)
+router.get('/user/:userId', (req, res) => {
+  const userId = req.params.userId;
+  console.log('📥 Fetching vehicles for user:', userId);
+  
+  db.query('SELECT * FROM vehicles WHERE user_id = ? ORDER BY created_at DESC', [userId], (err, results) => {
+    if (err) {
+      console.error('❌ Error fetching user vehicles:', err);
+      return res.status(500).json({ error: err.message });
+    }
+    console.log('✅ Found vehicles for user', userId, ':', results.length);
+    res.json(results);
+  });
+});
+
 // Get vehicle by ID
 router.get('/:id', (req, res) => {
   console.log('📥 Fetching vehicle:', req.params.id);

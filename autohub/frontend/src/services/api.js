@@ -1,8 +1,10 @@
 import axios from 'axios';
 import { trackUserAction } from '../services/analytics';
 
-// Force production URL (remove this when you have proper env setup)
-const API_URL = 'https://automotivehub-dv200-1.onrender.com';
+// Use environment variable for API URL (supports both local and production)
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
+console.log('🔗 API URL:', API_URL); // Debug log to verify which URL is being used
 
 // Create axios instance with backend URL
 const api = axios.create({

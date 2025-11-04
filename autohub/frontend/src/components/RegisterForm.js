@@ -59,7 +59,7 @@ const RegisterForm = () => {
       
       if (result.success || result.token) {
         alert('Registration successful! Welcome to AutoHub!');
-        navigate('/vehicle-management');
+        navigate('/garage');
       } else {
         setErrors({ general: result.message || 'Registration failed' });
       }

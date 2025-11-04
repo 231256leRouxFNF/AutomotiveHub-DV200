@@ -1,8 +1,9 @@
+require('dotenv').config(); // Explicitly load environment variables at the very top
+
 console.log('🚀 SERVER.JS STARTED - Line 1');
 
 // ============ LOAD ENVIRONMENT VARIABLES FIRST ============
 const path = require('path');
-require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 console.log('✓ Dotenv loaded');
 console.log('✓ JWT_SECRET exists:', !!process.env.JWT_SECRET);
 
@@ -723,7 +724,6 @@ app.get('/api/posts', async (req, res) => {
         p.*,
         u.username,
         u.email,
-        u.profile_image,
         COUNT(DISTINCT pl.id) as likes_count,
         COUNT(DISTINCT c.id) as comments_count
       FROM posts p 
@@ -747,7 +747,7 @@ app.get('/api/posts', async (req, res) => {
 });
 
 // POST create new post - Place this AFTER the GET route
-app.post('/api/posts', auth, async (req, res) => {
+app.post('/api/posts', auth, upload.single('image'), async (req, res) => {
   try {
     console.log('📥 POST /api/posts - Creating new post');
     console.log('📥 Request body:', req.body);
@@ -783,8 +783,7 @@ app.post('/api/posts', auth, async (req, res) => {
       `SELECT 
         p.*,
         u.username,
-        u.email,
-        u.profile_image
+        u.email
       FROM posts p 
       JOIN users u ON p.userId = u.id 
       WHERE p.id = ?`,
