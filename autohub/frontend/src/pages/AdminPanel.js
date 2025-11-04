@@ -66,7 +66,7 @@ const AdminPanel = () => {
   const handleDeletePost = async (postId) => {
     if (window.confirm('Are you sure you want to delete this post?')) {
       try {
-        await socialService.deletePost(postId);
+        await adminService.deletePost(postId);
         alert('Post deleted successfully');
         loadData();
       } catch (error) {
