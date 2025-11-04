@@ -11,7 +11,7 @@ import './Marketplace.css';
 import Top1 from '../assets/Marketplace-page/Top-Section-1.jpg';
 import Top2 from '../assets/Marketplace-page/Top-Section-2.jpg';
 import Top3 from '../assets/Marketplace-page/Top-Section-3.jpg';
-import Top4 from '../assets/Marketplace-page/Top-Section-4.jpg';
+import Top4 from '../assets/Marketplace-page/Top-Section-4.png';
 
 import Img1 from '../assets/Marketplace-page/Image-1.jpg';
 import Img2 from '../assets/Marketplace-page/Image-2.jpg';
@@ -33,7 +33,7 @@ const Marketplace = () => {
   const [selectedMake, setSelectedMake] = useState('');
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
-  const [sortBy, setSortBy] = useState('Newest');
+  const [sortBy, setSortBy] = useState('top');
   const [searchQuery, setSearchQuery] = useState('');
   const [email, setEmail] = useState('');
   const [featuredListings, setFeaturedListings] = useState([]);
@@ -75,7 +75,7 @@ const Marketplace = () => {
           const fallbackCategories = (marketplaceData.categories || []);
           const fallbackListings = (marketplaceData.listings || []);
 
-          const featuredImages = [Top1, Top4, Top3, Top2];
+          const featuredImages = [Top1, Top2, Top3, Top4];
           const listingImages = [Img1, Img2, Img3, Img4, Img5, Img6, Img7, Img8, Img9, Img10, Img11, Img12];
 
           const featuredToUse = (incomingFeatured.length ? incomingFeatured : fallbackFeatured).map((item, idx) => ({
@@ -187,6 +187,7 @@ const Marketplace = () => {
   const handleListingClick = (listingId) => {
     navigate(`/listing/${listingId}`);
   };
+
 
   return (
     <>
