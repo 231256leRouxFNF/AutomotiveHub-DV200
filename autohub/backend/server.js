@@ -10,8 +10,17 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' })); // Increased from default 100kb
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
+
+// Make sure JWT_SECRET is loaded
+if (!process.env.JWT_SECRET) {
+  console.error('❌ JWT_SECRET is not set! Authentication will fail!');
+  process.exit(1);
+}
+
+console.log('✅ JWT_SECRET is set');
+
 const path = require('path');
 const multer = require('multer');
 const fs = require('fs');
@@ -225,40 +234,70 @@ app.post('/api/register', async (req, res) => {
 // ============ LOGIN ROUTE ============
 app.post('/api/auth/login', async (req, res) => {
   try {
+    console.log('📥 Login attempt:', req.body.email);
+    
     const { email, password } = req.body;
+    
+    if (!email || !password) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Email and password are required' 
+      });
+    }
     
     // Find user
     const [users] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
     
+    console.log('👤 Found users:', users.length);
+    
     if (users.length === 0) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+      return res.status(401).json({ 
+        success: false,
+        error: 'Invalid email or password' 
+      });
     }
     
     const user = users[0];
     
     // Verify password
+    const bcrypt = require('bcryptjs');
     const isValid = await bcrypt.compare(password, user.password);
     
+    console.log('🔐 Password valid:', isValid);
+    
     if (!isValid) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+      return res.status(401).json({ 
+        success: false,
+        error: 'Invalid email or password' 
+      });
     }
     
-    // CREATE JWT TOKEN - THIS IS THE IMPORTANT PART!
+    // Check if JWT_SECRET exists
+    if (!process.env.JWT_SECRET) {
+      console.error('❌ JWT_SECRET not set!');
+      return res.status(500).json({ 
+        success: false,
+        error: 'Server configuration error' 
+      });
+    }
+    
+    // CREATE JWT TOKEN
+    const jwt = require('jsonwebtoken');
     const token = jwt.sign(
       { 
-        id: user.id,              // MUST include id
+        id: user.id,
         username: user.username,
         email: user.email
       },
-      process.env.JWT_SECRET,     // MUST use your secret
+      process.env.JWT_SECRET,
       { expiresIn: '24h' }
     );
     
-    console.log('✅ Token created for user:', user.id);
+    console.log('✅ Token created for user ID:', user.id);
     
     res.json({
       success: true,
-      token: token,  // Send token to frontend
+      token: token,
       user: {
         id: user.id,
         username: user.username,
@@ -267,8 +306,12 @@ app.post('/api/auth/login', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ error: 'Login failed' });
+    console.error('❌ Login error:', error);
+    console.error('❌ Error details:', error.message);
+    res.status(500).json({ 
+      success: false,
+      error: 'Login failed: ' + error.message 
+    });
   }
 });
 
@@ -752,52 +795,53 @@ app.get('/api/notifications/unread-count', auth, async (req, res) => {
 
 // ============ POSTS ENDPOINTS ============
 
-// Get all posts - REMOVE display_name from query
+// Get all posts - Place this BEFORE the POST route
 app.get('/api/posts', async (req, res) => {
   try {
-    const [posts] = await db.query(`
-      SELECT 
-        p.id,
-        p.userId,
-        p.content,
-        p.image_url,
-        p.created_at,
-        p.updated_at,
+    console.log('📥 GET /api/posts - Fetching all posts');
+    
+    const [posts] = await db.promise().query(
+      `SELECT 
+        p.*,
         u.username,
         u.email,
         u.profile_image,
-        (SELECT COUNT(*) FROM post_likes WHERE postId = p.id) as likes,
-        (SELECT COUNT(*) FROM comments WHERE postId = p.id) as comment_count
-      FROM posts p
-      JOIN users u ON p.userId = u.id
-      ORDER BY p.created_at DESC
-    `);
-    
+        COUNT(DISTINCT pl.id) as likes_count,
+        COUNT(DISTINCT c.id) as comments_count
+      FROM posts p 
+      JOIN users u ON p.userId = u.id 
+      LEFT JOIN post_likes pl ON p.id = pl.postId
+      LEFT JOIN comments c ON p.id = c.postId
+      GROUP BY p.id
+      ORDER BY p.created_at DESC`
+    );
+
+    console.log(`✅ Found ${posts.length} posts`);
     res.json({ success: true, posts });
   } catch (error) {
     console.error('❌ Error fetching posts:', error);
-    console.error('❌ SQL Error:', error.sqlMessage);
-    res.status(500).json({ success: false, error: 'Failed to fetch posts' });
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to fetch posts',
+      details: error.message 
+    });
   }
 });
 
-// POST create new post - FIX authentication
-app.post('/api/posts', auth, upload.single('image'), async (req, res) => {
+// POST create new post - Place this AFTER the GET route
+app.post('/api/posts', auth, async (req, res) => {
   try {
+    console.log('📥 POST /api/posts - Creating new post');
+    console.log('📥 Request body:', req.body);
+    console.log('📥 User from auth:', req.user);
+    
     const { content, image_url } = req.body;
-    
-    // FIX: Get user ID from authenticated user
-    const userId = req.user?.id || req.user?.userId;
-    
-    console.log('📥 Creating post for user:', userId);
-    console.log('📥 Request user object:', req.user);
-    console.log('📥 Post content:', content);
+    const userId = req.user.id;
     
     if (!userId) {
       return res.status(401).json({ 
         success: false, 
-        error: 'User not authenticated',
-        details: 'No user ID found in token'
+        error: 'User not authenticated' 
       });
     }
 
@@ -808,15 +852,16 @@ app.post('/api/posts', auth, upload.single('image'), async (req, res) => {
       });
     }
 
-    const [result] = await db.query(
-      'INSERT INTO posts (userId, content, image_url) VALUES (?, ?, ?)',
+    // Insert the post
+    const [result] = await db.promise().query(
+      'INSERT INTO posts (userId, content, image_url, created_at) VALUES (?, ?, ?, NOW())',
       [userId, content, image_url || null]
     );
 
     console.log('✅ Post created with ID:', result.insertId);
 
-    // Fetch the complete post
-    const [newPost] = await db.query(
+    // Fetch the complete post with user data
+    const [newPost] = await db.promise().query(
       `SELECT 
         p.*,
         u.username,
@@ -828,18 +873,20 @@ app.post('/api/posts', auth, upload.single('image'), async (req, res) => {
       [result.insertId]
     );
 
-    res.json({ 
+    console.log('✅ Returning post:', newPost[0]);
+
+    res.status(201).json({ 
       success: true, 
       post: newPost[0],
       message: 'Post created successfully' 
     });
   } catch (error) {
-    console.error('Error creating post:', error);
-    console.error('SQL Error:', error.sqlMessage);
+    console.error('❌ Error creating post:', error);
+    console.error('❌ Error stack:', error.stack);
     res.status(500).json({ 
       success: false, 
       error: 'Failed to create post',
-      details: error.sqlMessage || error.message
+      details: error.message
     });
   }
 });
@@ -972,31 +1019,12 @@ app.delete('/api/garage/vehicles/:id', auth, async (req, res) => {
       message: 'Vehicle deleted successfully' 
     });
   } catch (error) {
-    console.error('❌ Delete vehicle error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Failed to delete vehicle',
-      error: error.message 
-    });
-  }
-});
-
-// Add this debug endpoint after your other routes
-app.get('/api/debug/vehicle/:id', async (req, res) => {
-  try {
-    const [vehicles] = await db.promise().query(
-      'SELECT * FROM vehicles WHERE id = ?',
-      [req.params.id]
-    );
-    res.json(vehicles[0]);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Error deleting vehicle:', error);
+    res.status(500).json({ success: false, message: 'Failed to delete vehicle' });
   }
 });
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`✓ Server running on port ${PORT}`);
+  console.log(`🚀 Server is running on port ${PORT}`);
 });
-
-console.log('✓ SERVER.JS COMPLETED - Line 761');

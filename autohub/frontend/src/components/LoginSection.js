@@ -52,6 +52,38 @@ const LoginSection = () => {
     }
   };
 
+  const onSubmit = async (e) => {
+    e.preventDefault();
+    
+    try {
+      console.log('Login data being sent:', { email: formData.email, password: '***' });
+      
+      const response = await authService.login(formData);
+      
+      console.log('✅ Login response:', response);
+      
+      if (response.success || response.token) {
+        alert('✅ Login successful!');
+        navigate('/community');
+      } else {
+        alert('❌ Login failed: Invalid response');
+      }
+    } catch (error) {
+      console.error('❌ Login error:', error);
+      console.error('❌ Error response:', error.response);
+      console.error('❌ Error data:', error.response?.data);
+      console.error('❌ Error message:', error.response?.data?.error || error.message);
+      
+      // Show specific error message
+      const errorMessage = error.response?.data?.error || 
+                          error.response?.data?.message || 
+                          error.message || 
+                          'Login failed';
+      
+      alert(`❌ Login failed: ${errorMessage}`);
+    }
+  };
+
   return (
     <div className="login-main-container">
       <div className="left-side-panel">

@@ -1,9 +1,12 @@
 import axios from 'axios';
 import { trackUserAction } from '../services/analytics';
 
+// Force production URL (remove this when you have proper env setup)
+const API_URL = 'https://automotivehub-dv200-1.onrender.com';
+
 // Create axios instance with backend URL
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'https://automotivehub-dv200-1.onrender.com',
+  baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json'
   }
@@ -26,7 +29,7 @@ api.interceptors.request.use(
 // ============ 1. AUTH SERVICE ============
 export const authService = {
   login: async (credentials) => {
-    const response = await api.post('/api/login', credentials);
+    const response = await api.post('/api/auth/login', credentials); // Changed from '/api/login'
     if (response.data.token) {
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
@@ -202,7 +205,8 @@ export const eventService = {
 export const socialService = {
   getPosts: async () => {
     try {
-      const response = await api.get('/api/social/posts');
+      // Change this from /api/social/posts to /api/posts
+      const response = await api.get('/api/posts');
       return response.data.posts || [];
     } catch (error) {
       console.error('Failed to fetch posts:', error);
@@ -212,24 +216,30 @@ export const socialService = {
 
   createPost: async (postData) => {
     try {
-      const response = await api.post('/api/social/posts', postData);
+      console.log('🚀 Posting to:', api.defaults.baseURL + '/api/posts');
+      console.log('📦 Post data:', postData);
+      console.log('🔑 Token exists:', !!localStorage.getItem('token'));
       
-      // Track post creation
+      const response = await api.post('/api/posts', postData);
+      
       trackUserAction('create_post', {
         hasImage: !!postData.image_url
       });
       
       return response.data;
     } catch (error) {
-      console.error('Error creating post:', error);
+      console.error('❌ Error creating post:', error);
+      console.error('❌ Error response:', error.response?.data);
+      console.error('❌ Error status:', error.response?.status);
+      console.error('❌ Full URL:', error.config?.url);
       throw error;
     }
   },
 
   likePost: async (postId) => {
+    // Keep this as is - it matches your server.js
     const response = await api.post(`/api/social/posts/${postId}/like`);
     
-    // Track post like
     trackUserAction('like_post', {
       postId: postId
     });
