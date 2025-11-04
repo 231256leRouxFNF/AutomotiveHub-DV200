@@ -211,21 +211,19 @@ export const socialService = {
   },
 
   createPost: async (postData) => {
-    const formData = new FormData();
-    formData.append('content', postData.content);
-    
-    if (postData.image) {
-      formData.append('image', postData.image);
+    try {
+      const response = await api.post('/api/social/posts', postData);
+      
+      // Track post creation
+      trackUserAction('create_post', {
+        hasImage: !!postData.image_url
+      });
+      
+      return response.data;
+    } catch (error) {
+      console.error('Error creating post:', error);
+      throw error;
     }
-
-    const response = await api.post('/api/social/posts', formData);
-    
-    // Track post creation
-    trackUserAction('create_post', {
-      hasImage: !!postData.image
-    });
-    
-    return response.data;
   },
 
   likePost: async (postId) => {

@@ -2,24 +2,25 @@ import React, { useState, useEffect } from 'react';
 import { socialService, authService, eventService } from '../services/api';
 import { trackUserAction } from '../services/analytics';
 import Header from '../components/Header';
+import Footer from '../components/Footer'; // Add Footer import
 import communityData from '../data/community.json';
+import mockPosts from '../data/mockPosts';
 import { useNavigate, Link } from 'react-router-dom';
 import './CommunityFeed.css';
 import SEO from '../components/SEO';
 
 const CommunityFeed = () => {
+  // Use mock posts as default state
+  const [posts, setPosts] = useState(mockPosts);
+  const [loading, setLoading] = useState(false); // Set to false since we have mock data
+  const [error, setError] = useState(null);
+  const [events, setEvents] = useState([]);
+  const [communityStats, setCommunityStats] = useState(null);
+  const [communitySnapshots, setCommunitySnapshots] = useState([]);
   const [newPostContent, setNewPostContent] = useState('');
   const [selectedImage, setSelectedImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
-  const [communityStats, setCommunityStats] = useState([]);
-  const [posts, setPosts] = useState([]);
-  const [events, setEvents] = useState([]);
-  const [communitySnapshots, setCommunitySnapshots] = useState([]);
-  const [editingPostId, setEditingPostId] = useState(null);
-  const [editContent, setEditContent] = useState('');
   const [commentDrafts, setCommentDrafts] = useState({});
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
   
   // Event creation modal state
   const [showEventModal, setShowEventModal] = useState(false);
@@ -34,28 +35,18 @@ const CommunityFeed = () => {
   const currentUser = authService.getCurrentUser?.();
   const navigate = useNavigate();
 
-  // Fetch data on component mount
+  // Fetch additional data (events, stats) but keep mock posts
   useEffect(() => {
     const fetchData = async () => {
       try {
-        setIsLoading(true);
-        setError(null);
-        console.log('📥 Fetching community feed data...');
+        console.log('📥 Fetching community data...');
         
+        // Fetch events
         const eventsList = await eventService.getAllEvents();
         console.log('✅ Events fetched:', eventsList);
         setEvents(eventsList);
-        
-        const postsList = await socialService.getPosts();
-        console.log('✅ Posts fetched:', postsList);
-        
-        if (postsList.length === 0 && communityData.posts) {
-          console.log('📦 Using mock posts from community.json');
-          setPosts(communityData.posts);
-        } else {
-          setPosts(postsList);
-        }
 
+        // Use community.json data
         if (communityData.stats) {
           setCommunityStats(communityData.stats);
         }
@@ -65,16 +56,10 @@ const CommunityFeed = () => {
         
       } catch (error) {
         console.error('❌ Error fetching community data:', error);
-        setError(error.message);
-        
-        if (communityData.posts) {
-          setPosts(communityData.posts);
-        }
+        // Keep mock posts even on error
         if (communityData.stats) {
           setCommunityStats(communityData.stats);
         }
-      } finally {
-        setIsLoading(false);
       }
     };
 
@@ -102,14 +87,13 @@ const CommunityFeed = () => {
   const handleImageSelect = (e) => {
     const file = e.target.files[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+      if (file.size > 5 * 1024 * 1024) {
         alert('Image size must be less than 5MB');
         return;
       }
       
       setSelectedImage(file);
       
-      // Create preview
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result);
@@ -140,90 +124,80 @@ const CommunityFeed = () => {
     try {
       console.log('📤 Creating post...');
       
-      const postData = {
+      // Create new post object
+      const newPost = {
+        id: posts.length + 1,
+        user: {
+          username: currentUser.username,
+          profile_image: `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.username)}&background=667eea&color=fff&size=48`
+        },
         content: newPostContent,
-        image: selectedImage
+        image: imagePreview, // Use the preview image
+        likes: 0,
+        comments: 0,
+        created_at: "Just now"
       };
 
-      const response = await socialService.createPost(postData);
-      trackUserAction.createPost(); // Track post creation
+      // Add to posts array at the beginning
+      setPosts([newPost, ...posts]);
       
-      if (response.success) {
-        alert('Post created successfully!');
-        setNewPostContent('');
-        setSelectedImage(null);
-        setImagePreview(null);
-        
-        // Refresh posts
-        const updatedPosts = await socialService.getPosts();
-        setPosts(updatedPosts);
+      // Clear form
+      setNewPostContent('');
+      setSelectedImage(null);
+      setImagePreview(null);
+      
+      alert('Post created successfully!');
+      
+      // Cloudinary upload (if image is selected)
+      if (selectedImage) {
+        const formData = new FormData();
+        formData.append('file', selectedImage);
+        formData.append('upload_preset', 'your_upload_preset'); // Replace with your upload preset
+
+        // Upload to Cloudinary
+        const cloudinaryResponse = await fetch(
+          `https://api.cloudinary.com/v1_1/${process.env.REACT_APP_CLOUDINARY_CLOUD_NAME}/image/upload`,
+          {
+            method: 'POST',
+            body: formData,
+          }
+        );
+
+        const cloudinaryData = await cloudinaryResponse.json();
+        console.log('☁️ Cloudinary response:', cloudinaryData);
+
+        if (cloudinaryData.secure_url) {
+          // Update post with Cloudinary image URL
+          const updatedPost = {
+            ...newPost,
+            image: cloudinaryData.secure_url
+          };
+
+          // Prepend updated post to posts
+          setPosts(prevPosts => [updatedPost, ...prevPosts]);
+        } else {
+          alert('Image uploaded to Cloudinary, but URL retrieval failed.');
+        }
       }
+      
     } catch (error) {
       console.error('❌ Error creating post:', error);
       alert('Failed to create post. Please try again.');
     }
   };
 
-  const handleLike = async (postId) => {
-    if (!currentUser) {
-      alert('Please login to like posts');
-      navigate('/login');
-      return;
-    }
-
-    try {
-      await socialService.likePost(postId);
-      trackUserAction.likePost(); // Track like
-      
-      // Refresh posts
-      const updatedPosts = await socialService.getPosts();
-      setPosts(updatedPosts);
-    } catch (error) {
-      console.error('❌ Error liking post:', error);
-    }
-  };
-
-  const handleAddComment = async (postId, comment) => {
-    if (!comment?.trim()) return;
-
-    if (!currentUser) {
-      alert('Please login to comment');
-      navigate('/login');
-      return;
-    }
-
-    try {
-      await socialService.addComment(postId, comment);
-      
-      // Clear comment draft
-      setCommentDrafts(prev => ({
-        ...prev,
-        [postId]: ''
-      }));
-      
-      // Refresh posts
-      const updatedPosts = await socialService.getPosts();
-      setPosts(updatedPosts);
-    } catch (error) {
-      console.error('❌ Error adding comment:', error);
-    }
-  };
-
-  const handleDeletePost = async (postId) => {
-    if (!window.confirm('Are you sure you want to delete this post?')) {
-      return;
-    }
-
-    try {
-      await socialService.deletePost(postId);
-      
-      // Refresh posts
-      const updatedPosts = await socialService.getPosts();
-      setPosts(updatedPosts);
-    } catch (error) {
-      console.error('❌ Error deleting post:', error);
-      alert('Failed to delete post');
-    }
+  const handleLike = (postId) => {
+    // Update likes count locally
+    setPosts(posts.map(post => {
+      if (post.id === postId) {
+        return {
+          ...post,
+          likes: post.likes + 1,
+          isLiked: true
+        };
+      }
+      return post;
+    }));
   };
 
   // Event Modal Functions
@@ -272,7 +246,6 @@ const CommunityFeed = () => {
         alert('Event created successfully!');
         closeEventModal();
         
-        // Refresh events list
         const updatedEvents = await eventService.getAllEvents();
         setEvents(updatedEvents);
       }
@@ -292,17 +265,6 @@ const CommunityFeed = () => {
     { label: 'Tips & Tricks', icon: 'sparkles' },
     { label: 'Member Spotlight', icon: 'award' }
   ];
-
-  if (isLoading) {
-    return (
-      <div className="community-feed">
-        <Header />
-        <div className="loading">
-          Loading community feed...
-        </div>
-      </div>
-    );
-  }
 
   return (
     <>
@@ -337,14 +299,10 @@ const CommunityFeed = () => {
             <div className="sidebar-section">
               <div className="sidebar-header">
                 <h3 className="sidebar-title">Upcoming Events ({events.length})</h3>
-                
-              </div>
-
-                <div>
-                  <button className="create-event-btn" onClick={openEventModal}>
+                <button className="create-event-btn" onClick={openEventModal}>
                   {renderIcon('plus')} Create
                 </button>
-                </div>
+              </div>
 
               {events && events.length > 0 ? (
                 events.slice(0, 3).map((event) => (
@@ -379,7 +337,6 @@ const CommunityFeed = () => {
                   rows="4"
                 />
                 
-                {/* Image Preview */}
                 {imagePreview && (
                   <div className="image-preview">
                     <img src={imagePreview} alt="Preview" />
@@ -413,95 +370,52 @@ const CommunityFeed = () => {
             </div>
 
             {/* Display Posts */}
-            {!posts || posts.length === 0 ? (
-              <div className="no-posts">
-                <p>No posts yet. Be the first to share!</p>
-              </div>
-            ) : (
-              posts.map((post) => (
-                <div key={post.id} className="post-card">
-                  <div className="post-header">
-                    <div className="post-author">
-                      <img 
-                        src={post.avatar_url || '/default-avatar.png'} 
-                        alt={post.username} 
-                        className="author-avatar" 
-                      />
-                      <div>
-                        <h4>{post.username}</h4>
-                        <span className="post-time">
-                          {post.created_at ? new Date(post.created_at).toLocaleString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                            hour: 'numeric',
-                            minute: '2-digit',
-                            hour12: true
-                          }) : 'Just now'}
-                        </span>
-                      </div>
-                    </div>
-                    
-                    {currentUser && currentUser.id === post.userId && (
-                      <button 
-                        className="delete-post-btn"
-                        onClick={() => handleDeletePost(post.id)}
-                      >
-                        {renderIcon('x')}
-                      </button>
-                    )}
+            {posts.map((post) => (
+              <div key={post.id} className="post-card">
+                {/* User Profile Header */}
+                <div className="post-header">
+                  <img 
+                    src={post.user.profile_image} 
+                    alt={post.user.username}
+                    className="user-avatar"
+                  />
+                  <div className="user-info">
+                    <h4 className="username">{post.user.username}</h4>
+                    <span className="post-time">{post.created_at}</span>
                   </div>
+                </div>
+
+                {/* Post Content */}
+                <div className="post-content">
+                  <p>{post.content}</p>
                   
-                  <div className="post-content">
-                    <p>{post.content}</p>
-                    {post.image_url && (
-                      <img 
-                        src={`https://automotivehub-dv200-1.onrender.com${post.image_url}`} 
-                        alt="Post" 
-                        className="post-image" 
-                      />
-                    )}
-                  </div>
-
-                  <div className="post-stats">
-                    <span>{post.likes || 0} likes</span>
-                    <span>{post.comment_count || 0} comments</span>
-                  </div>
-
-                  <div className="post-actions">
-                    <button onClick={() => handleLike(post.id)}>
-                      {renderIcon('heart')} Like
-                    </button>
-                    <button onClick={() => setCommentDrafts({...commentDrafts, [post.id]: ''})}>
-                      {renderIcon('message')} Comment
-                    </button>
-                  </div>
-
-                  {post.comments && post.comments.length > 0 && (
-                    <div className="comments-section">
-                      {post.comments.map((comment) => (
-                        <div key={comment.id} className="comment">
-                          <strong>{comment.username}:</strong> {comment.content}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {commentDrafts[post.id] !== undefined && (
-                    <div className="comment-input">
-                      <input
-                        type="text"
-                        value={commentDrafts[post.id] || ''}
-                        onChange={(e) => setCommentDrafts({...commentDrafts, [post.id]: e.target.value})}
-                        placeholder="Write a comment..."
-                      />
-                      <button onClick={() => handleAddComment(post.id, commentDrafts[post.id])}>
-                        Post
-                      </button>
-                    </div>
+                  {post.image && (
+                    <img 
+                      src={post.image} 
+                      alt="Post"
+                      className="post-image"
+                      loading="lazy"
+                    />
                   )}
                 </div>
-              ))
-            )}
+
+                {/* Post Actions */}
+                <div className="post-actions">
+                  <button 
+                    className={`action-btn ${post.isLiked ? 'liked' : ''}`}
+                    onClick={() => handleLike(post.id)}
+                  >
+                    {renderIcon('heart')} {post.likes}
+                  </button>
+                  <button className="action-btn">
+                    {renderIcon('message')} {post.comments}
+                  </button>
+                  <button className="action-btn">
+                    {renderIcon('share')} Share
+                  </button>
+                </div>
+              </div>
+            ))}
           </main>
 
           {/* Right Sidebar */}
@@ -510,11 +424,11 @@ const CommunityFeed = () => {
               <h3 className="sidebar-title">Community Stats</h3>
               <div className="stats-grid">
                 <div className="stat-item">
-                  <div className="stat-value">{posts?.length || 0}</div>
+                  <div className="stat-value">{posts.length}</div>
                   <div className="stat-label">Posts</div>
                 </div>
                 <div className="stat-item">
-                  <div className="stat-value">{events?.length || 0}</div>
+                  <div className="stat-value">{events.length}</div>
                   <div className="stat-label">Events</div>
                 </div>
               </div>
@@ -620,6 +534,7 @@ const CommunityFeed = () => {
           </div>
         )}
       </div>
+      <Footer /> {/* Add Footer here */}
     </>
   );
 };
