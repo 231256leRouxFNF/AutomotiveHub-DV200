@@ -190,12 +190,12 @@ const Marketplace = () => {
 
   return (
     <>
-      <SEO 
+      {/* <SEO 
         title="Marketplace - Buy & Sell Vehicles"
         description="Browse and buy vehicles, parts, and automotive accessories. Find the best deals in the AutoHub marketplace."
         keywords="car marketplace, buy vehicles, sell cars, automotive parts, vehicle sales"
         url="https://automotivehub-dv200.vercel.app/marketplace"
-      />
+      /> */}
       <div className="marketplace">
         <Header />
         
