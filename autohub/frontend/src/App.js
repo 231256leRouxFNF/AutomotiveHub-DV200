@@ -6,7 +6,7 @@ import { authService } from './services/api';
 
 // Import pages
 import Home from './pages/Home';
-import Community from './pages/Community';
+import CommunityFeed from './pages/CommunityFeed'; // Changed from Community
 import Marketplace from './pages/Marketplace';
 import VehicleManagement from './pages/VehicleManagement';
 import Login from './pages/Login';
@@ -46,7 +46,7 @@ function App() {
       <AnalyticsWrapper>
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/community" element={<Community />} />
+          <Route path="/community" element={<CommunityFeed />} />
           <Route path="/marketplace" element={<Marketplace />} />
           <Route path="/garage" element={
             <ProtectedRoute>
