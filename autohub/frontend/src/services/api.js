@@ -249,6 +249,21 @@ export const socialService = {
     return response.data;
   },
 
+  deletePost: async (postId) => {
+    try {
+      const response = await api.delete(`/api/social/posts/${postId}`);
+      
+      trackUserAction('delete_post', {
+        postId: postId
+      });
+      
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error deleting post:', error);
+      throw error;
+    }
+  },
+
   addComment: async (postId, content) => {
     const response = await api.post(`/api/social/posts/${postId}/comments`, { content });
     return response.data;
@@ -383,6 +398,49 @@ export const listingService = {
     } catch (error) {
       console.error('Failed to search listings:', error);
       return [];
+    }
+  }
+};
+
+// ============ 6. ADMIN SERVICE ============
+export const adminService = {
+  getAllUsers: async () => {
+    try {
+      const response = await api.get('/api/admin/users');
+      return response.data.users || [];
+    } catch (error) {
+      console.error('Failed to fetch users:', error);
+      return [];
+    }
+  },
+
+  deleteUser: async (userId) => {
+    try {
+      const response = await api.delete(`/api/admin/users/${userId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to delete user:', error);
+      throw error;
+    }
+  },
+
+  getAllPosts: async () => {
+    try {
+      const response = await api.get('/api/admin/posts');
+      return response.data.posts || [];
+    } catch (error) {
+      console.error('Failed to fetch all posts:', error);
+      return [];
+    }
+  }
+  ,
+  deletePost: async (postId) => {
+    try {
+      const response = await api.delete(`/api/admin/posts/${postId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to delete post:', error);
+      throw error;
     }
   }
 };

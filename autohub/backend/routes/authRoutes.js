@@ -62,7 +62,7 @@ router.post('/login', async (req, res) => {
 
     console.log('🤫 JWT Secret used for signing:', process.env.JWT_SECRET ? 'Exists' : 'MISSING!');
     const token = jwt.sign(
-      { id: user.id, email: user.email, username: user.username },
+      { id: user.id, email: user.email, username: user.username, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );

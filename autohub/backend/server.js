@@ -39,6 +39,7 @@ console.log('✓ DB loaded');
 const authRoutes = require('./routes/authRoutes');
 // Import routes
 const vehicleRoutes = require('./routes/vehicleRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -107,6 +108,7 @@ const auth = (req, res, next) => {
 app.use('/api/auth', authRoutes);
 // Mount routes
 app.use('/api/vehicles', vehicleRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Test routes
 app.get('/', (req, res) => {
@@ -729,7 +731,7 @@ app.get('/api/posts', async (req, res) => {
       FROM posts p 
       JOIN users u ON p.userId = u.id 
       LEFT JOIN post_likes pl ON p.id = pl.postId
-      LEFT JOIN comments c ON p.id = c.post_id
+      LEFT JOIN comments c ON p.id = c.postId
       GROUP BY p.id
       ORDER BY p.created_at DESC`
     );

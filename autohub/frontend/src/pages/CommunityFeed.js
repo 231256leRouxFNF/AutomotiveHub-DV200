@@ -21,6 +21,10 @@ const CommunityFeed = () => {
   const [imagePreview, setImagePreview] = useState(null);
   const [commentDrafts, setCommentDrafts] = useState({});
   
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const POSTS_PER_PAGE = 15;
+  
   // Event creation modal state
   const [showEventModal, setShowEventModal] = useState(false);
   const [eventFormData, setEventFormData] = useState({
@@ -313,6 +317,24 @@ const CommunityFeed = () => {
     }
   };
 
+  const handleDeletePost = async (postId) => {
+    if (!window.confirm('Are you sure you want to delete this post?')) {
+      return;
+    }
+
+    try {
+      const realPostId = postId.replace('real-', ''); // Remove prefix if present
+      await socialService.deletePost(realPostId);
+      
+      // Remove post from UI
+      setPosts(posts.filter(p => p.id !== postId));
+      alert('Post deleted successfully!');
+    } catch (error) {
+      console.error('Failed to delete post:', error);
+      alert('Failed to delete post. ' + (error.response?.data?.message || error.message));
+    }
+  };
+
   // Event Modal Functions
   const openEventModal = () => {
     if (!currentUser) {
@@ -494,7 +516,10 @@ const CommunityFeed = () => {
                     <p>No posts yet. Be the first to share!</p>
                   </div>
                 ) : (
-                  posts.map((post) => (
+                  <>
+                  {posts
+                    .slice((currentPage - 1) * POSTS_PER_PAGE, currentPage * POSTS_PER_PAGE)
+                    .map((post) => (
                     <div key={post.id} className="post-card">
                       {/* Post badge for real vs mock */}
                       {post.isRealPost && (
@@ -548,9 +573,51 @@ const CommunityFeed = () => {
                         <button className="action-btn">
                           {renderIcon('share')} Share
                         </button>
+                        {/* Delete button - only show for post owner */}
+                        {currentUser && post.userId === currentUser.id && (
+                          <button 
+                            className="action-btn delete-btn"
+                            onClick={() => handleDeletePost(post.id)}
+                            style={{ marginLeft: 'auto', color: '#dc3545' }}
+                          >
+                            🗑️ Delete
+                          </button>
+                        )}
                       </div>
                     </div>
-                  ))
+                  ))}
+                  
+                  {/* Pagination Controls */}
+                  {posts.length > POSTS_PER_PAGE && (
+                    <div className="pagination">
+                      <button 
+                        className="pagination-btn"
+                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                        disabled={currentPage === 1}
+                      >
+                        « Previous
+                      </button>
+                      
+                      {[...Array(Math.ceil(posts.length / POSTS_PER_PAGE))].map((_, index) => (
+                        <button
+                          key={index + 1}
+                          className={`pagination-btn ${currentPage === index + 1 ? 'active' : ''}`}
+                          onClick={() => setCurrentPage(index + 1)}
+                        >
+                          {index + 1}
+                        </button>
+                      ))}
+                      
+                      <button 
+                        className="pagination-btn"
+                        onClick={() => setCurrentPage(prev => Math.min(Math.ceil(posts.length / POSTS_PER_PAGE), prev + 1))}
+                        disabled={currentPage === Math.ceil(posts.length / POSTS_PER_PAGE)}
+                      >
+                        Next »
+                      </button>
+                    </div>
+                  )}
+                  </>
                 )}
               </div>
             )}

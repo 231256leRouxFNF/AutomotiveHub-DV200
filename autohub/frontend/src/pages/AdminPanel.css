@@ -147,3 +147,52 @@
   font-size: 18px;
   color: #666;
 }
+
+/* Users Table Styles */
+.users-table {
+  overflow-x: auto;
+}
+
+.users-table table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #1a1a1a;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.users-table th {
+  background: #636AE8;
+  color: white;
+  padding: 15px;
+  text-align: left;
+  font-weight: 600;
+}
+
+.users-table td {
+  padding: 12px 15px;
+  border-bottom: 1px solid #333;
+  color: #F4F4F6;
+}
+
+.users-table tr:hover {
+  background: #222;
+}
+
+.role-badge {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.role-badge.admin {
+  background: #636AE8;
+  color: white;
+}
+
+.role-badge.user {
+  background: #393D47;
+  color: #F4F4F6;
+}

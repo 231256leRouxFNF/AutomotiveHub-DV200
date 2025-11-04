@@ -878,3 +878,52 @@
   display: grid;
   gap: 15px;
 }
+
+/* Pagination Styles */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin-top: 30px;
+  padding: 20px;
+}
+
+.pagination-btn {
+  padding: 10px 16px;
+  border: 1px solid #636AE8;
+  background: #19191F;
+  color: #F4F4F6;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: #636AE8;
+  box-shadow: 0 0 10px rgba(99, 106, 232, 0.5);
+}
+
+.pagination-btn.active {
+  background: #636AE8;
+  box-shadow: 0 0 15px rgba(99, 106, 232, 0.6);
+}
+
+.pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Delete Button Styles */
+.delete-btn {
+  color: #dc3545 !important;
+  border-color: #dc3545 !important;
+}
+
+.delete-btn:hover {
+  background: #dc3545 !important;
+  color: white !important;
+  box-shadow: 0 0 10px rgba(220, 53, 69, 0.5) !important;
+}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { authService, eventService, socialService } from '../services/api';
+import { authService, eventService, socialService, adminService } from '../services/api';
 import './AdminPanel.css';
 
 const AdminPanel = () => {
@@ -8,28 +8,32 @@ const AdminPanel = () => {
   const [activeTab, setActiveTab] = useState('events');
   const [pendingEvents, setPendingEvents] = useState([]);
   const [allPosts, setAllPosts] = useState([]);
+  const [allUsers, setAllUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const currentUser = authService.getCurrentUser();
 
   useEffect(() => {
     // Check if user is admin
-    if (!currentUser || !currentUser.isAdmin) {
+    if (!currentUser || currentUser.role !== 'admin') {
       alert('Access denied. Admin privileges required.');
       navigate('/');
       return;
     }
 
     loadData();
-  }, [currentUser, navigate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const loadData = async () => {
     setLoading(true);
     try {
       const events = await eventService.getAllEvents();
       const posts = await socialService.getPosts();
+      const users = await adminService.getAllUsers();
       
       setPendingEvents(events.filter(event => event.status === 'pending'));
       setAllPosts(posts);
+      setAllUsers(users);
     } catch (error) {
       console.error('Error loading admin data:', error);
     } finally {
@@ -72,6 +76,19 @@ const AdminPanel = () => {
     }
   };
 
+  const handleDeleteUser = async (userId) => {
+    if (window.confirm('Are you sure you want to delete this user? This will also delete all their posts, vehicles, and other data.')) {
+      try {
+        await adminService.deleteUser(userId);
+        alert('User deleted successfully');
+        loadData();
+      } catch (error) {
+        console.error('Error deleting user:', error);
+        alert('Failed to delete user: ' + (error.response?.data?.message || error.message));
+      }
+    }
+  };
+
   if (loading) {
     return <div className="admin-loading">Loading admin panel...</div>;
   }
@@ -97,6 +114,12 @@ const AdminPanel = () => {
           onClick={() => setActiveTab('posts')}
         >
           All Posts ({allPosts.length})
+        </button>
+        <button
+          className={activeTab === 'users' ? 'tab active' : 'tab'}
+          onClick={() => setActiveTab('users')}
+        >
+          All Users ({allUsers.length})
         </button>
       </div>
 
@@ -163,6 +186,54 @@ const AdminPanel = () => {
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'users' && (
+          <div className="users-section">
+            <h2>All Users</h2>
+            {allUsers.length === 0 ? (
+              <p>No users found</p>
+            ) : (
+              <div className="users-table">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Username</th>
+                      <th>Email</th>
+                      <th>Role</th>
+                      <th>Created</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {allUsers.map((user) => (
+                      <tr key={user.id}>
+                        <td>{user.id}</td>
+                        <td>{user.username}</td>
+                        <td>{user.email}</td>
+                        <td>
+                          <span className={`role-badge ${user.role}`}>
+                            {user.role || 'user'}
+                          </span>
+                        </td>
+                        <td>{new Date(user.created_at).toLocaleDateString()}</td>
+                        <td>
+                          <button
+                            onClick={() => handleDeleteUser(user.id)}
+                            className="delete-btn"
+                            disabled={user.id === currentUser?.id}
+                          >
+                            {user.id === currentUser?.id ? 'You' : 'Delete'}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
           </div>
