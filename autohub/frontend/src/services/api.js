@@ -3,7 +3,7 @@ import { trackUserAction } from '../services/analytics';
 
 // Create axios instance with backend URL
 const api = axios.create({
-  baseURL: 'https://automotivehub-dv200-1.onrender.com',
+  baseURL: process.env.REACT_APP_API_URL || 'https://automotivehub-dv200-1.onrender.com',
   headers: {
     'Content-Type': 'application/json'
   }

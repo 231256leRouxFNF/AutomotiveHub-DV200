@@ -4,14 +4,13 @@ import { trackUserAction } from '../services/analytics';
 import Header from '../components/Header';
 import Footer from '../components/Footer'; // Add Footer import
 import communityData from '../data/community.json';
-import mockPosts from '../data/mockPosts';
 import { useNavigate, Link } from 'react-router-dom';
 import './CommunityFeed.css';
 import SEO from '../components/SEO';
 
 const CommunityFeed = () => {
-  // Start with mock posts, then add real posts from database
-  const [posts, setPosts] = useState(mockPosts);
+  // Start with empty array, load from database only
+  const [posts, setPosts] = useState([]); // Changed from mockPosts to []
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [events, setEvents] = useState([]);
@@ -35,7 +34,7 @@ const CommunityFeed = () => {
   const currentUser = authService.getCurrentUser?.();
   const navigate = useNavigate();
 
-  // Fetch real posts from database and merge with mock posts
+  // Fetch real posts from database
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -43,38 +42,40 @@ const CommunityFeed = () => {
         console.log('📥 Fetching community data...');
         
         // Fetch real posts from database
-        const realPosts = await socialService.getPosts();
-        console.log('✅ Real posts fetched:', realPosts);
+        const response = await socialService.getPosts();
+        console.log('✅ Raw API response:', response);
+        
+        // Handle different response formats
+        const realPosts = Array.isArray(response) ? response : (response.posts || []);
+        console.log('✅ Real posts array:', realPosts);
         
         // Process real posts
-        const processedRealPosts = realPosts.map(post => ({
-          id: `real-${post.id}`, // Prefix to distinguish from mock posts
-          user: {
-            username: post.username || post.user?.username || 'Anonymous',
-            profile_image: post.user_profile_image || post.user?.profile_image || 
-                          `https://ui-avatars.com/api/?name=${encodeURIComponent(post.username || 'User')}&background=667eea&color=fff&size=48`
-          },
-          content: post.content,
-          image: post.image_url || post.image || null,
-          likes: parseInt(post.likes) || 0,
-          comments: parseInt(post.comments_count) || 0,
-          created_at: formatTimeAgo(post.created_at),
-          isLiked: post.is_liked || false,
-          isRealPost: true // Flag to identify real posts
-        }));
+        const processedRealPosts = realPosts.map(post => {
+          console.log('Processing post:', post);
+          return {
+            id: `real-${post.id}`,
+            user: {
+              username: post.username || post.user_username || 'Anonymous',
+              profile_image: post.profile_image || post.user_profile_image || 
+                            `https://ui-avatars.com/api/?name=${encodeURIComponent(post.username || 'User')}&background=667eea&color=fff&size=48`
+            },
+            content: post.content || '',
+            image: post.image_url || post.image || null,
+            likes: parseInt(post.likes) || 0,
+            comments: parseInt(post.comments_count) || parseInt(post.comment_count) || 0,
+            created_at: formatTimeAgo(post.created_at),
+            isLiked: post.is_liked || false,
+            isRealPost: true
+          };
+        });
 
-        // Merge real posts with mock posts (real posts first, then mock posts)
-        const allPosts = [...processedRealPosts, ...mockPosts];
-        
-        console.log('📊 Total posts (real + mock):', allPosts.length);
-        setPosts(allPosts);
+        console.log('📊 Processed posts:', processedRealPosts);
+        setPosts(processedRealPosts);
         
         // Fetch events
         const eventsList = await eventService.getAllEvents();
-        console.log('✅ Events fetched:', eventsList);
         setEvents(eventsList);
 
-        // Use community.json data
         if (communityData.stats) {
           setCommunityStats(communityData.stats);
         }
@@ -85,13 +86,8 @@ const CommunityFeed = () => {
         setLoading(false);
       } catch (error) {
         console.error('❌ Error fetching community data:', error);
-        // Keep mock posts even on error
-        setPosts(mockPosts);
+        setPosts([]); // Set to empty array on error
         setLoading(false);
-        
-        if (communityData.stats) {
-          setCommunityStats(communityData.stats);
-        }
       }
     };
 
@@ -170,82 +166,108 @@ const CommunityFeed = () => {
     }
 
     try {
-      console.log('📤 Creating post with image...');
+      console.log('📤 Creating post...');
       
       let imageUrl = null;
       
-      // Upload image to Cloudinary if selected
+      // Upload image to Cloudinary FIRST if selected
       if (selectedImage) {
+        console.log('📸 Uploading image to Cloudinary...');
+        
         const formData = new FormData();
         formData.append('file', selectedImage);
-        formData.append('upload_preset', 'autohub_posts');
+        formData.append('upload_preset', 'autohub_posts'); // Use your upload preset
+        formData.append('cloud_name', 'dqxun6u3d');
         
         try {
           const cloudinaryResponse = await fetch(
-            `https://api.cloudinary.com/v1_1/${process.env.REACT_APP_CLOUDINARY_CLOUD_NAME || 'YOUR_CLOUD_NAME'}/image/upload`,
+            `https://api.cloudinary.com/v1_1/dqxun6u3d/image/upload`,
             {
               method: 'POST',
-              body: formData,
+              body: formData
             }
           );
           
-          if (!cloudinaryResponse.ok) {
-            throw new Error('Cloudinary upload failed');
+          if (cloudinaryResponse.ok) {
+            const cloudinaryData = await cloudinaryResponse.json();
+            imageUrl = cloudinaryData.secure_url;
+            console.log('✅ Image uploaded to Cloudinary:', imageUrl);
+          } else {
+            console.error('⚠️ Cloudinary upload failed, posting without image');
           }
-          
-          const cloudinaryData = await cloudinaryResponse.json();
-          imageUrl = cloudinaryData.secure_url;
-          console.log('✅ Image uploaded to Cloudinary:', imageUrl);
         } catch (uploadError) {
-          console.error('❌ Cloudinary upload failed:', uploadError);
-          alert('Failed to upload image. Posting without image...');
-          // Continue without image
+          console.error('⚠️ Image upload error:', uploadError);
         }
       }
       
-      // Create post in database
+      // Now send post data with Cloudinary URL (not base64)
       const postData = {
         content: newPostContent,
-        image_url: imageUrl,
-        user_id: currentUser.id,
+        image_url: imageUrl // This is now a Cloudinary URL, not base64
       };
       
-      const response = await socialService.createPost(postData);
+      console.log('📤 Sending post data:', postData);
       
-      if (response.success || response.post) {
-        console.log('✅ Post created successfully:', response);
+      try {
+        const response = await socialService.createPost(postData);
+        console.log('✅ Post created on backend:', response);
         
-        // Create new post object for UI
-        const newPost = {
-          id: `real-${response.post?.id || Date.now()}`,
+        if (response.success || response.post) {
+          alert('✅ Post created successfully!');
+          setNewPostContent('');
+          setSelectedImage(null);
+          setImagePreview(null);
+          
+          // Refresh posts
+          const updatedPosts = await socialService.getPosts();
+          const processedPosts = (Array.isArray(updatedPosts) ? updatedPosts : (updatedPosts.posts || [])).map(post => ({
+            id: `real-${post.id}`,
+            user: {
+              username: post.username || post.user_username || 'Anonymous',
+              profile_image: post.profile_image || post.user_profile_image || 
+                            `https://ui-avatars.com/api/?name=${encodeURIComponent(post.username || 'User')}&background=667eea&color=fff&size=48`
+            },
+            content: post.content || '',
+            image: post.image_url || post.image || null,
+            likes: parseInt(post.likes) || 0,
+            comments: parseInt(post.comments_count) || 0,
+            created_at: formatTimeAgo(post.created_at),
+            isLiked: post.is_liked || false,
+            isRealPost: true
+          }));
+          setPosts(processedPosts);
+        }
+      } catch (backendError) {
+        console.error('⚠️ Backend failed:', backendError);
+        
+        // Create local post as fallback
+        const localPost = {
+          id: `local-${Date.now()}`,
           user: {
             username: currentUser.username,
             profile_image: currentUser.profile_image || 
                           `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.username)}&background=667eea&color=fff&size=48`
           },
           content: newPostContent,
-          image: imageUrl,
+          image: imagePreview || null,
           likes: 0,
           comments: 0,
           created_at: "Just now",
           isLiked: false,
-          isRealPost: true
+          isRealPost: false
         };
-
-        // Add to posts array at the beginning (before mock posts)
-        setPosts([newPost, ...posts]);
         
-        // Clear form
+        setPosts([localPost, ...posts]);
         setNewPostContent('');
         setSelectedImage(null);
         setImagePreview(null);
         
-        alert('Post created successfully! 🎉 All users can now see it.');
+        alert(`⚠️ Backend Error! Post created locally only.\n\nError: ${backendError.response?.data?.details || backendError.message}`);
       }
       
     } catch (error) {
-      console.error('❌ Error creating post:', error);
-      alert('Failed to create post. Please try again.');
+      console.error('❌ Unexpected error:', error);
+      alert(`❌ Unexpected error: ${error.message}`);
     }
   };
 

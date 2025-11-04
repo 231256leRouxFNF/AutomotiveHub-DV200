@@ -2,6 +2,14 @@ console.log('🚀 SERVER.JS STARTED - Line 1');
 
 const express = require('express');
 const cors = require('cors');
+const app = express();
+
+// Middleware
+app.use(cors());
+// INCREASE THE LIMIT HERE - Add this BEFORE other body parsers
+app.use(express.json({ limit: '50mb' })); // Increased from default 100kb
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const path = require('path');
@@ -20,11 +28,6 @@ console.log('✓ DB loaded');
 const authRoutes = require('./routes/authRoutes');
 // Import routes
 const vehicleRoutes = require('./routes/vehicleRoutes');
-
-const app = express();
-
-app.use(cors());
-app.use(express.json());
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
