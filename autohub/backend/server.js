@@ -65,25 +65,27 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // ============ AUTHENTICATION MIDDLEWARE ============
 const auth = (req, res, next) => {
   try {
-    const token = req.headers.authorization?.split(' ')[1]; // Bearer TOKEN
+    const token = req.headers.authorization?.split(' ')[1];
     
     if (!token) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'Authentication required' 
-      });
+      return res.status(401).json({ error: 'No token provided' });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
-    req.userId = decoded.userId;
-    req.username = decoded.username;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    
+    // Make sure we're setting the user correctly
+    req.user = {
+      id: decoded.id || decoded.userId,
+      email: decoded.email,
+      username: decoded.username
+    };
+    
+    console.log('✅ Auth middleware - User:', req.user);
+    
     next();
   } catch (error) {
-    console.error('Auth error:', error);
-    return res.status(401).json({ 
-      success: false, 
-      message: 'Invalid or expired token' 
-    });
+    console.error('❌ Auth error:', error);
+    return res.status(401).json({ error: 'Invalid token' });
   }
 };
 
@@ -221,59 +223,52 @@ app.post('/api/register', async (req, res) => {
 });
 
 // ============ LOGIN ROUTE ============
-app.post('/api/login', async (req, res) => {
+app.post('/api/auth/login', async (req, res) => {
   try {
-    const { identifier, password } = req.body;
-
-    console.log('Login attempt:', { identifier }); // Debug log
-
-    // Check if identifier is email or username
-    const sql = 'SELECT * FROM users WHERE email = ? OR username = ?';
-    const [users] = await db.promise().query(sql, [identifier, identifier]);
-
+    const { email, password } = req.body;
+    
+    // Find user
+    const [users] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
+    
     if (users.length === 0) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'Invalid credentials' 
-      });
+      return res.status(401).json({ error: 'Invalid credentials' });
     }
-
+    
     const user = users[0];
-
+    
     // Verify password
-    const isValidPassword = await bcrypt.compare(password, user.password);
-
-    if (!isValidPassword) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'Invalid credentials' 
-      });
+    const isValid = await bcrypt.compare(password, user.password);
+    
+    if (!isValid) {
+      return res.status(401).json({ error: 'Invalid credentials' });
     }
-
-    // Generate JWT token
+    
+    // CREATE JWT TOKEN - THIS IS THE IMPORTANT PART!
     const token = jwt.sign(
-      { userId: user.id, username: user.username },
-      process.env.JWT_SECRET || 'your-secret-key',
-      { expiresIn: '7d' }
+      { 
+        id: user.id,              // MUST include id
+        username: user.username,
+        email: user.email
+      },
+      process.env.JWT_SECRET,     // MUST use your secret
+      { expiresIn: '24h' }
     );
-
+    
+    console.log('✅ Token created for user:', user.id);
+    
     res.json({
       success: true,
-      message: 'Login successful',
-      token,
+      token: token,  // Send token to frontend
       user: {
         id: user.id,
         username: user.username,
         email: user.email,
-        display_name: user.display_name
+        profile_image: user.profile_image
       }
     });
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Server error during login' 
-    });
+    res.status(500).json({ error: 'Login failed' });
   }
 });
 
@@ -757,10 +752,10 @@ app.get('/api/notifications/unread-count', auth, async (req, res) => {
 
 // ============ POSTS ENDPOINTS ============
 
-// Get all posts - FIXED SQL QUERY
-app.get('/api/social/posts', async (req, res) => {
+// Get all posts - REMOVE display_name from query
+app.get('/api/posts', async (req, res) => {
   try {
-    const sql = `
+    const [posts] = await db.query(`
       SELECT 
         p.id,
         p.userId,
@@ -769,92 +764,82 @@ app.get('/api/social/posts', async (req, res) => {
         p.created_at,
         p.updated_at,
         u.username,
-        u.display_name,
         u.email,
+        u.profile_image,
         (SELECT COUNT(*) FROM post_likes WHERE postId = p.id) as likes,
         (SELECT COUNT(*) FROM comments WHERE postId = p.id) as comment_count
       FROM posts p
       JOIN users u ON p.userId = u.id
       ORDER BY p.created_at DESC
-    `;
-    
-    const [posts] = await db.promise().query(sql);
-    
-    // Get comments for each post
-    for (let post of posts) {
-      const commentsSql = `
-        SELECT c.*, u.username, u.display_name
-        FROM comments c
-        JOIN users u ON c.userId = u.id
-        WHERE c.postId = ?
-        ORDER BY c.created_at ASC
-      `;
-      const [comments] = await db.promise().query(commentsSql, [post.id]);
-      post.comments = comments;
-    }
-    
-    console.log('📤 Sending posts:', posts.length);
+    `);
     
     res.json({ success: true, posts });
   } catch (error) {
     console.error('❌ Error fetching posts:', error);
-    console.error('❌ SQL Error:', error.sqlMessage); // More detailed error
-    res.status(500).json({ 
-      success: false, 
-      message: 'Failed to fetch posts',
-      error: error.sqlMessage 
-    });
+    console.error('❌ SQL Error:', error.sqlMessage);
+    res.status(500).json({ success: false, error: 'Failed to fetch posts' });
   }
 });
 
-// Create new post (with image upload)
-app.post('/api/social/posts', auth, upload.single('image'), async (req, res) => {
+// POST create new post - FIX authentication
+app.post('/api/posts', auth, upload.single('image'), async (req, res) => {
   try {
-    const { content } = req.body;
-    const userId = req.userId;
+    const { content, image_url } = req.body;
     
-    if (!content || !content.trim()) {
-      return res.status(400).json({ 
+    // FIX: Get user ID from authenticated user
+    const userId = req.user?.id || req.user?.userId;
+    
+    console.log('📥 Creating post for user:', userId);
+    console.log('📥 Request user object:', req.user);
+    console.log('📥 Post content:', content);
+    
+    if (!userId) {
+      return res.status(401).json({ 
         success: false, 
-        message: 'Post content is required' 
+        error: 'User not authenticated',
+        details: 'No user ID found in token'
       });
     }
 
-    // Handle image upload
-    let imageUrl = null;
-    if (req.file) {
-      imageUrl = `/uploads/${req.file.filename}`;
+    if (!content || content.trim().length === 0) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Content is required' 
+      });
     }
 
-    const sql = 'INSERT INTO posts (userId, content, image_url) VALUES (?, ?, ?)';
-    const [result] = await db.promise().query(sql, [userId, content, imageUrl]);
+    const [result] = await db.query(
+      'INSERT INTO posts (userId, content, image_url) VALUES (?, ?, ?)',
+      [userId, content, image_url || null]
+    );
 
-    // Fetch the created post with user info
-    const getPostSql = `
-      SELECT 
+    console.log('✅ Post created with ID:', result.insertId);
+
+    // Fetch the complete post
+    const [newPost] = await db.query(
+      `SELECT 
         p.*,
         u.username,
-        u.display_name,
-        0 as likes,
-        0 as comment_count
-      FROM posts p
-      JOIN users u ON p.userId = u.id
-      WHERE p.id = ?
-    `;
-    const [posts] = await db.promise().query(getPostSql, [result.insertId]);
-    const newPost = posts[0];
-    newPost.comments = [];
+        u.email,
+        u.profile_image
+      FROM posts p 
+      JOIN users u ON p.userId = u.id 
+      WHERE p.id = ?`,
+      [result.insertId]
+    );
 
     res.json({ 
       success: true, 
-      message: 'Post created successfully',
-      post: newPost
+      post: newPost[0],
+      message: 'Post created successfully' 
     });
   } catch (error) {
     console.error('Error creating post:', error);
+    console.error('SQL Error:', error.sqlMessage);
     res.status(500).json({ 
       success: false, 
-      message: 'Failed to create post' 
+      error: 'Failed to create post',
+      details: error.sqlMessage || error.message
     });
   }
 });
