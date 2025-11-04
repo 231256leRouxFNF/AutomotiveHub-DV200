@@ -6,11 +6,11 @@ import { authService } from './services/api';
 
 // Import pages
 import Home from './pages/Home';
-import CommunityFeed from './pages/CommunityFeed'; // Changed from Community
-import Marketplace from './pages/Marketplace';
+import CommunityFeed from './pages/CommunityFeed';
+import MarketplaceListings from './pages/MarketplaceListings';
 import VehicleManagement from './pages/VehicleManagement';
-import Login from './pages/Login';
-import Register from './pages/Register';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
 import AdminDashboard from './pages/AdminDashboard';
 
 // Analytics wrapper component
@@ -47,14 +47,14 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/community" element={<CommunityFeed />} />
-          <Route path="/marketplace" element={<Marketplace />} />
+          <Route path="/marketplace" element={<MarketplaceListings />} />
           <Route path="/garage" element={
             <ProtectedRoute>
               <VehicleManagement />
             </ProtectedRoute>
           } />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
           <Route path="/admin" element={
             <ProtectedRoute>
               <AdminDashboard />
