@@ -30,21 +30,34 @@ export const authService = {
     if (response.data.token) {
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
+      
+      // Track login
+      trackUserAction('login', {
+        userId: response.data.user.id,
+        username: response.data.user.username
+      });
     }
     return response.data;
   },
 
- register: async (userData) => {
-    console.log('Sending to backend:', userData); // Debug log
-    const response = await api.post('/api/register', userData); // Changed back to /api/register
+  register: async (userData) => {
+    console.log('Sending to backend:', userData);
+    const response = await api.post('/api/register', userData);
     if (response.data.token) {
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
+      
+      // Track registration
+      trackUserAction('sign_up', {
+        userId: response.data.user.id,
+        username: response.data.user.username
+      });
     }
     return response.data;
   },
 
   logout: () => {
+    trackUserAction('logout'); // Track logout
     localStorage.removeItem('token');
     localStorage.removeItem('user');
   },
@@ -76,8 +89,43 @@ export const authService = {
 // ============ 2. GARAGE SERVICE ============
 export const garageService = {
   getUserVehicles: async (userId) => {
-    const response = await api.get(`/api/vehicles/user/${userId}`);
-    return response.data.vehicles || [];
+    try {
+      console.log('🔍 Trying user-specific endpoint:', `/api/vehicles/user/${userId}`);
+      const response = await api.get(`/api/vehicles/user/${userId}`);
+      console.log('✅ User-specific response:', response.data);
+      return response.data.vehicles || response.data || [];
+    } catch (error) {
+      console.warn('⚠️ User-specific endpoint failed, trying /api/vehicles');
+      // Fallback to getting all vehicles and filtering client-side
+      try {
+        const response = await api.get('/api/vehicles');
+        console.log('📦 All vehicles response:', response.data);
+        
+        // Handle different response formats
+        let allVehicles = [];
+        if (Array.isArray(response.data)) {
+          allVehicles = response.data;
+        } else if (response.data.vehicles) {
+          allVehicles = response.data.vehicles;
+        } else if (response.data.data) {
+          allVehicles = response.data.data;
+        }
+        
+        console.log('🚗 All vehicles:', allVehicles);
+        
+        // Filter by user_id on client side
+        const userVehicles = allVehicles.filter(v => {
+          console.log(`🔍 Comparing vehicle user_id: ${v.user_id} (${typeof v.user_id}) with userId: ${userId} (${typeof userId})`);
+          return v.user_id == userId; // Use == instead of === to handle type coercion
+        });
+        console.log('✅ Filtered user vehicles:', userVehicles);
+        return userVehicles;
+      } catch (fallbackError) {
+        console.error('❌ Both endpoints failed:', fallbackError);
+        console.error('❌ Error details:', fallbackError.response?.data);
+        return [];
+      }
+    }
   },
 
   uploadVehicleImage: async (formData) => {
@@ -91,6 +139,14 @@ export const garageService = {
 
   addVehicle: async (vehicleData) => {
     const response = await api.post('/api/vehicles', vehicleData);
+    
+    // Track vehicle addition
+    trackUserAction('add_vehicle', {
+      make: vehicleData.make,
+      model: vehicleData.model,
+      year: vehicleData.year
+    });
+    
     return response.data;
   },
 
@@ -101,6 +157,12 @@ export const garageService = {
 
   deleteVehicle: async (vehicleId) => {
     const response = await api.delete(`/api/vehicles/${vehicleId}`);
+    
+    // Track vehicle deletion
+    trackUserAction('delete_vehicle', {
+      vehicleId: vehicleId
+    });
+    
     return response.data;
   }
 };
@@ -114,6 +176,13 @@ export const eventService = {
 
   createEvent: async (eventData) => {
     const response = await api.post('/api/events', eventData);
+    
+    // Track event creation
+    trackUserAction('create_event', {
+      eventName: eventData.name,
+      eventDate: eventData.date
+    });
+    
     return response.data;
   },
 
@@ -150,11 +219,23 @@ export const socialService = {
     }
 
     const response = await api.post('/api/social/posts', formData);
+    
+    // Track post creation
+    trackUserAction('create_post', {
+      hasImage: !!postData.image
+    });
+    
     return response.data;
   },
 
   likePost: async (postId) => {
     const response = await api.post(`/api/social/posts/${postId}/like`);
+    
+    // Track post like
+    trackUserAction('like_post', {
+      postId: postId
+    });
+    
     return response.data;
   },
 
@@ -240,6 +321,14 @@ export const listingService = {
   createListing: async (listingData) => {
     try {
       const response = await api.post('/api/listings', listingData);
+      
+      // Track listing creation
+      trackUserAction('create_listing', {
+        make: listingData.make,
+        model: listingData.model,
+        price: listingData.price
+      });
+      
       return response.data;
     } catch (error) {
       console.error('Failed to create listing:', error);

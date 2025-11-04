@@ -1,28 +1,24 @@
-import { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { HelmetProvider } from 'react-helmet-async';
+import React, { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { Analytics } from "@vercel/analytics/react";
+import { initGA, trackPageView } from './services/analytics';
 import { authService } from './services/api';
-import { initGA, logPageView } from './services/analytics';
 
 // Import pages
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
-import CommunityFeed from './pages/CommunityFeed';
+import Home from './pages/Home';
+import Community from './pages/Community';
 import Marketplace from './pages/Marketplace';
 import VehicleManagement from './pages/VehicleManagement';
-import ListingDetails from './pages/ListingDetails';
-import EditListingWizard from './pages/EditListingWizard';
-import NotificationsCenter from './pages/NotificationsCenter';
-import SearchResults from './pages/SearchResults';
-import EditProfilePage from './pages/EditProfilePage';
-import AdminPanel from './pages/AdminPanel';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import AdminDashboard from './pages/AdminDashboard';
 
 // Analytics wrapper component
 const AnalyticsWrapper = ({ children }) => {
   const location = useLocation();
 
   useEffect(() => {
-    logPageView(location.pathname + location.search);
+    trackPageView(location.pathname);
   }, [location]);
 
   return children;
@@ -33,7 +29,8 @@ const ProtectedRoute = ({ children }) => {
   const isAuthenticated = authService.isAuthenticated();
   
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    window.location.href = '/login';
+    return null;
   }
   
   return children;
@@ -41,90 +38,32 @@ const ProtectedRoute = ({ children }) => {
 
 function App() {
   useEffect(() => {
-    // Initialize Google Analytics
     initGA();
   }, []);
 
   return (
-    <HelmetProvider>
-      <Router>
-        <AnalyticsWrapper>
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/" element={<CommunityFeed />} /> {/* CHANGED: CommunityFeed as landing page */}
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
-            
-            {/* Protected Routes */}
-            <Route 
-              path="/community" 
-              element={
-                <ProtectedRoute>
-                  <CommunityFeed />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/marketplace" 
-              element={
-                <ProtectedRoute>
-                  <Marketplace />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/garage" 
-              element={
-                <ProtectedRoute>
-                  <VehicleManagement />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/notifications" 
-              element={
-                <ProtectedRoute>
-                  <NotificationsCenter />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/search" 
-              element={
-                <ProtectedRoute>
-                  <SearchResults />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/profile/edit" 
-              element={
-                <ProtectedRoute>
-                  <EditProfilePage />
-                </ProtectedRoute>
-              } 
-            />
-            
-            {/* Admin Route */}
-            <Route 
-              path="/admin" 
-              element={
-                <ProtectedRoute>
-                  <AdminPanel />
-                </ProtectedRoute>
-              } 
-            />
-            
-            {/* Other routes */}
-            <Route path="/listing/:id" element={<ListingDetails />} />
-            <Route path="/edit-listing/:id" element={<EditListingWizard />} />
-            
-            {/* Catch all - redirect to login */}
-            <Route path="*" element={<Navigate to="/login" replace />} />
-          </Routes>
-        </AnalyticsWrapper>
-      </Router>
-    </HelmetProvider>
+    <Router>
+      <AnalyticsWrapper>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/community" element={<Community />} />
+          <Route path="/marketplace" element={<Marketplace />} />
+          <Route path="/garage" element={
+            <ProtectedRoute>
+              <VehicleManagement />
+            </ProtectedRoute>
+          } />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/admin" element={
+            <ProtectedRoute>
+              <AdminDashboard />
+            </ProtectedRoute>
+          } />
+        </Routes>
+      </AnalyticsWrapper>
+      <Analytics />
+    </Router>
   );
 }
 

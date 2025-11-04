@@ -37,8 +37,8 @@ const VehicleManagement = () => {
   const [isUploading, setIsUploading] = useState(false);
 
   // ⚠️ REPLACE THESE WITH YOUR CLOUDINARY CREDENTIALS
-  const CLOUDINARY_CLOUD_NAME = 'YOUR_CLOUD_NAME'; // Get from Cloudinary dashboard
-  const CLOUDINARY_UPLOAD_PRESET = 'YOUR_UPLOAD_PRESET'; // Create an unsigned preset
+  const CLOUDINARY_CLOUD_NAME = 'dipwvhvz0';
+  const CLOUDINARY_UPLOAD_PRESET = 'autohub'; // Changed from YOUR_UPLOAD_PRESET_NAME
 
   const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
