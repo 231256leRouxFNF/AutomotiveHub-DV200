@@ -142,9 +142,13 @@ const Header = () => {
                   {unreadCount > 0 && <span className="notification-badge">{unreadCount}</span>}
                 </div>
               </Link>
-              <Link to="/settings" className="icon-link"><div className="settings-icon">⚙️</div></Link>
+              {/* Profile avatar icon */}
               <div className="profile-icon" onClick={() => navigate(`/profile/${currentUser.id}`)}>
-                👤
+                <img
+                  src={currentUser.avatar || '/default-avatar.png'}
+                  alt="Profile"
+                  style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', border: '2px solid #eee' }}
+                />
               </div>
               <button onClick={handleLogout} className="logout-button">Logout</button>
             </>

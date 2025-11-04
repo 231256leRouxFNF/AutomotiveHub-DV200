@@ -237,6 +237,21 @@ app.post('/api/register', async (req, res) => {
 });
 
 // ============ USER PROFILE ENDPOINTS ============
+// Public profile endpoint for any user by ID
+app.get('/api/user/:id/profile', async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const sql = 'SELECT id, username, email, display_name, avatar_url, created_at FROM users WHERE id = ?';
+    const [users] = await db.promise().query(sql, [userId]);
+    if (users.length === 0) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    res.json({ success: true, user: users[0] });
+  } catch (error) {
+    console.error('Error fetching public profile:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch public profile' });
+  }
+});
 
 app.get('/api/user/profile', auth, async (req, res) => {
   try {

@@ -1,0 +1,50 @@
+/* Profile Page Styles - matches general app style */
+.profile-page {
+  max-width: 900px;
+  margin: 32px auto;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  padding: 32px;
+  font-family: inherit;
+}
+.profile-page h1 {
+  font-size: 2rem;
+  margin-bottom: 16px;
+}
+.profile-stats {
+  display: flex;
+  gap: 32px;
+  margin-bottom: 24px;
+}
+.profile-stats p {
+  margin: 0;
+  font-size: 1.1rem;
+}
+.profile-page button {
+  background: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 20px;
+  font-size: 1rem;
+  cursor: pointer;
+  margin-bottom: 24px;
+}
+.profile-page button:hover {
+  background: #0056b3;
+}
+.profile-page h2 {
+  margin-top: 32px;
+  font-size: 1.3rem;
+}
+.profile-page ul {
+  list-style: none;
+  padding: 0;
+}
+.profile-page li {
+  background: #f7f7f7;
+  margin-bottom: 8px;
+  padding: 10px 16px;
+  border-radius: 6px;
+}

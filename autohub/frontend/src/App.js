@@ -10,6 +10,7 @@ import VehicleManagement from './pages/VehicleManagement';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import AdminPanel from './pages/AdminPanel';
+import ProfilePage from './pages/ProfilePage';
 
 // Simplified Analytics wrapper - removed GA tracking temporarily
 const AnalyticsWrapper = ({ children }) => {
@@ -47,6 +48,7 @@ function App() {
               <AdminPanel />
             </ProtectedRoute>
           } />
+          <Route path="/profile/:id" element={<ProfilePage />} />
         </Routes>
       </AnalyticsWrapper>
       <Analytics />

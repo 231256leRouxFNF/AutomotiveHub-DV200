@@ -173,12 +173,12 @@ const AdminPanel = () => {
                       <span>{new Date(post.createdAt).toLocaleString()}</span>
                     </div>
                     <p>{post.content}</p>
-                    {post.image && (
-                      <img src={post.image} alt="Post" className="post-image" />
-                    )}
+                              {post.image_url && (
+                                <img src={post.image_url} alt="Post" className="post-image" />
+                              )}
                     <div className="admin-actions">
                       <button
-                        onClick={() => handleDeletePost(post._id)}
+                                  onClick={() => handleDeletePost(post.id)}
                         className="delete-btn"
                       >
                         Delete Post

@@ -7,15 +7,54 @@ const { protect } = require('../middleware/auth');
 const requireAdmin = (req, res, next) => {
   console.log('🔍 Admin check - req.user:', req.user);
   console.log('🔍 Admin check - req.user.role:', req.user?.role);
-  
   if (!req.user || req.user.role !== 'admin') {
     console.log('❌ Admin access denied');
     return res.status(403).json({ message: 'Admin access required' });
   }
-  
   console.log('✅ Admin access granted');
   next();
 };
+
+// Bulk delete users (admin only)
+router.post('/users/bulk-delete', protect, requireAdmin, async (req, res) => {
+  try {
+    const { userIds } = req.body;
+    if (!Array.isArray(userIds) || userIds.length === 0) {
+      return res.status(400).json({ success: false, message: 'No user IDs provided' });
+    }
+    // Prevent deleting yourself
+    if (userIds.includes(req.user.id)) {
+      return res.status(400).json({ success: false, message: 'You cannot delete your own account' });
+    }
+    const [result] = await db.promise().query(
+      `DELETE FROM users WHERE id IN (${userIds.map(() => '?').join(',')})`,
+      userIds
+    );
+    res.json({ success: true, message: `Deleted ${result.affectedRows} users` });
+  } catch (error) {
+    console.error('Error bulk deleting users:', error);
+    res.status(500).json({ success: false, message: 'Failed to bulk delete users' });
+  }
+});
+// Bulk delete posts (admin only)
+router.post('/posts/bulk-delete', protect, requireAdmin, async (req, res) => {
+  try {
+    const { postIds } = req.body;
+    if (!Array.isArray(postIds) || postIds.length === 0) {
+      return res.status(400).json({ success: false, message: 'No post IDs provided' });
+    }
+    const [result] = await db.promise().query(
+      `DELETE FROM posts WHERE id IN (${postIds.map(() => '?').join(',')})`,
+      postIds
+    );
+    res.json({ success: true, message: `Deleted ${result.affectedRows} posts` });
+  } catch (error) {
+    console.error('Error bulk deleting posts:', error);
+    res.status(500).json({ success: false, message: 'Failed to bulk delete posts' });
+  }
+});
+
+// Middleware to check if user is admin
 
 // Get all users (admin only)
 router.get('/users', protect, requireAdmin, async (req, res) => {
