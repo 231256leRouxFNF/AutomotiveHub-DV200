@@ -234,83 +234,77 @@ app.post('/api/register', async (req, res) => {
 // ============ LOGIN ROUTE ============
 app.post('/api/auth/login', async (req, res) => {
   try {
-    console.log('📥 Login attempt:', req.body.email);
+    console.log('📥 LOGIN REQUEST:', req.body);
     
     const { email, password } = req.body;
-    
+
+    // Validate input
     if (!email || !password) {
+      console.log('❌ Missing credentials');
       return res.status(400).json({ 
         success: false,
         error: 'Email and password are required' 
       });
     }
-    
+
+    console.log('🔍 Looking up user:', email);
+
     // Find user
-    const [users] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
-    
-    console.log('👤 Found users:', users.length);
-    
-    if (users.length === 0) {
-      return res.status(401).json({ 
-        success: false,
-        error: 'Invalid email or password' 
-      });
-    }
-    
-    const user = users[0];
-    
-    // Verify password
-    const bcrypt = require('bcryptjs');
-    const isValid = await bcrypt.compare(password, user.password);
-    
-    console.log('🔐 Password valid:', isValid);
-    
-    if (!isValid) {
-      return res.status(401).json({ 
-        success: false,
-        error: 'Invalid email or password' 
-      });
-    }
-    
-    // Check if JWT_SECRET exists
-    if (!process.env.JWT_SECRET) {
-      console.error('❌ JWT_SECRET not set!');
-      return res.status(500).json({ 
-        success: false,
-        error: 'Server configuration error' 
-      });
-    }
-    
-    // CREATE JWT TOKEN
-    const jwt = require('jsonwebtoken');
-    const token = jwt.sign(
-      { 
-        id: user.id,
-        username: user.username,
-        email: user.email
-      },
-      process.env.JWT_SECRET,
-      { expiresIn: '24h' }
+    const [users] = await db.promise().query(
+      'SELECT * FROM users WHERE email = ?',
+      [email]
     );
+
+    if (users.length === 0) {
+      console.log('❌ User not found');
+      return res.status(401).json({ 
+        success: false,
+        error: 'Invalid email or password' 
+      });
+    }
+
+    const user = users[0];
+    console.log('✅ User found:', user.email);
+
+    // Check password
+    const isValidPassword = await bcrypt.compare(password, user.password);
     
-    console.log('✅ Token created for user ID:', user.id);
-    
+    if (!isValidPassword) {
+      console.log('❌ Invalid password');
+      return res.status(401).json({ 
+        success: false,
+        error: 'Invalid email or password' 
+      });
+    }
+
+    console.log('✅ Password valid');
+
+    // Generate token
+    const token = jwt.sign(
+      { id: user.id, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    console.log('✅ Token generated');
+
+    // Return user data without password
+    const { password: _, ...userWithoutPassword } = user;
+
     res.json({
       success: true,
-      token: token,
-      user: {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        profile_image: user.profile_image
-      }
+      token,
+      user: userWithoutPassword,
+      message: 'Login successful'
     });
+
+    console.log('✅ Login successful for:', user.email);
   } catch (error) {
     console.error('❌ Login error:', error);
-    console.error('❌ Error details:', error.message);
     res.status(500).json({ 
       success: false,
-      error: 'Login failed: ' + error.message 
+      error: 'Login failed',
+      details: error.message 
     });
   }
 });
