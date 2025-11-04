@@ -14,7 +14,7 @@ router.get('/posts', async (req, res) => {
         COUNT(DISTINCT l.id) as likes,
         COUNT(DISTINCT c.id) as comments_count
       FROM posts p
-      LEFT JOIN users u ON p.user_id = u.id
+      LEFT JOIN users u ON p.userId = u.id
       LEFT JOIN post_likes l ON p.id = l.post_id
       LEFT JOIN post_comments c ON p.id = c.post_id
       GROUP BY p.id
@@ -42,15 +42,11 @@ router.post('/posts', authenticateToken, async (req, res) => {
       return res.status(400).json({ success: false, error: 'Content is required' });
     }
 
-    // Add more detailed logging
     console.log('💾 Attempting database insert...');
-    console.log('💾 Database config:', { 
-      host: process.env.DB_HOST, 
-      database: process.env.DB_NAME 
-    });
     
+    // Use userId instead of user_id to match your table
     const [result] = await db.execute(
-      'INSERT INTO posts (user_id, content, image_url, created_at) VALUES (?, ?, ?, NOW())',
+      'INSERT INTO posts (userId, content, image_url, created_at) VALUES (?, ?, ?, NOW())',
       [user_id, content, image_url || null]
     );
 
@@ -63,7 +59,7 @@ router.post('/posts', authenticateToken, async (req, res) => {
         u.username,
         u.profile_image as user_profile_image
       FROM posts p 
-      JOIN users u ON p.user_id = u.id 
+      JOIN users u ON p.userId = u.id 
       WHERE p.id = ?`,
       [result.insertId]
     );
@@ -74,27 +70,20 @@ router.post('/posts', authenticateToken, async (req, res) => {
       message: 'Post created successfully' 
     });
   } catch (error) {
-    // IMPROVED ERROR LOGGING - THIS IS THE KEY FIX
     console.error('❌ ========================================');
     console.error('❌ ERROR CREATING POST');
     console.error('❌ ========================================');
     console.error('❌ Error object:', error);
     console.error('❌ Error message:', error.message);
     console.error('❌ Error code:', error.code);
-    console.error('❌ Error errno:', error.errno);
     console.error('❌ SQL Message:', error.sqlMessage);
-    console.error('❌ SQL State:', error.sqlState);
-    console.error('❌ Stack trace:', error.stack);
     console.error('❌ ========================================');
     
-    // Return detailed error to frontend
     res.status(500).json({ 
       success: false, 
       message: 'Failed to create post',
       error: error.message,
-      details: error.sqlMessage || error.code || 'Database error',
-      sqlState: error.sqlState,
-      errno: error.errno
+      details: error.sqlMessage || error.code || 'Database error'
     });
   }
 });
