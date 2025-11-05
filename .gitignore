@@ -1,0 +1,3 @@
+# Ignore database setup SQL in admin folder
+admin/database_setup.sql
+admin/fix_schema_mismatches.sql
