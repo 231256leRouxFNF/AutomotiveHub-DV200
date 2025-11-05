@@ -22,7 +22,7 @@ const UserProfile = () => {
             email: '',
             bio: 'Sign in to personalize your profile.',
             location: '',
-            avatar_url: ''
+            profile_image: ''
           });
           setLoading(false);
           return;
@@ -30,15 +30,14 @@ const UserProfile = () => {
 
         let p = null;
         try {
-          p = await userService.getUserProfile(me.id);
+          p = await userService.getProfile();
         } catch (e) {
           p = {
             display_name: me.username || 'User',
             username: me.username || 'user',
             email: me.email || '',
             bio: '',
-            location: '',
-            avatar_url: ''
+            location: ''
           };
         }
         setProfile(p);
@@ -60,6 +59,20 @@ const UserProfile = () => {
     load();
   }, []);
 
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const res = await userService.uploadAvatar(file);
+      setProfile((prev) => ({ ...prev, profile_image: res.profile_image }));
+    } catch (err) {
+      alert('Failed to upload image');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   return (
     <div className="profile-page">
       <Header />
@@ -75,11 +88,7 @@ const UserProfile = () => {
         <div className="profile-grid">
           <aside className="profile-card">
             <div className="profile-avatar">
-              {profile?.avatar_url ? (
-                <img src={profile.avatar_url} alt="Avatar" className="profile-avatar-img" />
-              ) : (
-                <span>👤</span>
-              )}
+              <span>👤</span>
             </div>
             <h2 className="profile-name">{profile?.display_name || 'Unnamed'}</h2>
             <div className="profile-username">@{profile?.username || 'user'}</div>

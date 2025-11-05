@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { HelmetProvider } from 'react-helmet-async';
 import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { Analytics } from "@vercel/analytics/react";
 import { authService } from './services/api';
@@ -30,29 +31,31 @@ const ProtectedRoute = ({ children }) => {
 
 function App() {
   return (
-    <Router>
-      <AnalyticsWrapper>
-        <Routes>
-          <Route path="/" element={<CommunityFeed />} />
-          <Route path="/community" element={<CommunityFeed />} />
-          <Route path="/marketplace" element={<Marketplace />} />
-          <Route path="/garage" element={
-            <ProtectedRoute>
-              <VehicleManagement />
-            </ProtectedRoute>
-          } />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/admin" element={
-            <ProtectedRoute>
-              <AdminPanel />
-            </ProtectedRoute>
-          } />
-          <Route path="/profile/:id" element={<ProfilePage />} />
-        </Routes>
-      </AnalyticsWrapper>
-      <Analytics />
-    </Router>
+    <HelmetProvider>
+      <Router>
+        <AnalyticsWrapper>
+          <Routes>
+            <Route path="/" element={<CommunityFeed />} />
+            <Route path="/community" element={<CommunityFeed />} />
+            <Route path="/marketplace" element={<Marketplace />} />
+            <Route path="/garage" element={
+              <ProtectedRoute>
+                <VehicleManagement />
+              </ProtectedRoute>
+            } />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/admin" element={
+              <ProtectedRoute>
+                <AdminPanel />
+              </ProtectedRoute>
+            } />
+            <Route path="/profile/:id" element={<ProfilePage />} />
+          </Routes>
+        </AnalyticsWrapper>
+        <Analytics />
+      </Router>
+    </HelmetProvider>
   );
 }
 

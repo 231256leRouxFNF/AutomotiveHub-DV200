@@ -24,6 +24,9 @@ const CommunityFeed = () => {
   const [imagePreview, setImagePreview] = useState(null);
   const [commentDrafts, setCommentDrafts] = useState({});
   const [zoomedImage, setZoomedImage] = useState(null);
+  // SEO meta tags
+  const seoTitle = 'AutoHub Community Feed';
+  const seoDescription = 'Join the AutoHub community to share, discuss, and connect with fellow automotive enthusiasts.';
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -408,12 +411,7 @@ const CommunityFeed = () => {
 
   return (
     <>
-      <SEO 
-        title="Community Feed"
-        description="Connect with car enthusiasts, share your rides, and engage with the automotive community on AutoHub."
-        keywords="car community, automotive social, car posts, vehicle sharing"
-        url="https://automotivehub-dv200.vercel.app/community"
-      />
+      <SEO title={seoTitle} description={seoDescription} url="https://automotivehub-dv200.vercel.app/community" />
       <div className="community-feed">
         <Header />
         
@@ -452,6 +450,7 @@ const CommunityFeed = () => {
                     </div>
                     <div className="event-title">{event.title || 'Untitled Event'}</div>
                     <div className="event-location">{event.location || 'Location TBD'}</div>
+                    <div className="event-creator">By: {event.creatorUsername || event.creator_name || event.username || 'Unknown'}</div>
                   </div>
                 ))
               ) : (

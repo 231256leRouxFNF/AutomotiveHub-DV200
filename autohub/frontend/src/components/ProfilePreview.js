@@ -54,7 +54,7 @@ const ProfilePreview = ({ userId }) => {
   if (error) return <div className="profile-preview-card">Error: {error.message}</div>;
   if (!profile) return <div className="profile-preview-card">No profile found.</div>;
 
-  const { display_name, avatar_url, bio, followersCount, followingCount, mutualFollowers } = profile;
+  const { display_name, bio, followersCount, followingCount, mutualFollowers } = profile;
 
   // Check if the current user is viewing their own profile
   const currentUser = authService.getCurrentUser();
@@ -62,7 +62,7 @@ const ProfilePreview = ({ userId }) => {
 
   return (
     <div className="profile-preview-card">
-      <img src={avatar_url || '/images/no-image.svg'} alt={display_name || profile.username} className="profile-avatar" />
+      <img src={'/images/no-image.svg'} alt={display_name || profile.username} className="profile-avatar" />
       <Link to={`/profile/${userId}`} className="profile-name">{display_name || profile.username}</Link>
       <p className="profile-bio">{bio}</p>
       <div className="profile-stats">

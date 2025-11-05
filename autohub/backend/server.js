@@ -236,21 +236,38 @@ app.post('/api/register', async (req, res) => {
 app.get('/api/user/:id/profile', async (req, res) => {
   try {
     const userId = req.params.id;
-  const sql = 'SELECT id, username, email, created_at FROM users WHERE id = ?';
+    const sql = 'SELECT id, username, email, created_at, profile_image FROM users WHERE id = ?';
     const [users] = await db.promise().query(sql, [userId]);
     if (users.length === 0) {
-      return res.status(404).json({ success: false, message: 'User not found' });
+      return res.status(404).json({ message: 'User not found' });
     }
-    res.json({ success: true, user: users[0] });
+    // Return user object directly for frontend compatibility
+    res.json(users[0]);
   } catch (error) {
     console.error('Error fetching public profile:', error);
-    res.status(500).json({ success: false, message: 'Failed to fetch public profile' });
+    res.status(500).json({ message: 'Failed to fetch public profile' });
+  }
+});
+
+// Alias for frontend compatibility
+app.get('/api/users/:id/profile', async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const sql = 'SELECT id, username, email, created_at, profile_image FROM users WHERE id = ?';
+    const [users] = await db.promise().query(sql, [userId]);
+    if (users.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.json(users[0]);
+  } catch (error) {
+    console.error('Error fetching public profile:', error);
+    res.status(500).json({ message: 'Failed to fetch public profile' });
   }
 });
 
 app.get('/api/user/profile', auth, async (req, res) => {
   try {
-  const sql = 'SELECT id, username, email, created_at FROM users WHERE id = ?';
+  const sql = 'SELECT id, username, email, created_at, profile_image FROM users WHERE id = ?';
     const [users] = await db.promise().query(sql, [req.userId]);
     
     if (users.length === 0) {
@@ -302,18 +319,31 @@ app.post('/api/user/avatar', auth, upload.single('avatar'), async (req, res) => 
       return res.status(400).json({ success: false, message: 'No image uploaded' });
     }
 
-    const avatarUrl = `/uploads/${req.file.filename}`;
-    const sql = 'UPDATE users SET avatar_url = ? WHERE id = ?';
-    await db.promise().query(sql, [avatarUrl, req.userId]);
+    // Upload to Cloudinary
+    const cloudinary = require('./config/cloudinary');
+    const result = await cloudinary.uploader.upload(req.file.path, {
+      folder: 'autohub/profile_pics',
+      public_id: `user_${req.userId}_${Date.now()}`,
+      resource_type: 'image'
+    });
 
-    res.json({ 
-      success: true, 
-      message: 'Avatar updated successfully',
-      avatar_url: avatarUrl
+    // Save Cloudinary URL to profile_image column
+    const profileImageUrl = result.secure_url;
+    const sql = 'UPDATE users SET profile_image = ? WHERE id = ?';
+    await db.promise().query(sql, [profileImageUrl, req.userId]);
+
+    // Optionally, delete local file after upload
+    const fs = require('fs');
+    fs.unlink(req.file.path, () => {});
+
+    res.json({
+      success: true,
+      message: 'Profile image updated successfully',
+      profile_image: profileImageUrl
     });
   } catch (error) {
-    console.error('Error uploading avatar:', error);
-    res.status(500).json({ success: false, message: 'Failed to upload avatar' });
+    console.error('Error uploading profile image:', error);
+    res.status(500).json({ success: false, message: 'Failed to upload profile image' });
   }
 });
 
@@ -485,55 +515,6 @@ app.delete('/api/listings/:id', auth, async (req, res) => {
     await db.promise().query('DELETE FROM listings WHERE id = ?', [id]);
     res.json({ success: true, message: 'Listing deleted successfully' });
   } catch (error) {
-    console.error('Error deleting listing:', error);
-    res.status(500).json({ success: false, message: 'Failed to delete listing' });
-  }
-});
-
-app.get('/api/listings/user/:userId', async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const sql = 'SELECT * FROM listings WHERE userId = ? ORDER BY created_at DESC';
-    const [listings] = await db.promise().query(sql, [userId]);
-    res.json({ success: true, listings });
-  } catch (error) {
-    console.error('Error fetching user listings:', error);
-    res.status(500).json({ success: false, message: 'Failed to fetch user listings' });
-  }
-});
-
-app.get('/api/listings/search', async (req, res) => {
-  try {
-    const { query, category, minPrice, maxPrice } = req.query;
-    
-    let sql = 'SELECT l.*, u.username FROM listings l JOIN users u ON l.userId = u.id WHERE l.status = "active"';
-    const params = [];
-
-    if (query) {
-      sql += ' AND (l.title LIKE ? OR l.description LIKE ?)';
-      params.push(`%${query}%`, `%${query}%`);
-    }
-
-    if (category) {
-      sql += ' AND l.category = ?';
-      params.push(category);
-    }
-
-    if (minPrice) {
-      sql += ' AND l.price >= ?';
-      params.push(minPrice);
-    }
-
-    if (maxPrice) {
-      sql += ' AND l.price <= ?';
-      params.push(maxPrice);
-    }
-
-    sql += ' ORDER BY l.created_at DESC';
-
-    const [listings] = await db.promise().query(sql, params);
-    res.json({ success: true, listings });
-  } catch (error) {
     console.error('Error searching listings:', error);
     res.status(500).json({ success: false, message: 'Failed to search listings' });
   }
@@ -597,93 +578,6 @@ app.get('/api/events', async (req, res) => {
 });
 
 // ============ ADD VEHICLE TO GARAGE (WITH IMAGE UPLOAD) ============
-app.post('/api/garage/vehicles', auth, upload.single('images'), async (req, res) => {
-  try {
-    console.log('📥 Add vehicle request:', {
-      body: req.body,
-      userId: req.userId,
-      file: req.file ? 'Present' : 'None'
-    });
-
-    const { make, model, year, color, description } = req.body;
-    const userId = req.userId;
-
-    // Validate required fields
-    if (!make || !model || !year) {
-      return res.status(400).json({
-        success: false,
-        message: 'Make, model, and year are required'
-      });
-    }
-
-    // Validate userId exists
-    if (!userId) {
-      return res.status(401).json({
-        success: false,
-        message: 'User authentication required'
-      });
-    }
-
-    let imageUrl = null;
-    
-    // If file uploaded, use Cloudinary
-    if (req.file) {
-      try {
-        const cloudinary = require('./config/cloudinary');
-        const result = await cloudinary.uploader.upload(req.file.path, {
-          folder: 'autohub/garage',
-          resource_type: 'auto'
-        });
-        imageUrl = result.secure_url;
-        
-        // Delete local file after upload
-        fs.unlinkSync(req.file.path);
-        
-        console.log('✅ Image uploaded to Cloudinary:', imageUrl);
-      } catch (cloudinaryError) {
-        console.error('❌ Cloudinary error:', cloudinaryError);
-        // Continue without image rather than failing completely
-      }
-    }
-
-    // FIXED: Remove created_at since it has DEFAULT CURRENT_TIMESTAMP
-    const query = `
-      INSERT INTO vehicles (user_id, make, model, year, color, description, image_url)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `;
-
-    console.log('🔍 Executing query with values:', [userId, make, model, year, color, description, imageUrl]);
-
-    const [result] = await db.promise().query(query, [
-      userId,
-      make,
-      model,
-      year,
-      color || null,
-      description || null,
-      imageUrl
-    ]);
-
-    console.log('✅ Vehicle added with ID:', result.insertId);
-
-    res.json({
-      success: true,
-      message: 'Vehicle added successfully',
-      vehicleId: result.insertId,
-      imageUrl: imageUrl
-    });
-
-  } catch (error) {
-    console.error('❌ Error adding vehicle:', error);
-    console.error('❌ SQL Error:', error.sqlMessage);
-    console.error('❌ Error code:', error.code);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to add vehicle',
-      error: error.sqlMessage || error.message
-    });
-  }
-});
 
 // Update GET garage endpoint to include image URLs
 app.get('/api/garage/:userId', async (req, res) => {

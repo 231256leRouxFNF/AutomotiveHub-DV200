@@ -1,5 +1,7 @@
 /* Vehicle Card Styles */
 .vehicle-card {
+  width: 450px;
+  height: 550px;
   background: #1e1e2e;
   border-radius: 16px;
   overflow: hidden;
@@ -113,7 +115,7 @@
 }
 
 .vehicle-card-footer {
-  display: flex;
+  margin-top: 75px;
   gap: 12px;
   padding-top: 16px;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
