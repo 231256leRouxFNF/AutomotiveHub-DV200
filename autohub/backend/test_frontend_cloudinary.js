@@ -46,18 +46,8 @@ const req = https.request(options, (res) => {
     try {
       const response = JSON.parse(data);
       
-      if (res.statusCode === 200) {
-        console.log('✅ SUCCESS! Frontend account (dipwvhvz0) WORKS!');
-        console.log('\n📷 Image uploaded successfully:');
-        console.log('   URL:', response.secure_url);
-        console.log('   Public ID:', response.public_id);
-        console.log('   Format:', response.format);
-        console.log('\n✅ RECOMMENDATION: Use dipwvhvz0 for all uploads\n');
-      } else {
-        console.log('❌ FAILED! Frontend account also has issues');
-        console.log('Status:', res.statusCode);
-        console.log('Error:', response.error?.message || JSON.stringify(response));
-        console.log('\n⚠️  You may need to create a new Cloudinary account\n');
+        if (res.statusCode !== 200) {
+          console.error('Frontend account has issues. Status:', res.statusCode);
       }
     } catch (error) {
       console.error('❌ Error parsing response:', error.message);

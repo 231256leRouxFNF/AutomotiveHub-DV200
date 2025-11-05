@@ -1,11 +1,8 @@
-require('dotenv').config(); // Explicitly load environment variables at the very top
+require('dotenv').config();
 
-console.log('🚀 SERVER.JS STARTED - Line 1');
 
 // ============ LOAD ENVIRONMENT VARIABLES FIRST ============
 const path = require('path');
-console.log('✓ Dotenv loaded');
-console.log('✓ JWT_SECRET exists:', !!process.env.JWT_SECRET);
 
 const express = require('express');
 const cors = require('cors');
@@ -21,19 +18,17 @@ const bcrypt = require('bcryptjs');
 
 // NOW check JWT_SECRET after dotenv is loaded
 if (!process.env.JWT_SECRET) {
-  console.error('❌ JWT_SECRET is not set in .env file!');
-  console.error('💡 Create a .env file in the backend folder with: JWT_SECRET=your_secret_key_here');
+  console.error('JWT_SECRET is not set in .env file!');
+  console.error('Create a .env file in the backend folder with: JWT_SECRET=your_secret_key_here');
   process.exit(1);
 }
 
-console.log('✅ JWT_SECRET is set');
 
 const multer = require('multer');
 const fs = require('fs');
 
 // Now import db AFTER environment is loaded
 const db = require('./config/db');
-console.log('✓ DB loaded');
 
 // Import route files
 const authRoutes = require('./routes/authRoutes');

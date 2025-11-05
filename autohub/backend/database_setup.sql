@@ -602,6 +602,42 @@ ALTER TABLE `vehicle_images`
   ADD CONSTRAINT `vehicle_images_ibfk_1` FOREIGN KEY (`vehicle_id`) REFERENCES `vehicles` (`id`) ON DELETE CASCADE;
 COMMIT;
 
+-- --------------------------------------------------------
+
+-- Table structure for table `dm_messages`
+
+CREATE TABLE `dm_messages` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `sender_id` int(11) NOT NULL,
+  `receiver_id` int(11) NOT NULL,
+  `content` text NOT NULL,
+  `created_at` datetime DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  FOREIGN KEY (`sender_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`receiver_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `dm_messages`
+--
+
+INSERT INTO `dm_messages` (`id`, `sender_id`, `receiver_id`, `content`, `created_at`) VALUES
+(1, 1, 2, 'Hey Jane, can you check my latest post?', '2025-11-05 10:00:00'),
+(2, 2, 1, 'Sure John, I will check it out!', '2025-11-05 10:01:00');
+
+--
+-- Indexes for table `dm_messages`
+--
+ALTER TABLE `dm_messages`
+  ADD KEY `sender_id` (`sender_id`),
+  ADD KEY `receiver_id` (`receiver_id`);
+
+--
+-- AUTO_INCREMENT for table `dm_messages`
+--
+ALTER TABLE `dm_messages`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
