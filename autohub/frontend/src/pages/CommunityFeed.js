@@ -7,6 +7,9 @@ import communityData from '../data/community.json';
 import { useNavigate, Link } from 'react-router-dom';
 import './CommunityFeed.css';
 import SEO from '../components/SEO';
+import ImageModal from '../components/ImageModal';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const CommunityFeed = () => {
   // Start with empty array, load from database only
@@ -20,6 +23,7 @@ const CommunityFeed = () => {
   const [selectedImage, setSelectedImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [commentDrafts, setCommentDrafts] = useState({});
+  const [zoomedImage, setZoomedImage] = useState(null);
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -299,6 +303,7 @@ const CommunityFeed = () => {
           }
           return p;
         }));
+        toast.success('Post liked!');
       } catch (error) {
         console.error('Failed to like post:', error);
       }
@@ -552,6 +557,8 @@ const CommunityFeed = () => {
                             alt="Post content"
                             className="post-image"
                             loading="lazy"
+                            onClick={() => setZoomedImage(post.image)}
+                            style={{ cursor: 'zoom-in' }}
                             onError={(e) => {
                               e.target.style.display = 'none';
                             }}
@@ -740,6 +747,10 @@ const CommunityFeed = () => {
         )}
       </div>
       <Footer /> {/* Add Footer here */}
+      {/* Image Zoom Modal */}
+      <ImageModal src={zoomedImage} alt="Zoomed post" onClose={() => setZoomedImage(null)} />
+      {/* Toast Container */}
+  <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop closeOnClick pauseOnFocusLoss draggable pauseOnHover />
     </>
   );
 };

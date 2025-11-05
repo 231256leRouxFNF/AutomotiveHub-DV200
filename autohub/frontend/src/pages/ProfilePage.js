@@ -1,6 +1,8 @@
+
+
 import React, { useEffect, useState } from 'react';
-import { userService } from '../services/api';
-import { useNavigate, useParams } from 'react-router-dom';
+import { userService, garageService, listingService } from '../services/api';
+import { useParams, useNavigate } from 'react-router-dom';
 import './ProfilePage.css';
 
 const ProfilePage = () => {
@@ -8,9 +10,6 @@ const ProfilePage = () => {
   const [vehicles, setVehicles] = useState([]);
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [avatarPreview, setAvatarPreview] = useState(null);
-  const [avatarFile, setAvatarFile] = useState(null);
-  const [avatarUploading, setAvatarUploading] = useState(false);
   const navigate = useNavigate();
   const { id } = useParams();
 
@@ -28,10 +27,14 @@ const ProfilePage = () => {
           user = await userService.getProfile();
         }
         setProfile(user);
-        // Fetch vehicles and posts for the user (stubbed)
-        const userVehicles = user?.vehicles || [];
-        const userPosts = user?.posts || [];
+
+        // Fetch vehicles for this user
+        const userVehicles = user ? await garageService.getUserVehicles(user.id) : [];
         setVehicles(userVehicles);
+
+        // Fetch posts for this user
+        const allPosts = await listingService.getAllListings();
+        const userPosts = allPosts.filter(p => p.userId === user.id);
         setPosts(userPosts);
       } catch (error) {
         console.error('Failed to fetch profile:', error);
@@ -42,62 +45,28 @@ const ProfilePage = () => {
     fetchData();
   }, [id]);
 
-  const handleAvatarChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setAvatarFile(file);
-      setAvatarPreview(URL.createObjectURL(file));
-    }
-  };
-
-  const handleAvatarUpload = async () => {
-    if (!avatarFile) return;
-    setAvatarUploading(true);
-    try {
-      await userService.uploadAvatar(avatarFile);
-      alert('Profile picture updated!');
-      setAvatarFile(null);
-      setAvatarPreview(null);
-      // Refresh profile
-      const user = await userService.getProfile();
-      setProfile(user);
-    } catch (error) {
-      alert('Failed to upload avatar');
-    } finally {
-      setAvatarUploading(false);
-    }
-  };
-
   if (loading) return <div>Loading profile...</div>;
   if (!profile) return <div>Profile not found.</div>;
 
+  // Show DM button if viewing another user's profile
+  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+  const isOwnProfile = !id || (currentUser && currentUser.id === profile.id);
+
   return (
     <div className="profile-page">
-      <h1>{profile.username}'s Profile</h1>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-        <div>
-          <img
-            src={avatarPreview || profile.avatar || '/default-avatar.png'}
-            alt="Avatar"
-            style={{ width: 96, height: 96, borderRadius: '50%', objectFit: 'cover', border: '2px solid #eee' }}
-          />
-        </div>
-        <div>
-          <input type="file" accept="image/*" onChange={handleAvatarChange} />
-          {avatarPreview && (
-            <button onClick={handleAvatarUpload} disabled={avatarUploading} style={{ marginLeft: 8 }}>
-              {avatarUploading ? 'Uploading...' : 'Save Profile Picture'}
-            </button>
-          )}
-        </div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <h1>{profile.username}'s Profile</h1>
+        {!isOwnProfile && (
+          <button className="dm-btn" onClick={() => navigate(`/dm/${profile.id}`)}>
+            Send Message
+          </button>
+        )}
       </div>
-      <div className="profile-stats">
+      <div className="profile-stats" style={{ display: 'flex', gap: '24px', marginBottom: 24 }}>
         <p><strong>Email:</strong> {profile.email}</p>
-        <p><strong>Role:</strong> {profile.role}</p>
         <p><strong>Posts:</strong> {posts.length}</p>
         <p><strong>Vehicles:</strong> {vehicles.length}</p>
       </div>
-      <button onClick={() => navigate('/edit-profile')}>Edit Profile</button>
       <h2>Garage</h2>
       <ul>
         {vehicles.length === 0 ? <li>No vehicles in garage.</li> : vehicles.map(v => (
@@ -107,7 +76,7 @@ const ProfilePage = () => {
       <h2>Posts</h2>
       <ul>
         {posts.length === 0 ? <li>No posts yet.</li> : posts.map(p => (
-          <li key={p.id}>{p.content}</li>
+          <li key={p.id}>{p.title || p.content}</li>
         ))}
       </ul>
     </div>
