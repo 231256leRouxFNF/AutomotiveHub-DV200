@@ -1,4 +1,3 @@
-
 ## Project Overview
 
 AutoHub is a full-stack web application for automotive marketplace and community features. The project is structured as a monorepo with separate frontend (React) and backend (Node.js/Express) applications.
@@ -147,3 +146,33 @@ The frontend makes API calls to relative paths (e.g., `/api/listings`), expectin
 - jsonwebtoken for authentication
 - CORS enabled for frontend communication
 - nodemon for development auto-reload
+
+## NPM Packages Used
+
+### Backend (autohub/backend)
+- express
+- mysql2
+- dotenv
+- bcryptjs
+- jsonwebtoken
+- multer
+- cors
+- nodemon (dev)
+- cloudinary
+
+### Frontend (autohub/frontend)
+- react
+- react-dom
+- react-router-dom
+- react-helmet-async
+- axios
+- @vercel/analytics
+- react-toastify
+- bootstrap
+- @mui/material
+
+---
+
+For installation, run `npm install` in both `autohub/backend` and `autohub/frontend` folders.
+
+See each folder's `package.json` for full details and scripts.
