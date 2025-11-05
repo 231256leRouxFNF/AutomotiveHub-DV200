@@ -3,7 +3,8 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #000;
+  background: linear-gradient(135deg, #23243a 0%, #000 100%);
+  padding-bottom: 40px;
   color: #F4F4F6;
   font-family: 'Inter', -apple-system, Roboto, Helvetica, sans-serif;
   font-size: 20px;
@@ -11,24 +12,26 @@
 
 .community-container {
   flex: 1;
-  max-width: 2200px;
+  max-width: 1800px;
   margin: 0 auto;
-  padding: 80px 64px;
+  padding: 60px 32px;
   display: grid;
-  grid-template-columns: 500px 1fr 500px;
-  gap: 64px;
+  grid-template-columns: 400px 1fr 400px;
+  gap: 40px;
 }
 
 /* Sidebar Styles */
 .community-sidebar {
+  width: 500px;
   border-radius: 18px;
   border: 2px solid #393D47;
   background: #19191F;
-  box-shadow: 10px 10px 0 #636AE8;
-  padding: 56px;
+  box-shadow: 0 8px 32px rgba(99,106,232,0.12);
+  padding: 36px;
   height: fit-content;
   position: sticky;
   top: 80px;
+  margin-left: -125px;
 }
 
 .sidebar-section {
@@ -62,10 +65,11 @@
   gap: 12px;
   padding: 12px 16px;
   background: transparent;
-  border: 1px solid #393D47;
-  border-radius: 6px;
-  color: #8C8D8B;
-  font-size: 14px;
+    border: 1px solid #393D47;
+    border-radius: 8px;
+    color: #8C8D8B;
+    font-size: 15px;
+    box-shadow: 0 2px 8px rgba(99,106,232,0.04);
   font-weight: 400;
   cursor: pointer;
   transition: all 0.2s;
@@ -80,10 +84,11 @@
 }
 
 .sidebar-link.active {
-  background: #636AE8;
+  background: linear-gradient(90deg, #636AE8 0%, #5a5fd4 100%);
   color: #FFF;
   border-color: #636AE8;
   font-weight: 500;
+  box-shadow: 0 4px 16px rgba(99,106,232,0.12);
 }
 
 .sidebar-link .icon {
@@ -136,7 +141,7 @@
 
 .event-preview:hover {
   border-color: #636AE8;
-  box-shadow: 2px 2px 0 #636AE8;
+  box-shadow: 0 8px 32px rgba(99,106,232,0.16);
 }
 
 .event-preview:last-child {
@@ -168,6 +173,7 @@
 }
 
 .post-composer {
+  width: 600px;
   border-radius: 16px;
   border: 2px solid #393D47;
   background: #19191F;
@@ -215,8 +221,8 @@
   border-radius: 18px;
   border: 2px solid #393D47;
   background: #19191F;
-  box-shadow: 10px 10px 0 #636AE8;
-  padding: 56px;
+  box-shadow: 0 8px 32px rgba(99,106,232,0.12);
+  padding: 40px;
   margin-bottom: 48px;
   position: relative;
 }
@@ -335,9 +341,9 @@
   background: #000;
   padding: 12px;
   border-radius: 6px;
-  margin-bottom: 8px;
-  color: #F4F4F6;
-  font-size: 14px;
+    background: #19191F;
+    padding: 32px;
+    box-shadow: 0 4px 16px rgba(99,106,232,0.08);
   line-height: 22px;
   border: 1px solid #393D47;
 }
@@ -391,11 +397,12 @@
 
 /* Right Sidebar */
 .community-right-sidebar {
+  width: 500px;
   border-radius: 8px;
   border: 1px solid #393D47;
   background: #19191F;
   box-shadow: 4px 4px 0 #636AE8;
-  padding: 25px;
+  padding: 20px;
   height: fit-content;
   position: sticky;
   top: 80px;

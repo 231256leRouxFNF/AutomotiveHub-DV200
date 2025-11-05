@@ -41,9 +41,8 @@ html, body {
 /* Content Grid */
 .content-grid {
   display: grid;
-  grid-template-columns: 300px minmax(0, 1fr);
-  gap: 24px;
-  align-items: start;
+  grid-template-columns: 320px 1fr;
+  gap: 16px;
 }
 
 /* Add Vehicle Card */
@@ -117,15 +116,6 @@ html, body {
 .upload-icon {
   width: 48px;
   height: 48px;
-}
-
-.upload-text {
-  color: #8C8D8B;
-  font-size: 14px;
-  font-weight: 400;
-  line-height: 20px;
-  margin: 0;
-  max-width: 190px;
 }
 
 .form-row {
@@ -224,8 +214,24 @@ html, body {
 /* Vehicles Grid */
 .vehicles-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(324px, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
+  align-items: start;
+  margin: 0;
+}
+
+@media (max-width: 1200px) {
+  .vehicles-grid {
+    grid-template-columns: repeat(2, 340px);
+    max-width: 740px;
+  }
+}
+
+@media (max-width: 800px) {
+  .vehicles-grid {
+    grid-template-columns: 1fr;
+    max-width: 340px;
+  }
 }
 
 .vehicles-placeholder {
