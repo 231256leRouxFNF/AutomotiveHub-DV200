@@ -33,7 +33,7 @@ const db = mysql.createConnection({
 // Connect to the database
 db.connect((err) => {
   if (err) {
-    console.error('❌ Database connection failed:', err.message);
+    console.error(' Database connection failed:', err.message);
     if (err.code === 'PROTOCOL_CONNECTION_LOST') {
       console.error('Database connection was closed.');
     }
@@ -47,7 +47,7 @@ db.connect((err) => {
       console.error('Access denied. Check username and password.');
     }
   } else {
-    console.log('✅ Database connected successfully');
+    console.log(' Database connected successfully');
   }
 });
 

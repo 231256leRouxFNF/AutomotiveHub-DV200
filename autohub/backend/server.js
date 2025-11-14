@@ -88,11 +88,11 @@ const auth = (req, res, next) => {
       username: decoded.username
     };
     
-    console.log('✅ Auth middleware - User:', req.user);
+    console.log(' Auth middleware - User:', req.user);
     
     next();
   } catch (error) {
-    console.error('❌ Auth error:', error);
+    console.error('Auth error:', error);
     return res.status(401).json({ error: 'Invalid token' });
   }
 };
@@ -556,7 +556,7 @@ app.post('/api/events', auth, async (req, res) => {
 // ============ GET ALL EVENTS (UPDATED WITH LOGGING) ============
 app.get('/api/events', async (req, res) => {
   try {
-    console.log('📥 Fetching events...');
+    console.log(' Fetching events...');
     
     const sql = `
       SELECT e.*, u.username, p.display_name
@@ -568,11 +568,11 @@ app.get('/api/events', async (req, res) => {
     `;
     
     const [events] = await db.promise().query(sql);
-    console.log(`✅ Found ${events.length} events`);
+    console.log(` Found ${events.length} events`);
     
     res.json({ success: true, events });
   } catch (error) {
-    console.error('❌ Events error:', error);
+    console.error('Events error:', error);
     res.status(500).json({ success: false, message: 'Failed to fetch events' });
   }
 });
@@ -594,11 +594,11 @@ app.get('/api/garage/:userId', async (req, res) => {
     
     const [vehicles] = await db.promise().query(sql, [userId]);
     
-    console.log(`✅ Found ${vehicles.length} vehicles for user ${userId}`);
+    console.log(` Found ${vehicles.length} vehicles for user ${userId}`);
     
     res.json({ success: true, vehicles });
   } catch (error) {
-    console.error('❌ Garage error:', error);
+    console.error(' Garage error:', error);
     res.status(500).json({ success: false, message: 'Failed to fetch garage' });
   }
 });
@@ -640,10 +640,10 @@ app.get('/api/posts', async (req, res) => {
       ORDER BY p.created_at DESC`
     );
 
-    console.log(`✅ Found ${posts.length} posts`);
+    console.log(` Found ${posts.length} posts`);
     res.json({ success: true, posts });
   } catch (error) {
-    console.error('❌ Error fetching posts:', error);
+    console.error(' Error fetching posts:', error);
     res.status(500).json({ 
       success: false, 
       error: 'Failed to fetch posts',
@@ -682,7 +682,7 @@ app.post('/api/posts', auth, upload.single('image'), async (req, res) => {
       [userId, content, image_url || null]
     );
 
-    console.log('✅ Post created with ID:', result.insertId);
+    console.log(' Post created with ID:', result.insertId);
 
     // Fetch the complete post with user data
     const [newPost] = await db.promise().query(
@@ -696,7 +696,7 @@ app.post('/api/posts', auth, upload.single('image'), async (req, res) => {
       [result.insertId]
     );
 
-    console.log('✅ Returning post:', newPost[0]);
+    console.log('Returning post:', newPost[0]);
 
     res.status(201).json({ 
       success: true, 
@@ -704,8 +704,8 @@ app.post('/api/posts', auth, upload.single('image'), async (req, res) => {
       message: 'Post created successfully' 
     });
   } catch (error) {
-    console.error('❌ Error creating post:', error);
-    console.error('❌ Error stack:', error.stack);
+    console.error('Error creating post:', error);
+    console.error('Error stack:', error.stack);
     res.status(500).json({ 
       success: false, 
       error: 'Failed to create post',
@@ -828,14 +828,14 @@ app.delete('/api/garage/vehicles/:id', auth, async (req, res) => {
       const imagePath = path.join(__dirname, vehicle.image_url);
       if (fs.existsSync(imagePath)) {
         fs.unlinkSync(imagePath);
-        console.log('✅ Deleted image file:', imagePath);
+        console.log(' Deleted image file:', imagePath);
       }
     }
 
     // Delete vehicle from database
     await db.promise().query('DELETE FROM vehicles WHERE id = ?', [id]);
 
-    console.log('✅ Vehicle deleted successfully');
+    console.log(' Vehicle deleted successfully');
 
     res.json({ 
       success: true, 
