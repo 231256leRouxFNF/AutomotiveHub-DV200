@@ -4,7 +4,7 @@ import { trackUserAction } from '../services/analytics';
 // Use environment variable for API URL (supports both local and production)
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
-console.log('🔗 API URL:', API_URL); // Debug log to verify which URL is being used
+// ...existing code...
 
 // Create axios instance with backend URL
 const api = axios.create({

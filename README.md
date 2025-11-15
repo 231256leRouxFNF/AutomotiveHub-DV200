@@ -2,6 +2,11 @@
 
 AutoHub is a full-stack automotive community and marketplace web application. Users can buy, sell, and manage vehicles, join discussions, and participate in car-related events. The app is built with a Node.js/Express backend and a React frontend.
 
+---
+**Portfolio Note:**
+This codebase has been cleaned and organized for portfolio presentation. Temporary files, debug logs, and dead code have been removed for clarity and professionalism. Please refer to the documentation and folder structure for a clear overview.
+---
+
 ## Features
 - User authentication and registration
 - Vehicle marketplace: list, search, and manage vehicles

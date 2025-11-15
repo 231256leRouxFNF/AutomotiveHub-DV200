@@ -88,7 +88,7 @@ const auth = (req, res, next) => {
       username: decoded.username
     };
     
-    console.log(' Auth middleware - User:', req.user);
+    // ...existing code...
     
     next();
   } catch (error) {
@@ -556,7 +556,7 @@ app.post('/api/events', auth, async (req, res) => {
 // ============ GET ALL EVENTS (UPDATED WITH LOGGING) ============
 app.get('/api/events', async (req, res) => {
   try {
-    console.log(' Fetching events...');
+    // ...existing code...
     
     const sql = `
       SELECT e.*, u.username, p.display_name
@@ -568,7 +568,7 @@ app.get('/api/events', async (req, res) => {
     `;
     
     const [events] = await db.promise().query(sql);
-    console.log(` Found ${events.length} events`);
+    // ...existing code...
     
     res.json({ success: true, events });
   } catch (error) {

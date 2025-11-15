@@ -6,12 +6,12 @@ const Listing = {};
 
 // Example: Create a new listing
 Listing.create = (listingData, callback) => {
-  const { userId, title, description, price, category, condition, year, make, model, mileage, location, imageUrls } = listingData;
+  const { id, userId, title, description, price, category, condition, year, make, model, mileage, location, imageUrls } = listingData;
   const sql = `
-    INSERT INTO listings (userId, title, description, price, category, condition, year, make, model, mileage, location, imageUrls)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO listings (id, userId, title, description, price, category, condition, year, make, model, mileage, location, imageUrls)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
-  const values = [userId, title, description, price, category, condition, year, make, model, mileage, location, imageUrls];
+  const values = [id, userId, title, description, price, category, condition, year, make, model, mileage, location, imageUrls];
   db.query(sql, values, callback);
 };
 

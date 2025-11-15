@@ -6,6 +6,17 @@ import './AdminPanel.css';
 const AdminPanel = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('events');
+  const [showStaticListings, setShowStaticListings] = useState(() => {
+    const saved = localStorage.getItem('showStaticListings');
+    return saved === null ? true : saved === 'true';
+  });
+    // Toggle static listings visibility and persist to localStorage
+    const handleToggleStaticListings = () => {
+      setShowStaticListings(prev => {
+        localStorage.setItem('showStaticListings', !prev);
+        return !prev;
+      });
+    };
   const [pendingEvents, setPendingEvents] = useState([]);
   const [allPosts, setAllPosts] = useState([]);
   const [allUsers, setAllUsers] = useState([]);
@@ -99,6 +110,9 @@ const AdminPanel = () => {
         <h1>Admin Panel</h1>
         <button onClick={() => navigate('/')} className="back-btn">
           Back to Site
+        </button>
+        <button onClick={handleToggleStaticListings} className="toggle-static-btn" style={{marginLeft: '16px'}}>
+          {showStaticListings ? 'Hide Static Listings' : 'Show Static Listings'}
         </button>
       </div>
 

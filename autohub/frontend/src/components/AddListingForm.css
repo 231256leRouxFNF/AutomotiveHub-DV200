@@ -1,0 +1,190 @@
+/* AddListingForm.css - Styles for AddListingForm component */
+
+.add-listing-form {
+  background: #181a20;
+  border-radius: 12px;
+  padding: 32px 24px;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.12);
+  max-width: 480px;
+  margin: 0 auto;
+  color: #f3f3f3;
+}
+/* Close button for modal form */
+.close-btn {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  background: rgba(79,140,255,0.85);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  font-size: 1.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+  transition: background 0.2s;
+  z-index: 10;
+}
+.close-btn:hover {
+  background: #357ae8;
+}
+.add-listing-form {
+  position: relative;
+}
+
+.add-listing-form h2 {
+  font-size: 1.6rem;
+  margin-bottom: 18px;
+  color: #f3f3f3;
+}
+
+.add-listing-form input,
+.add-listing-form textarea {
+  width: 100%;
+  padding: 10px 12px;
+  margin-bottom: 14px;
+  border-radius: 6px;
+  border: 1px solid #333;
+  background: #23262f;
+  color: #f3f3f3;
+  font-size: 1rem;
+}
+
+.add-listing-form input:focus,
+.add-listing-form textarea:focus {
+  outline: none;
+  border-color: #4f8cff;
+}
+
+.add-listing-form textarea {
+  resize: vertical;
+}
+
+.add-listing-form button[type="submit"] {
+  background: #4f8cff;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 20px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.add-listing-form button[type="submit"]:hover {
+  background: #357ae8;
+}
+
+.add-listing-form .error {
+  color: #ff4f4f;
+  margin-top: 10px;
+  font-size: 0.98rem;
+}
+
+.add-listing-form label {
+  font-size: 1rem;
+  margin-bottom: 6px;
+  color: #bdbdbd;
+}
+
+.add-listing-form input[type="radio"] {
+  margin-right: 6px;
+}
+
+.add-listing-form input[type="file"] {
+  display: none;
+}
+
+.upload-area {
+  background: linear-gradient(135deg, #23262f 80%, #2d3142 100%);
+  border: 2px dashed #4f8cff;
+  border-radius: 12px;
+  padding: 24px 0 12px 0;
+  text-align: center;
+  margin-bottom: 18px;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+  position: relative;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.10);
+}
+.upload-area.drag-over {
+  border-color: #357ae8;
+  background: linear-gradient(135deg, #20232a 80%, #23262f 100%);
+  box-shadow: 0 4px 16px rgba(79,140,255,0.10);
+}
+.upload-area.uploading {
+  opacity: 0.7;
+  cursor: wait;
+}
+.image-gallery {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+.image-thumb {
+  position: relative;
+  width: 90px;
+  height: 90px;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  background: #23262f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.image-preview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+  display: block;
+}
+.remove-image {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: rgba(255, 79, 79, 0.85);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.10);
+  transition: background 0.2s;
+  z-index: 2;
+}
+.remove-image:hover {
+  background: #ff2323;
+}
+.upload-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 4px solid #4f8cff;
+  border-top: 4px solid #23262f;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 8px;
+}
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

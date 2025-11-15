@@ -24,47 +24,85 @@ const ListingDetails = () => {
     let cancelled = false;
     const loadListingDetails = async () => {
       try {
-        const [listingResponse, relatedResponse] = await Promise.all([
-          listingService.getListingById(id), // Use the new listing service
-          axios.get(`/api/listings/${id}/related`)
-        ]);
-
+        const listingResponse = await listingService.getListingById(id);
+        const fetchedListing = listingResponse?.listing || listingResponse || {};
         if (!cancelled) {
-          const fetchedListing = listingResponse || {};
-          setListing(fetchedListing);
-
-          // Parse images from imageUrls (JSON string) or use fallback
-          const images = (fetchedListing.imageUrls && JSON.parse(fetchedListing.imageUrls)) || [];
-          setVehicleImages(images.length ? images : (listingStatic.listing.images || []));
-          
-          setVehicleSpecs(Array.isArray(fetchedListing.specs) && fetchedListing.specs.length ? fetchedListing.specs : (listingStatic.listing.specs || []));
-
-          const rData = Array.isArray(relatedResponse.data) && relatedResponse.data.length ? relatedResponse.data : (listingStatic.related || []);
-          setRelatedListings(rData);
-
-          // Fetch seller profile if userId is available
-          if (fetchedListing.userId) {
-            const profile = await userService.getUserProfile(fetchedListing.userId);
-            setSellerProfile(profile);
+          // Generate placeholders for missing fields
+          const generatedListing = {
+            ...fetchedListing,
+            title: fetchedListing.title || '[MISSING: title]',
+            price: fetchedListing.price || '[MISSING: price]',
+            location: fetchedListing.location || '[MISSING: location]',
+            condition: fetchedListing.condition || '[MISSING: condition]',
+            make: fetchedListing.make || '[MISSING: make]',
+            model: fetchedListing.model || '[MISSING: model]',
+            year: fetchedListing.year || '[MISSING: year]',
+            description: fetchedListing.description || '[MISSING: description]',
+            images: fetchedListing.images || [],
+            specs: Array.isArray(fetchedListing.specs) ? fetchedListing.specs : []
+          };
+          setListing(generatedListing);
+          // Parse images
+          let images = [];
+          if (generatedListing.images) {
+            if (typeof generatedListing.images === 'string') {
+              const imgStr = generatedListing.images.trim();
+              // Only parse if string starts with '[' and ends with ']'
+              if (imgStr.startsWith('[') && imgStr.endsWith(']')) {
+                try {
+                  images = JSON.parse(imgStr);
+                  if (!Array.isArray(images)) {
+                    images = [images];
+                  }
+                } catch {
+                  images = [imgStr];
+                }
+              } else {
+                // Direct URL string
+                images = [imgStr];
+              }
+            } else if (Array.isArray(generatedListing.images)) {
+              images = generatedListing.images;
+            }
           }
+          setVehicleImages(images);
+          setVehicleSpecs(Array.isArray(generatedListing.specs) ? generatedListing.specs : []);
+          // Fetch seller profile and related listings in parallel
+          Promise.all([
+            generatedListing.userId ? userService.getUserProfile(generatedListing.userId) : Promise.resolve(null),
+            axios.get(`/api/listings/${id}/related`).then(r => r.data).catch(() => [])
+          ]).then(([profile, related]) => {
+            if (!cancelled) {
+              setSellerProfile(profile);
+              setRelatedListings(Array.isArray(related) && related.length ? related : []);
+            }
+          });
         }
       } catch (e) {
         if (!cancelled) {
-          console.error("Error loading listing details:", e);
+          // Only use static data if API fails
           const fallback = listingStatic.listing || {};
           setVehicleImages(fallback.images || []);
           setVehicleSpecs(fallback.specs || []);
           setRelatedListings(listingStatic.related || []);
-          setListing({ title: fallback.title || '', price: fallback.price || '', description: fallback.description || '', tags: fallback.tags || [], location: fallback.location || '' });
+          setListing({ ...fallback });
         }
       }
     };
     loadListingDetails();
     return () => { cancelled = true; };
-  }, [id, currentUser, listing]); // Add listing to dependencies to re-evaluate isOwner
+  }, [id]); // Only depend on id for loading
 
   if (!listing) {
-    return <div className="page-wrapper"><Header /><main className="page-container"><p>Loading listing details...</p></main><Footer /></div>;
+    return (
+      <div className="page-wrapper">
+        <Header />
+        <main className="page-container">
+          <div className="skeleton-loader">Loading listing details...</div>
+        </main>
+        <Footer />
+      </div>
+    );
   }
 
   const nextImage = () => {
@@ -80,18 +118,15 @@ const ListingDetails = () => {
   };
 
   const handleMessageSeller = () => {
-    // Handle message seller action
-    console.log('Message seller clicked');
+    // TODO: Implement message seller modal or redirect
   };
 
   const handleAddToWatchlist = () => {
-    // Handle add to watchlist action
-    console.log('Add to watchlist clicked');
+    // TODO: Implement add to watchlist functionality
   };
 
   const handleShareListing = () => {
-    // Handle share listing action
-    console.log('Share listing clicked');
+    // TODO: Implement share listing functionality
   };
 
   const handleDeleteListing = async () => {
@@ -108,8 +143,8 @@ const ListingDetails = () => {
   };
 
   const handleViewDetails = (listingId) => {
-    // Handle view details action for related listings
-    console.log('View details for listing:', listingId);
+    // TODO: Implement navigation to related listing details
+    navigate(`/listing/${listingId}`);
   };
 
   return (
@@ -119,7 +154,17 @@ const ListingDetails = () => {
         description={listing ? listing.description : 'View vehicle details and specifications on AutoHub marketplace'}
         keywords={listing ? `${listing.title}, ${listing.category}, buy vehicle` : 'vehicle listing, car details'}
         url={`https://automotivehub-dv200.vercel.app/listing/${id}`}
-        image={listing?.images ? JSON.parse(listing.images)[0] : undefined}
+        image={
+          listing?.images
+            ? (typeof listing.images === 'string'
+                ? (listing.images.trim().startsWith('[') && listing.images.trim().endsWith(']')
+                    ? JSON.parse(listing.images)[0]
+                    : listing.images)
+                : Array.isArray(listing.images)
+                    ? listing.images[0]
+                    : undefined)
+            : undefined
+        }
         type="product"
       />
       <div className="listing-details">
@@ -175,7 +220,7 @@ const ListingDetails = () => {
               <div className="details-card">
                 <h1 className="vehicle-title">{listing.title}</h1>
                 
-                <div className="price">R {parseFloat(listing.price).toFixed(2)}</div>
+                <div className="price">R {listing.price && !isNaN(listing.price) ? parseFloat(listing.price).toFixed(2) : listing.price || 'N/A'}</div>
                 
                 <div className="vehicle-tags">
                   {listing.category && <span className="tag">{listing.category}</span>}
@@ -218,7 +263,7 @@ const ListingDetails = () => {
             {/* Right Column - Price and Actions */}
             <div className="sidebar">
               <div className="price-card">
-                <div className="price-display">R {parseFloat(listing.price).toFixed(2)}</div>
+                <div className="price-display">R {listing.price && !isNaN(listing.price) ? parseFloat(listing.price).toFixed(2) : listing.price || 'N/A'}</div>
                 <div className="location">
                   <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                     <path d="M15.803 8.05225C15.7318 6.61611 15.1305 5.2529 14.1089 4.23133C13.0874 3.20976 11.7242 2.60845 10.288 2.53729L10.0003 2.53C8.45938 2.53 6.9812 3.14175 5.89161 4.23133C4.80202 5.32092 4.19027 6.79908 4.19027 8.33999C4.19027 10.1322 5.20021 12.0643 6.51249 13.7885C7.78057 15.4545 9.23626 16.8029 10.0003 17.4659C10.7643 16.8029 12.2199 15.4545 13.488 13.7885C14.8003 12.0643 15.8103 10.1322 15.8103 8.33999L15.803 8.05225Z" fill="#8C8D8B"/>

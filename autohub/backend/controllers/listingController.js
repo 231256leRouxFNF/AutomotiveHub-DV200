@@ -64,8 +64,8 @@ const listingController = {
   // Get all listings
   getAllListings: async (req, res) => {
     const { q, category, condition, make, sort, minPrice, maxPrice, limit, offset } = req.query;
-    let sql = 'SELECT l.id, l.title, l.description, l.price, l.location, l.condition, l.make, l.model, l.year, l.imageUrls, u.username as owner_username, p.display_name as owner_name, l.created_at FROM listings l JOIN users u ON l.userId = u.id LEFT JOIN profiles p ON u.id = p.user_id';
-    let countSql = 'SELECT COUNT(*) as totalCount FROM listings l JOIN users u ON l.userId = u.id LEFT JOIN profiles p ON u.id = p.user_id';
+    let sql = 'SELECT l.id, l.title, l.description, l.price, l.location, l.condition, l.make, l.model, l.year, l.imageUrls, u.username as owner_username, l.created_at FROM listings l JOIN users u ON l.userId = u.id';
+    let countSql = 'SELECT COUNT(*) as totalCount FROM listings l JOIN users u ON l.userId = u.id';
     const params = [];
     const where = [];
 
@@ -138,8 +138,10 @@ const listingController = {
 
   // Get a single listing by ID
   getListingById: (req, res) => {
-    const { id } = req.params;
-    Listing.findById(id, (err, listing) => {
+    const { listingId } = req.params;
+    console.log('Fetching listing with ID:', listingId);
+    Listing.findById(listingId, (err, listing) => {
+      console.log('Database result:', listing);
       if (err) {
         console.error('Error fetching listing:', err);
         return res.status(500).json({ success: false, message: 'Failed to fetch listing' });

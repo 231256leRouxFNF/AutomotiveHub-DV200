@@ -1,3 +1,42 @@
+/* Add Listing Button */
+.add-listing-btn {
+  background: #E8618C;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  padding: 12px 28px;
+  margin: 24px 0 0 0;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(232, 97, 140, 0.15);
+  transition: background 0.2s;
+}
+.add-listing-btn:hover {
+  background: #c74c74;
+}
+.add-listing-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+.close-modal-btn {
+  margin-top: 16px;
+  background: #393D47;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 18px;
+  cursor: pointer;
+  font-size: 16px;
+}
 .marketplace {
   background: #000;
   color: #F4F4F6;
@@ -525,6 +564,83 @@
 
 .social-icon:hover {
   transform: scale(1.1);
+}
+
+/* Add Listing Form Styles */
+.add-listing-form {
+  background: #181A20;
+  color: #F4F4F6;
+  padding: 32px 36px 24px 36px;
+  border-radius: 12px;
+  box-shadow: 0 4px 32px rgba(57, 61, 71, 0.18);
+  min-width: 340px;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+.add-listing-form h2 {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 24px;
+  text-align: center;
+}
+.add-listing-form input,
+.add-listing-form textarea {
+  background: #23252B;
+  color: #F4F4F6;
+  border: 1px solid #393D47;
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 16px;
+  font-size: 16px;
+  font-family: inherit;
+  outline: none;
+  transition: border 0.2s;
+}
+.add-listing-form input:focus,
+.add-listing-form textarea:focus {
+  border-color: #E8618C;
+}
+.add-listing-form textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+.add-listing-form button[type="submit"] {
+  background: #E8618C;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  padding: 12px 0;
+  margin-top: 8px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(232, 97, 140, 0.15);
+  transition: background 0.2s;
+}
+.add-listing-form button[type="submit"]:hover {
+  background: #c74c74;
+}
+.add-listing-form .error {
+  color: #E8618C;
+  margin-top: 8px;
+  text-align: center;
+}
+.add-listing-form label {
+  font-size: 16px;
+  margin-bottom: 8px;
+  color: #E8618C;
+  font-weight: 500;
+}
+.add-listing-form input[type="radio"] {
+  margin-right: 8px;
+}
+.add-listing-form input[type="file"] {
+  background: none;
+  color: #F4F4F6;
+  border: none;
+  margin-bottom: 16px;
 }
 
 /* Responsive Design */
