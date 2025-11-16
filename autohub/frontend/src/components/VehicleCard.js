@@ -3,27 +3,27 @@ import './VehicleCard.css';
 
 const VehicleCard = ({ vehicle, onDelete }) => {
   const getImageUrl = (vehicle) => {
-    console.log('🔍 Full vehicle object:', vehicle);
+    console.log('Full vehicle object:', vehicle);
     
     // Check all possible image field names
     if (vehicle.image_url) {
-      console.log('✅ Using image_url:', vehicle.image_url);
+      console.log('Using image_url:', vehicle.image_url);
       return vehicle.image_url;
     }
     
     if (vehicle.imageUrl) {
-      console.log('✅ Using imageUrl:', vehicle.imageUrl);
+      console.log('Using imageUrl:', vehicle.imageUrl);
       return vehicle.imageUrl;
     }
     
     if (vehicle.primary_image) {
-      console.log('✅ Using primary_image:', vehicle.primary_image);
+      console.log('Using primary_image:', vehicle.primary_image);
       return vehicle.primary_image;
     }
     
     // Check if images is an array or JSON string
     if (vehicle.images) {
-      console.log('📦 Images field found:', vehicle.images);
+      console.log('Images field found:', vehicle.images);
       try {
         const images = typeof vehicle.images === 'string' 
           ? JSON.parse(vehicle.images) 
@@ -32,15 +32,15 @@ const VehicleCard = ({ vehicle, onDelete }) => {
         if (Array.isArray(images) && images.length > 0) {
           const firstImage = images[0];
           const url = firstImage.url || firstImage;
-          console.log('✅ Using first image from array:', url);
+          console.log('Using first image from array:', url);
           return url;
         }
       } catch (e) {
-        console.error('❌ Error parsing images:', e);
+        console.error('Error parsing images:', e);
       }
     }
     
-    console.log('⚠️ No image found. Available fields:', Object.keys(vehicle));
+    console.log('No image found. Available fields:', Object.keys(vehicle));
     return null;
   };
 
@@ -67,7 +67,7 @@ const VehicleCard = ({ vehicle, onDelete }) => {
               e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="300" height="200"%3E%3Crect fill="%23f0f0f0" width="300" height="200"/%3E%3Ctext fill="%23999" x="50%25" y="50%25" text-anchor="middle" dy=".3em" font-family="Arial" font-size="16"%3EImage Unavailable%3C/text%3E%3C/svg%3E';
             }}
             onLoad={() => {
-              console.log('✅ Image loaded successfully:', imageUrl);
+              console.log('Image loaded successfully:', imageUrl);
             }}
           />
         ) : (

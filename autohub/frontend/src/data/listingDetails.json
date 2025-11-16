@@ -1,34 +1,26 @@
-{
-  "listing": {
-    "id": "civic-2020-type-r",
-    "title": "Custom 2020 Honda Civic Type R - Heavily Modified",
-    "price": "R 745,494.63",
-    "location": "Cape Town, South Africa",
-    "condition": "Used",
-    "make": "Honda",
-    "model": "Civic Type R",
-    "year": 2020,
-    "description": "This meticulously maintained 2020 Honda Civic Type R is a true enthusiast's dream, boasting an extensive list of high-performance modifications and a stunning exterior. With only one owner and a clean title, this car has been babied and regularly serviced. It's built for both track performance and daily driving comfort, delivering an exhilarating experience every time. The engine has been professionally tuned and all modifications were installed by certified technicians. Ready for its next adventure, whether it's conquering winding roads or turning heads at car meets.",
-    "images": [
-      "https://images.unsplash.com/photo-1606665813985-1dbd8f7f6b31?q=80&w=1600&auto=format&fit=crop"
-    ],
-    "specs": [
-      { "label": "Make", "value": "Honda" },
-      { "label": "Model", "value": "Civic Type R" },
-      { "label": "Year", "value": "2020" },
-      { "label": "Mileage", "value": "—" },
-      { "label": "Engine", "value": "2.0L Turbo" },
-      { "label": "Transmission", "value": "6-Speed Manual" }
-    ]
-  },
-  "related": [
-    { "id": "r1", "title": "2022 Ford Mustang GT Premium", "price": "R 684,083.41", "image": "https://images.unsplash.com/photo-1525609004556-c46c7d6cf023?q=80&w=1600&auto=format&fit=crop" },
-    { "id": "r2", "title": "2018 Porsche 911 Carrera S", "price": "R 1,490,989.25", "image": "https://images.unsplash.com/photo-1502877338535-766e1452684a?q=80&w=1600&auto=format&fit=crop" },
-    { "id": "r3", "title": "2021 BMW M3 Competition", "price": "R 1,262,955.60", "image": "https://images.unsplash.com/photo-1555215695-3004980ad54e?q=80&w=1600&auto=format&fit=crop" },
-    { "id": "r4", "title": "2017 Nissan GT-R Black Edition", "price": "R 1,666,399.75", "image": "https://images.unsplash.com/photo-1525609004556-c46c7d6cf023?q=80&w=1600&auto=format&fit=crop" },
-    { "id": "r5", "title": "1991 Mazda RX-7 FC3S", "price": "R 491,149.40", "image": "https://images.unsplash.com/photo-1511394181419-16f2bb1b0a42?q=80&w=1600&auto=format&fit=crop" },
-    { "id": "r6", "title": "2015 Audi RS7 Sportback", "price": "R 2,017,220.75", "image": "https://images.unsplash.com/photo-1523986371872-9d3ba2e2f642?q=80&w=1600&auto=format&fit=crop" },
-    { "id": "r7", "title": "2020 Mercedes-AMG C63 S", "price": "R 1,192,791.40", "image": "https://images.unsplash.com/photo-1519638399535-1b036603ac77?q=80&w=1600&auto=format&fit=crop" },
-    { "id": "r8", "title": "2022 Subaru WRX STI Limited", "price": "R 798,117.78", "image": "https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=1600&auto=format&fit=crop" }
-  ]
-}
+
+  {
+    "listing": {
+      "id": "civic-2020-type-r",
+      "title": "Custom 2020 Honda Civic Type R - Heavily Modified",
+      "price": "R 745,494.63",
+      "location": "Cape Town, South Africa",
+      "condition": "Used",
+      "make": "Honda",
+      "model": "Civic Type R",
+      "year": 2020,
+      "description": "This meticulously maintained 2020 Honda Civic Type R is a true enthusiast's dream, boasting an extensive list of high-performance modifications and a stunning exterior. With only one owner and a clean title, this car has been babied and regularly serviced. It's built for both track performance and daily driving comfort, delivering an exhilarating experience every time. The engine has been professionally tuned and all modifications were installed by certified technicians. Ready for its next adventure, whether it's conquering winding roads or turning heads at car meets.",
+      "images": [
+        "https://images.unsplash.com/photo-1606665813985-1dbd8f7f6b31?q=80&w=1600&auto=format&fit=crop"
+      ],
+      "specs": [
+        { "label": "Make", "value": "Honda" },
+        { "label": "Model", "value": "Civic Type R" },
+        { "label": "Year", "value": "2020" },
+        { "label": "Mileage", "value": "—" },
+        { "label": "Engine", "value": "2.0L Turbo" },
+        { "label": "Transmission", "value": "6-Speed Manual" }
+      ]
+    }
+  }
+

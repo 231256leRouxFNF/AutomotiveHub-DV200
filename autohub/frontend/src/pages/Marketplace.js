@@ -6,27 +6,26 @@ import marketplaceData from '../data/marketplace.json';
 import { listingService } from '../services/api'; // Import listingService
 import SEO from '../components/SEO'; // ADD THIS
 import './Marketplace.css';
+import AddListingForm from '../components/AddListingForm';
 
-// Local marketplace images
-import Top1 from '../assets/Marketplace-page/Top-Section-1.jpg';
-import Top2 from '../assets/Marketplace-page/Top-Section-2.jpg';
-import Top3 from '../assets/Marketplace-page/Top-Section-3.jpg';
-import Top4 from '../assets/Marketplace-page/Top-Section-4.png';
-
-import Img1 from '../assets/Marketplace-page/Image-1.jpg';
-import Img2 from '../assets/Marketplace-page/Image-2.jpg';
-import Img3 from '../assets/Marketplace-page/Image-3.jpg';
-import Img4 from '../assets/Marketplace-page/Image-4.jpg';
-import Img5 from '../assets/Marketplace-page/Image-5.jpg';
-import Img6 from '../assets/Marketplace-page/Image-6.jpg';
-import Img7 from '../assets/Marketplace-page/Image-7.jpg';
-import Img8 from '../assets/Marketplace-page/Image-8.jpg';
-import Img9 from '../assets/Marketplace-page/Image-9.jpg';
-import Img10 from '../assets/Marketplace-page/Image-10.jpg';
-import Img11 from '../assets/Marketplace-page/Image-11.jpg';
-import Img12 from '../assets/Marketplace-page/Image-12.jpg';
 
 const Marketplace = () => {
+    // Get current user and admin status
+    const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+    const isAdmin = currentUser?.role === 'admin';
+
+    // Delete listing handler
+    const handleDeleteListing = async (listingId) => {
+      if (!window.confirm('Are you sure you want to delete this listing?')) return;
+      try {
+        await listingService.deleteListing(listingId);
+        setAllListings(prev => prev.filter(l => l.id !== listingId));
+        setTotalListings(prev => Math.max(0, prev - 1));
+        alert('Listing deleted successfully.');
+      } catch (err) {
+        alert('Failed to delete listing.');
+      }
+    };
   const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedCondition, setSelectedCondition] = useState('');
@@ -42,86 +41,83 @@ const Marketplace = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [listingsPerPage] = useState(10); // Number of listings per page
   const [totalListings, setTotalListings] = useState(0);
+  const [showAddForm, setShowAddForm] = useState(false);
+  // Removed static listings toggle and logic
+  const [showStatic, setShowStatic] = useState(() => {
+    const saved = localStorage.getItem('showStaticListings');
+    return saved === null ? true : saved === 'true';
+  });
+
+  // Use attached images for featured listings (correct paths)
+  const featuredImages = [
+    require('../assets/Marketplace-page/Top-Section-1.jpg'), // Mustang
+    require('../assets/Marketplace-page/Top-Section-2.jpg'), // Civic
+    require('../assets/Marketplace-page/Top-Section-3.jpg'), // Jeep
+    require('../assets/Marketplace-page/Top-Section-4.png'), // Audi
+  ];
 
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
       try {
         const offset = (currentPage - 1) * listingsPerPage;
-        const [f, c, a] = await Promise.all([
-          axios.get('/api/featured-listings'),
-          axios.get('/api/categories'),
-          listingService.getAllListings({
+        let response;
+        if (listingService.getAllListings.length === 0) {
+          response = await listingService.getAllListings();
+        } else {
+          response = await listingService.getAllListings({
             q: searchQuery,
             category: selectedCategory,
             condition: selectedCondition,
             make: selectedMake,
-            sort: sortBy === 'Newest' ? 'created_at_desc' : (sortBy === 'Price Low to High' ? 'price_asc' : (sortBy === 'Price High to Low' ? 'price_desc' : '')),
+            sort: sortBy,
             minPrice,
             maxPrice,
             limit: listingsPerPage,
             offset: offset,
-          })
-        ]);
-        if (!cancelled) {
-          const incomingFeatured = Array.isArray(f.data) ? f.data : [];
-          const incomingCategories = Array.isArray(c.data) ? c.data : [];
-          
-          const incomingListingsData = a; // `a` now contains {totalCount, listings}
-          const incomingListings = Array.isArray(incomingListingsData.listings) ? incomingListingsData.listings : [];
-          setTotalListings(incomingListingsData.totalCount || 0);
-
-          const fallbackFeatured = (marketplaceData.featured || []);
-          const fallbackCategories = (marketplaceData.categories || []);
-          const fallbackListings = (marketplaceData.listings || []);
-
-          const featuredImages = [Top1, Top2, Top3, Top4];
-          const listingImages = [Img1, Img2, Img3, Img4, Img5, Img6, Img7, Img8, Img9, Img10, Img11, Img12];
-
-          const featuredToUse = (incomingFeatured.length ? incomingFeatured : fallbackFeatured).map((item, idx) => ({
+          });
+        }
+        // Use correct keys from marketplace.json
+        // Replace featured listing images with attached images
+        const featured = (marketplaceData.featured || []).map((listing, idx) => ({
+          ...listing,
+          image: featuredImages[idx] || listing.image
+        }));
+        setFeaturedListings(featured);
+        setCategories(marketplaceData.categories || []);
+        let incomingListings = Array.isArray(response) ? response : (response.listings || []);
+        setTotalListings(response.totalCount || incomingListings.length || 0);
+        setAllListings(incomingListings.map((item, idx) => {
+          let images = [];
+          try {
+            if (item.imageUrls) {
+              images = typeof item.imageUrls === 'string' ? JSON.parse(item.imageUrls) : item.imageUrls;
+            }
+          } catch (e) {
+            images = [];
+          }
+          let imageUrl = images[0]?.url || images[0] || marketplaceData.listings?.[idx % (marketplaceData.listings?.length || 1)]?.image || '';
+          return {
             ...item,
-            // Prefer local images first, then try database
-            image: featuredImages[idx % featuredImages.length] || 
-                   item.image || 
-                   (item.imageUrls && JSON.parse(item.imageUrls)[0])
-          }));
-
-          const listingsToUse = (incomingListings.length ? incomingListings : fallbackListings).map((item, idx) => ({
-            ...item,
-            // Parse imageUrls if it's a JSON string, and use the first URL or a fallback image
-            image: (item.imageUrls && JSON.parse(item.imageUrls)[0]) || listingImages[idx % listingImages.length],
-            price: parseFloat(item.price).toFixed(2), // Format price
+            image: imageUrl,
+            price: item.price ? parseFloat(item.price).toFixed(2) : '',
             location: item.location || 'Unknown',
             condition: item.condition || 'N/A',
-            seller: item.owner_username || 'Anonymous' // Assuming owner_username is available from backend
-          }));
-
-          setFeaturedListings(featuredToUse);
-          setCategories(incomingCategories.length ? incomingCategories : fallbackCategories);
-          setAllListings(listingsToUse);
-        }
+            seller: item.owner_username || item.seller || 'Anonymous'
+          };
+        }));
       } catch (e) {
         if (!cancelled) {
           console.error("Error loading marketplace data:", e);
-          const featuredImages = [Top1, Top2, Top3, Top4];
-          const listingImages = [Img1, Img2, Img3, Img4, Img5, Img6, Img7, Img8, Img9, Img10, Img11, Img12];
-          const fallbackFeatured = (marketplaceData.featured || []).map((item, idx) => ({
-            ...item,
-            image: featuredImages[idx % featuredImages.length]
-          }));
-          const fallbackListings = (marketplaceData.listings || []).map((item, idx) => ({
-            ...item,
-            image: listingImages[idx % listingImages.length]
-          }));
-          setFeaturedListings(fallbackFeatured);
-          setCategories((marketplaceData.categories || []));
-          setAllListings(fallbackListings);
+          setFeaturedListings(marketplaceData.featured || []);
+          setCategories(marketplaceData.categories || []);
+          setAllListings([]);
         }
       }
     };
     load();
     return () => { cancelled = true; };
-  }, [searchQuery, selectedCategory, selectedCondition, selectedMake, sortBy, minPrice, maxPrice, currentPage, listingsPerPage]); // Re-run effect when filters change
+  }, [searchQuery, selectedCategory, selectedCondition, selectedMake, sortBy, minPrice, maxPrice, currentPage, listingsPerPage]);
 
 
 
@@ -193,152 +189,149 @@ const Marketplace = () => {
 
 
   return (
-    <>
-      {/* <SEO 
-        title="Marketplace - Buy & Sell Vehicles"
-        description="Browse and buy vehicles, parts, and automotive accessories. Find the best deals in the AutoHub marketplace."
-        keywords="car marketplace, buy vehicles, sell cars, automotive parts, vehicle sales"
-        url="https://automotivehub-dv200.vercel.app/marketplace"
-      /> */}
-      <div className="marketplace">
-        <Header />
-        
-        <div className="marketplace-container">
-          <div className="marketplace-header">
-            <h1 className="marketplace-title">Marketplace</h1>
-          </div>
+    <div className="marketplace-wrapper">
+      <Header />
+      <div className="marketplace-container">
+        <div className="marketplace-header">
+          <h1 className="marketplace-title">Marketplace</h1>
+          <button className="add-listing-btn" onClick={() => setShowAddForm(true)}>
+            + Add Listing
+          </button>
+        </div>
 
-          {/* Featured Listings Section */}
-          <section className="featured-section">
-            <h2 className="section-title">Featured Listings</h2>
-            <div className="featured-grid">
-              {featuredListings.map((listing) => (
-                <div key={listing.id} className="featured-card" onClick={() => handleListingClick(listing.id)}>
-                  <img src={listing.image} alt={listing.title} className="featured-image" />
-                  <div className="featured-content">
-                    <h3 className="featured-title">{listing.title}</h3>
-                    <p className="featured-description">{listing.description}</p>
-                    <div className="featured-price">{listing.price}</div>
-                    <button
-                      className="view-details-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleViewDetails(listing.id);
-                      }}
-                    >
-                      View Details
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* Shop by Category Section */}
-          <section className="category-section">
-            <h2 className="section-title">Shop by Category</h2>
-            <div className="category-grid">
-              {categories.map((category) => (
-                <div key={category.name} className="category-item">
-                  <div className="category-icon">{category.icon}</div>
-                  <span className="category-name">{category.name}</span>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* All Listings Section */}
-          <section className="listings-section">
-            <h2 className="section-title">All Listings</h2>
-            
-            {/* Filters */}
-            <div className="filters-container">
-              <div className="search-row">
-                <input
-                  type="text"
-                  placeholder="Search listings..."
-                  className="search-input"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
-              
-              <div className="filter-row">
-                <select
-                  className="filter-select"
-                  value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                >
-                  <option value="">All Categories</option>
-                  {categories.map(cat => (
-                    <option key={cat.slug} value={cat.slug}>{cat.name}</option>
-                  ))}
-                </select>
-                
-                <select
-                  className="filter-select"
-                  value={selectedCondition}
-                  onChange={(e) => setSelectedCondition(e.target.value)}
-                >
-                  <option value="">All Conditions</option>
-                  <option value="new">New</option>
-                  <option value="used">Used</option>
-                  <option value="certified_used">Certified Used</option>
-                  <option value="parts">For Parts</option>
-                </select>
-                
-                <select
-                  className="filter-select"
-                  value={selectedMake}
-                  onChange={(e) => setSelectedMake(e.target.value)}
-                >
-                  <option value="">All Makes</option>
-                  {[...new Set(allListings.map(listing => listing.make))].filter(Boolean).sort().map(make => (
-                    <option key={make} value={make}>{make}</option>
-                  ))}
-                </select>
-              </div>
-              
-              <div className="price-row">
-                <input
-                  type="text"
-                  placeholder="Min Price"
-                  className="price-input"
-                  value={minPrice}
-                  onChange={(e) => setMinPrice(e.target.value)}
-                />
-                <input
-                  type="text"
-                  placeholder="Max Price"
-                  className="price-input"
-                  value={maxPrice}
-                  onChange={(e) => setMaxPrice(e.target.value)}
-                />
-                <button className="apply-filters-btn" onClick={handleApplyFilters}>
-                  Apply Filters
-                </button>
-                <button className="clear-filters-btn" onClick={handleClearFilters}>
-                  Clear Filters
-                </button>
-                
-                <div className="sort-container">
-                  <label>Sort by:</label>
-                  <select
-                    className="sort-select"
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
+        {/* Featured Listings Section */}
+        <section className="featured-section">
+          <h2 className="section-title">Featured Listings</h2>
+          <div className="featured-grid">
+            {featuredListings.map((listing) => (
+              <div key={listing.id} className="featured-card" onClick={() => handleListingClick(listing.id)}>
+                <img src={listing.image} alt={listing.title} className="featured-image" />
+                <div className="featured-content">
+                  <h3 className="featured-title">{listing.title}</h3>
+                  <p className="featured-description">{listing.description}</p>
+                  <div className="featured-price">{listing.price}</div>
+                  <button
+                    className="view-details-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleViewDetails(listing.id);
+                    }}
                   >
-                    <option value="created_at_desc">Newest</option>
-                    <option value="price_asc">Price Low to High</option>
-                    <option value="price_desc">Price High to Low</option>
-                  </select>
+                    View Details
+                  </button>
                 </div>
               </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Shop by Category Section */}
+        <section className="category-section">
+          <h2 className="section-title">Shop by Category</h2>
+          <div className="category-grid">
+            {categories.map((category) => (
+              <div key={category.name} className="category-item">
+                <div className="category-icon">{category.icon}</div>
+                <span className="category-name">{category.name}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* All Listings Section */}
+        <section className="listings-section">
+          <h2 className="section-title">All Listings</h2>
+          
+          {/* Filters */}
+          <div className="filters-container">
+            <div className="search-row">
+              <input
+                type="text"
+                placeholder="Search listings..."
+                className="search-input"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
             </div>
             
-            {/* Listings Grid */}
-            <div className="listings-grid">
-              {allListings.map((listing) => (
+            <div className="filter-row">
+              <select
+                className="filter-select"
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+              >
+                <option value="">All Categories</option>
+                {categories.map(cat => (
+                  <option key={cat.slug} value={cat.slug}>{cat.name}</option>
+                ))}
+              </select>
+              
+              <select
+                className="filter-select"
+                value={selectedCondition}
+                onChange={(e) => setSelectedCondition(e.target.value)}
+              >
+                <option value="">All Conditions</option>
+                <option value="new">New</option>
+                <option value="used">Used</option>
+                <option value="certified_used">Certified Used</option>
+                <option value="parts">For Parts</option>
+              </select>
+              
+              <select
+                className="filter-select"
+                value={selectedMake}
+                onChange={(e) => setSelectedMake(e.target.value)}
+              >
+                <option value="">All Makes</option>
+                {[...new Set(allListings.map(listing => listing.make))].filter(Boolean).sort().map(make => (
+                  <option key={make} value={make}>{make}</option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="price-row">
+              <input
+                type="text"
+                placeholder="Min Price"
+                className="price-input"
+                value={minPrice}
+                onChange={(e) => setMinPrice(e.target.value)}
+              />
+              <input
+                type="text"
+                placeholder="Max Price"
+                className="price-input"
+                value={maxPrice}
+                onChange={(e) => setMaxPrice(e.target.value)}
+              />
+              <button className="apply-filters-btn" onClick={handleApplyFilters}>
+                Apply Filters
+              </button>
+              <button className="clear-filters-btn" onClick={handleClearFilters}>
+                Clear Filters
+              </button>
+              
+              <div className="sort-container">
+                <label>Sort by:</label>
+                <select
+                  className="sort-select"
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                >
+                  <option value="created_at_desc">Newest</option>
+                  <option value="price_asc">Price Low to High</option>
+                  <option value="price_desc">Price High to Low</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          
+          {/* Listings Grid - Only dynamic listings */}
+          <div className="listings-grid">
+            {allListings.map((listing) => {
+              const isOwner = currentUser?.id === listing.userId || currentUser?.id === listing.user_id;
+              return (
                 <div
                   key={listing.id}
                   className="listing-card"
@@ -351,68 +344,85 @@ const Marketplace = () => {
                     <div className="listing-info">
                       <div className="listing-location">📍 {listing.location}</div>
                       <div className="listing-condition">🏷️ {listing.condition}</div>
-                      {/* <div className="listing-seller">👤 {listing.seller}</div> */}
                     </div>
+                    {(isOwner || isAdmin) && (
+                      <button
+                        className="delete-listing-btn"
+                        onClick={e => {
+                          e.stopPropagation();
+                          handleDeleteListing(listing.id);
+                        }}
+                        style={{marginTop: '12px', background: '#E8618C', color: '#fff', border: 'none', borderRadius: '6px', padding: '8px 16px', cursor: 'pointer'}}
+                      >
+                        Delete Listing
+                      </button>
+                    )}
                   </div>
                 </div>
-              ))}
-            </div>
+              );
+            })}
+          </div>
 
-            {/* Pagination Controls */}
-            <div className="pagination-controls">
-              <button 
-                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
-                className="pagination-btn"
-              >
-                Previous
-              </button>
-              <span>Page {currentPage} of {Math.ceil(totalListings / listingsPerPage)}</span>
-              <button 
-                onClick={() => setCurrentPage(prev => Math.min(Math.ceil(totalListings / listingsPerPage), prev + 1))}
-                disabled={currentPage === Math.ceil(totalListings / listingsPerPage)}
-                className="pagination-btn"
-              >
-                Next
-              </button>
-            </div>
-          </section>
+          {/* Pagination Controls */}
+          <div className="pagination-controls">
+            <button 
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+              className="pagination-btn"
+            >
+              Previous
+            </button>
+            <span>Page {currentPage} of {Math.ceil(totalListings / listingsPerPage)}</span>
+            <button 
+              onClick={() => setCurrentPage(prev => Math.min(Math.ceil(totalListings / listingsPerPage), prev + 1))}
+              disabled={currentPage === Math.ceil(totalListings / listingsPerPage)}
+              className="pagination-btn"
+            >
+              Next
+            </button>
+          </div>
+        </section>
 
-          {/* Footer Newsletter Section */}
-          <footer className="marketplace-footer">
-            <div className="newsletter-section">
-              <h3 className="newsletter-title">Stay up-to-date on the latest car trends!</h3>
-              <form className="newsletter-form" onSubmit={handleSubscribe}>
-                <div className="email-input-container">
-                  <span className="email-icon">✉️</span>
-                  <input
-                    type="email"
-                    placeholder="Enter your email address"
-                    className="email-input"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
-                <button type="submit" className="subscribe-btn">Subscribe</button>
-              </form>
-            </div>
-            
-            <div className="footer-content">
-              <div className="language-selector">
-                <button className="language-btn">English</button>
+        {/* Footer Newsletter Section */}
+        <footer className="marketplace-footer">
+          <div className="newsletter-section">
+            <h3 className="newsletter-title">Stay up-to-date on the latest car trends!</h3>
+            <form className="newsletter-form" onSubmit={handleSubscribe}>
+              <div className="email-input-container">
+                <span className="email-icon">✉️</span>
+                <input
+                  type="email"
+                  placeholder="Enter your email address"
+                  className="email-input"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
               </div>
-              <div className="copyright">© 2025 AutoHub.</div>
-              <div className="social-links">
-                <span className="social-icon">📘</span>
-                <span className="social-icon">🐦</span>
-                <span className="social-icon">📷</span>
-              </div>
+              <button type="submit" className="subscribe-btn">Subscribe</button>
+            </form>
+          </div>
+          
+          <div className="footer-content">
+            <div className="language-selector">
+              <button className="language-btn">English</button>
             </div>
-          </footer>
-        </div>
+            <div className="copyright">© 2025 AutoHub.</div>
+            <div className="social-links">
+              <span className="social-icon">📘</span>
+              <span className="social-icon">🐦</span>
+              <span className="social-icon">📷</span>
+            </div>
+          </div>
+        </footer>
       </div>
-    </>
+
+      {showAddForm && (
+        <div className="add-listing-modal">
+          <AddListingForm onSuccess={() => setShowAddForm(false)} onClose={() => setShowAddForm(false)} />
+        </div>
+      )}
+    </div>
   );
 };
 

@@ -38,8 +38,9 @@ const LoginSection = () => {
         identifier: formData.identifier,
         password: formData.password
       });
-      
-      if (result.success) {
+      // Set userId in localStorage if login is successful and user info is present
+      if (result.success && result.user && result.user.id) {
+        localStorage.setItem('userId', result.user.id);
         alert('Login successful! Welcome to AutoHub.');
         navigate('/community'); // Redirect to community feed after successful login
       } else {

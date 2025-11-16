@@ -3,6 +3,7 @@ import { HelmetProvider } from 'react-helmet-async';
 import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { Analytics } from "@vercel/analytics/react";
 import { authService } from './services/api';
+import ListingDetails from './pages/ListingDetails';
 
 // Import pages - CLEANED UP
 import CommunityFeed from './pages/CommunityFeed';
@@ -51,6 +52,7 @@ function App() {
               </ProtectedRoute>
             } />
             <Route path="/profile/:id" element={<ProfilePage />} />
+            <Route path="/listing/:id" element={<ListingDetails />} />
           </Routes>
         </AnalyticsWrapper>
         <Analytics />

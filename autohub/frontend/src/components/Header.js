@@ -145,9 +145,14 @@ const Header = () => {
               {/* Profile avatar icon */}
               <div className="profile-icon" onClick={() => navigate(`/profile/${currentUser.id}`)}>
                 <img
-                  src={currentUser.avatar || '/default-avatar.png'}
-                  alt="Profile"
-                  style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', border: '2px solid #eee' }}
+                  src={
+                    currentUser.avatar && currentUser.avatar.trim() !== ''
+                      ? currentUser.avatar
+                      : `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.username || 'User')}&background=667eea&color=fff&size=128`
+                  }
+                  alt="Profile Avatar"
+                  title="View Profile"
+                  style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', border: '2px solid #eee', background: '#f0f0f0' }}
                 />
               </div>
               <button onClick={handleLogout} className="logout-button">Logout</button>

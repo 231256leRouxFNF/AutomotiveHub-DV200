@@ -5,7 +5,7 @@ export const initGA = () => {
   if (typeof window !== 'undefined' && window.gtag) {
     window.gtag('js', new Date());
     window.gtag('config', measurementId);
-    console.log('✅ Google Analytics initialized with ID:', measurementId);
+    // ...existing code...
   } else {
     console.warn('⚠️ Google Analytics not loaded. Make sure gtag is included in index.html');
   }
@@ -17,7 +17,7 @@ export const trackPageView = (path) => {
     window.gtag('config', process.env.REACT_APP_GA_MEASUREMENT_ID || 'G-P9RMJ9BJLM', {
       page_path: path,
     });
-    console.log('📊 Page view tracked:', path);
+    // ...existing code...
   }
 };
 
@@ -25,6 +25,6 @@ export const trackPageView = (path) => {
 export const trackUserAction = (action, params = {}) => {
   if (typeof window !== 'undefined' && window.gtag) {
     window.gtag('event', action, params);
-    console.log('📊 Event tracked:', action, params);
+    // ...existing code...
   }
 };

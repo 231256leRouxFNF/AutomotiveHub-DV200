@@ -5,50 +5,61 @@ const listingController = {
   // Create a new listing
   createListing: async (req, res) => {
     try {
-      const { title, description, price, make, model, year, userId } = req.body;
-      
-      // Upload images to Cloudinary
-      const uploadedImages = [];
-      if (req.files && req.files.length > 0) {
-        for (const file of req.files) {
-          const result = await cloudinary.uploader.upload(file.path, {
-            folder: 'autohub/listings',
-            resource_type: 'auto'
-          });
-          uploadedImages.push(result);
-        }
-      }
-
-      // In createListing function, ensure images are properly formatted
-      const imageUrls = uploadedImages.map(img => ({
-        url: img.secure_url,
-        public_id: img.public_id
-      }));
-
-      const imageUrlsJson = JSON.stringify(imageUrls);
-
-      // Insert listing into database with Cloudinary URLs
-      const query = `
-        INSERT INTO listings (title, description, price, make, model, year, userId, images)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      `;
-      
-      const [result] = await db.execute(query, [
-        title, 
-        description, 
-        price, 
-        make, 
-        model, 
-        year, 
+      const {
+        title,
+        description,
+        price,
+        category,
+        condition,
+        year,
+        make,
+        model,
+        mileage,
+        location,
         userId,
-        imageUrlsJson // Store as JSON array
-      ]);
+        imageUrls
+      } = req.body;
 
-      res.status(201).json({
-        success: true,
-        message: 'Listing created successfully',
-        listingId: result.insertId,
-        images: imageUrls
+      // If images are uploaded via multer, handle Cloudinary upload (optional)
+      // If using direct URLs, skip this block
+      // const uploadedImages = [];
+      // if (req.files && req.files.length > 0) {
+      //   for (const file of req.files) {
+      //     const result = await cloudinary.uploader.upload(file.path, {
+      //       folder: 'autohub/listings',
+      //       resource_type: 'auto'
+      //     });
+      //     uploadedImages.push(result);
+      //   }
+      // }
+
+      // Use Listing.create to insert into DB
+      const listingData = {
+        userId,
+        title,
+        description,
+        price,
+        category,
+        condition,
+        year,
+        make,
+        model,
+        mileage,
+        location,
+        imageUrls: imageUrls || '[]'
+      };
+
+      Listing.create(listingData, (err, result) => {
+        if (err) {
+          console.error('Error creating listing:', err);
+          return res.status(500).json({ success: false, message: 'Error creating listing', error: err.message });
+        }
+        res.status(201).json({
+          success: true,
+          message: 'Listing created successfully',
+          listingId: result.insertId,
+          images: imageUrls ? JSON.parse(imageUrls) : []
+        });
       });
 
     } catch (error) {
@@ -64,8 +75,8 @@ const listingController = {
   // Get all listings
   getAllListings: async (req, res) => {
     const { q, category, condition, make, sort, minPrice, maxPrice, limit, offset } = req.query;
-    let sql = 'SELECT l.id, l.title, l.description, l.price, l.location, l.condition, l.make, l.model, l.year, l.imageUrls, u.username as owner_username, p.display_name as owner_name, l.created_at FROM listings l JOIN users u ON l.userId = u.id LEFT JOIN profiles p ON u.id = p.user_id';
-    let countSql = 'SELECT COUNT(*) as totalCount FROM listings l JOIN users u ON l.userId = u.id LEFT JOIN profiles p ON u.id = p.user_id';
+    let sql = 'SELECT l.id, l.title, l.description, l.price, l.location, l.condition, l.make, l.model, l.year, l.imageUrls, u.username as owner_username, l.created_at FROM listings l JOIN users u ON l.userId = u.id';
+    let countSql = 'SELECT COUNT(*) as totalCount FROM listings l JOIN users u ON l.userId = u.id';
     const params = [];
     const where = [];
 
@@ -102,12 +113,12 @@ const listingController = {
       const [totalCountResult] = await Listing.query(countSql, params);
       const totalCount = totalCountResult[0].totalCount;
       
-      // Ensure images are parsed correctly before sending
+      // Ensure imageUrls are parsed correctly before sending
       const formattedListings = listings.map(listing => ({
         ...listing,
-        images: typeof listing.images === 'string' ? JSON.parse(listing.images) : listing.images
+        imageUrls: typeof listing.imageUrls === 'string' ? JSON.parse(listing.imageUrls) : listing.imageUrls
       }));
-      
+
       res.status(200).json({ 
         totalCount,
         limit: parsedLimit,
@@ -138,8 +149,10 @@ const listingController = {
 
   // Get a single listing by ID
   getListingById: (req, res) => {
-    const { id } = req.params;
-    Listing.findById(id, (err, listing) => {
+    const { listingId } = req.params;
+    console.log('Fetching listing with ID:', listingId);
+    Listing.findById(listingId, (err, listing) => {
+      console.log('Database result:', listing);
       if (err) {
         console.error('Error fetching listing:', err);
         return res.status(500).json({ success: false, message: 'Failed to fetch listing' });

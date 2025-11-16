@@ -53,7 +53,12 @@ Listing.delete = (id, callback) => {
 
 // Generic query method for more complex queries
 Listing.query = (sql, values, callback) => {
-  db.query(sql, values, callback);
+  if (typeof callback === 'function') {
+    db.query(sql, values, callback);
+  } else {
+    // Promise-based query for async/await usage
+    return db.promise().query(sql, values);
+  }
 };
 
 module.exports = Listing;
