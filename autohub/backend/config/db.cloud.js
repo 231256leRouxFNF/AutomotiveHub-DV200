@@ -1,5 +1,5 @@
 require('dotenv').config({ path: require('path').resolve(__dirname, '../.env') });
-const mysql = require('mysql2');
+const mysql = require('mysql2/promise');
 
 const host = process.env.DB_HOST || 'localhost';
 const port = Number(process.env.DB_PORT || 3306);
@@ -21,14 +21,6 @@ console.log('Cloud Database Configuration:', {
   environment: process.env.NODE_ENV || 'production'
 });
 
-const db = mysql.createConnection({ host, user, password, database, port });
-db.connect((err) => {
-  if (err) {
-    console.error(' Cloud DB connection failed:', err.message);
-    process.exit(1);
-  } else {
-    console.log(' Cloud DB connected successfully.');
-  }
-});
-
-module.exports = db;
+const pool = mysql.createPool({ host, user, password, database, port, waitForConnections: true, connectionLimit: 10, queueLimit: 0 });
+console.log(' Cloud DB pool created.');
+module.exports = pool;

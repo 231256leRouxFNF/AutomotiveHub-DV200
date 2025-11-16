@@ -26,7 +26,7 @@ router.post('/users/bulk-delete', protect, requireAdmin, async (req, res) => {
     if (userIds.includes(req.user.id)) {
       return res.status(400).json({ success: false, message: 'You cannot delete your own account' });
     }
-    const [result] = await db.promise().query(
+    const [result] = await db.query(
       `DELETE FROM users WHERE id IN (${userIds.map(() => '?').join(',')})`,
       userIds
     );
@@ -43,7 +43,7 @@ router.post('/posts/bulk-delete', protect, requireAdmin, async (req, res) => {
     if (!Array.isArray(postIds) || postIds.length === 0) {
       return res.status(400).json({ success: false, message: 'No post IDs provided' });
     }
-    const [result] = await db.promise().query(
+    const [result] = await db.query(
       `DELETE FROM posts WHERE id IN (${postIds.map(() => '?').join(',')})`,
       postIds
     );
@@ -59,7 +59,7 @@ router.post('/posts/bulk-delete', protect, requireAdmin, async (req, res) => {
 // Get all users (admin only)
 router.get('/users', protect, requireAdmin, async (req, res) => {
   try {
-    const [users] = await db.promise().query(
+    const [users] = await db.query(
       'SELECT id, username, email, role, created_at FROM users ORDER BY created_at DESC'
     );
     res.json({ success: true, users });
@@ -83,7 +83,7 @@ router.delete('/users/:userId', protect, requireAdmin, async (req, res) => {
     }
 
     // Delete user (cascade will delete their posts, vehicles, etc.)
-    await db.promise().query('DELETE FROM users WHERE id = ?', [userId]);
+    await db.query('DELETE FROM users WHERE id = ?', [userId]);
     
     res.json({ success: true, message: 'User deleted successfully' });
   } catch (error) {
@@ -95,7 +95,7 @@ router.delete('/users/:userId', protect, requireAdmin, async (req, res) => {
 // Get all posts (admin only)
 router.get('/posts', protect, requireAdmin, async (req, res) => {
   try {
-    const [posts] = await db.promise().query(
+    const [posts] = await db.query(
       `SELECT 
         p.*,
         u.username,
@@ -116,7 +116,7 @@ module.exports = router;
 router.delete('/posts/:postId', protect, requireAdmin, async (req, res) => {
   try {
     const { postId } = req.params;
-    const [result] = await db.promise().query('DELETE FROM posts WHERE id = ?', [postId]);
+    const [result] = await db.query('DELETE FROM posts WHERE id = ?', [postId]);
     if (result.affectedRows === 0) {
       return res.status(404).json({ success: false, message: 'Post not found' });
     }

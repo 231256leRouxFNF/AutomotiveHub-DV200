@@ -7,6 +7,7 @@ import './UserProfile.css';
 
 const UserProfile = () => {
   const [profile, setProfile] = useState(null);
+  const [profileError, setProfileError] = useState(null);
   const [stats, setStats] = useState({ totalVehicles: 0, featured: 0, upcomingEvents: 0 });
   const [loading, setLoading] = useState(true);
 
@@ -30,15 +31,17 @@ const UserProfile = () => {
 
         let p = null;
         try {
-          p = await userService.getProfile();
+          const res = await userService.getProfile();
+          if (res && res.success && res.profile) {
+            p = res.profile;
+            setProfileError(null);
+          } else {
+            setProfileError('Profile not found');
+            p = null;
+          }
         } catch (e) {
-          p = {
-            display_name: me.username || 'User',
-            username: me.username || 'user',
-            email: me.email || '',
-            bio: '',
-            location: ''
-          };
+          setProfileError('Profile not found');
+          p = null;
         }
         setProfile(p);
 
@@ -88,7 +91,11 @@ const UserProfile = () => {
         <div className="profile-grid">
           <aside className="profile-card">
             <div className="profile-avatar">
-              <span>👤</span>
+              {profile?.profile_image ? (
+                <img src={profile.profile_image} alt="Avatar" className="profile-avatar-img" />
+              ) : (
+                <span>👤</span>
+              )}
             </div>
             <h2 className="profile-name">{profile?.display_name || 'Unnamed'}</h2>
             <div className="profile-username">@{profile?.username || 'user'}</div>
@@ -144,6 +151,9 @@ const UserProfile = () => {
         </div>
 
         {loading && <div className="muted" style={{ marginTop: 16 }}>Loading profile…</div>}
+        {!loading && profileError && (
+          <div className="muted" style={{ marginTop: 16, color: 'red' }}>{profileError}</div>
+        )}
       </main>
       <Footer />
     </div>

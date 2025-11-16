@@ -32,6 +32,7 @@ const db = require('./config/db');
 
 // Import route files
 const authRoutes = require('./routes/authRoutes');
+const userRoutes = require('./routes/userRoutes');
 // Import routes
 const vehicleRoutes = require('./routes/vehicleRoutes');
 const adminRoutes = require('./routes/adminRoutes');
@@ -101,6 +102,7 @@ const auth = (req, res, next) => {
 
 // Auth routes - MUST be before any other /api/auth routes
 app.use('/api/auth', authRoutes);
+app.use('/api/user', userRoutes);
 // Mount routes
 app.use('/api/vehicles', vehicleRoutes);
 app.use('/api/admin', adminRoutes);
@@ -122,7 +124,7 @@ app.get('/test-db', (req, res) => {
 // Add this after your test-db route
 app.get('/test-vehicles-table', async (req, res) => {
   try {
-    const [tables] = await db.promise().query("SHOW TABLES LIKE 'vehicles'");
+    const [tables] = await db.query("SHOW TABLES LIKE 'vehicles'");
     if (tables.length === 0) {
       return res.json({ 
         exists: false, 
@@ -130,7 +132,7 @@ app.get('/test-vehicles-table', async (req, res) => {
       });
     }
     
-    const [columns] = await db.promise().query("DESCRIBE vehicles");
+    const [columns] = await db.query("DESCRIBE vehicles");
     res.json({ 
       exists: true, 
       columns: columns 
@@ -143,7 +145,7 @@ app.get('/test-vehicles-table', async (req, res) => {
 // Add this debug endpoint
 app.get('/test-events-table', async (req, res) => {
   try {
-    const [tables] = await db.promise().query("SHOW TABLES LIKE 'events'");
+    const [tables] = await db.query("SHOW TABLES LIKE 'events'");
     if (tables.length === 0) {
       return res.json({ 
         exists: false, 
@@ -152,8 +154,8 @@ app.get('/test-events-table', async (req, res) => {
     }
     
     // Check if any events exist
-    const [events] = await db.promise().query("SELECT COUNT(*) as count FROM events");
-    const [allEvents] = await db.promise().query("SELECT * FROM events ORDER BY created_at DESC LIMIT 5");
+    const [events] = await db.query("SELECT COUNT(*) as count FROM events");
+    const [allEvents] = await db.query("SELECT * FROM events ORDER BY created_at DESC LIMIT 5");
     
     res.json({ 
       exists: true,
@@ -180,7 +182,7 @@ app.post('/api/register', async (req, res) => {
 
     // Checks if user already exists
     const checkUserSql = 'SELECT * FROM users WHERE email = ? OR username = ?';
-    const [existingUsers] = await db.promise().query(checkUserSql, [email, username]);
+    const [existingUsers] = await db.query(checkUserSql, [email, username]);
 
     if (existingUsers.length > 0) {
       return res.status(400).json({ 
@@ -194,13 +196,13 @@ app.post('/api/register', async (req, res) => {
 
     // Inserts user(s) to db
     const insertUserSql = 'INSERT INTO users (username, email, password) VALUES (?, ?, ?)';
-    const [result] = await db.promise().query(insertUserSql, [username, email, hashedPassword]);
+    const [result] = await db.query(insertUserSql, [username, email, hashedPassword]);
 
     const userId = result.insertId;
 
     // Creates account
     const insertProfileSql = 'INSERT INTO profiles (user_id, display_name) VALUES (?, ?)';
-    await db.promise().query(insertProfileSql, [userId, display_name || username]);
+    await db.query(insertProfileSql, [userId, display_name || username]);
 
     // Generate JWT token
     const token = jwt.sign(
@@ -237,7 +239,7 @@ app.get('/api/user/:id/profile', async (req, res) => {
   try {
     const userId = req.params.id;
     const sql = 'SELECT id, username, email, created_at, profile_image FROM users WHERE id = ?';
-    const [users] = await db.promise().query(sql, [userId]);
+    const [users] = await db.query(sql, [userId]);
     if (users.length === 0) {
       return res.status(404).json({ message: 'User not found' });
     }
@@ -254,7 +256,7 @@ app.get('/api/users/:id/profile', async (req, res) => {
   try {
     const userId = req.params.id;
     const sql = 'SELECT id, username, email, created_at, profile_image FROM users WHERE id = ?';
-    const [users] = await db.promise().query(sql, [userId]);
+    const [users] = await db.query(sql, [userId]);
     if (users.length === 0) {
       return res.status(404).json({ message: 'User not found' });
     }
@@ -268,7 +270,7 @@ app.get('/api/users/:id/profile', async (req, res) => {
 app.get('/api/user/profile', auth, async (req, res) => {
   try {
   const sql = 'SELECT id, username, email, created_at, profile_image FROM users WHERE id = ?';
-    const [users] = await db.promise().query(sql, [req.userId]);
+    const [users] = await db.query(sql, [req.userId]);
     
     if (users.length === 0) {
       return res.status(404).json({ success: false, message: 'User not found' });
@@ -293,10 +295,10 @@ app.put('/api/user/profile', auth, async (req, res) => {
     }
 
     const sql = 'UPDATE users SET display_name = ?, email = ? WHERE id = ?';
-    await db.promise().query(sql, [display_name, email, req.userId]);
+    await db.query(sql, [display_name, email, req.userId]);
     
     // Get updated user
-    const [users] = await db.promise().query(
+    const [users] = await db.query(
       'SELECT id, username, email, display_name, avatar_url FROM users WHERE id = ?', 
       [req.userId]
     );
@@ -330,7 +332,7 @@ app.post('/api/user/avatar', auth, upload.single('avatar'), async (req, res) => 
     // Save Cloudinary URL to profile_image column
     const profileImageUrl = result.secure_url;
     const sql = 'UPDATE users SET profile_image = ? WHERE id = ?';
-    await db.promise().query(sql, [profileImageUrl, req.userId]);
+    await db.query(sql, [profileImageUrl, req.userId]);
 
     // Optionally, delete local file after upload
     const fs = require('fs');
@@ -359,7 +361,7 @@ app.put('/api/user/password', auth, async (req, res) => {
     }
 
     // Verify current password
-    const [users] = await db.promise().query('SELECT password FROM users WHERE id = ?', [req.userId]);
+    const [users] = await db.query('SELECT password FROM users WHERE id = ?', [req.userId]);
     
     if (users.length === 0) {
       return res.status(404).json({ success: false, message: 'User not found' });
@@ -373,7 +375,7 @@ app.put('/api/user/password', auth, async (req, res) => {
 
     // Hash new password
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-    await db.promise().query('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, req.userId]);
+    await db.query('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, req.userId]);
 
     res.json({ success: true, message: 'Password changed successfully' });
   } catch (error) {
@@ -392,7 +394,7 @@ app.get('/api/listings', async (req, res) => {
       JOIN users u ON l.userId = u.id
       ORDER BY l.created_at DESC
     `;
-    const [listings] = await db.promise().query(sql);
+    const [listings] = await db.query(sql);
     res.json({ success: true, listings });
   } catch (error) {
     console.error('Error fetching listings:', error);
@@ -409,7 +411,7 @@ app.get('/api/listings/:id', async (req, res) => {
       JOIN users u ON l.userId = u.id
       WHERE l.id = ?
     `;
-    const [listings] = await db.promise().query(sql, [id]);
+    const [listings] = await db.query(sql, [id]);
     
     if (listings.length === 0) {
       return res.status(404).json({ success: false, message: 'Listing not found' });
@@ -438,7 +440,7 @@ app.post('/api/listings', auth, async (req, res) => {
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
-    const [result] = await db.promise().query(sql, [
+    const [result] = await db.query(sql, [
       req.userId,
       title,
       description || '',
@@ -470,7 +472,7 @@ app.put('/api/listings/:id', auth, async (req, res) => {
     const { title, description, price, category, condition, images } = req.body;
 
     // Check ownership
-    const [listings] = await db.promise().query('SELECT * FROM listings WHERE id = ? AND userId = ?', [id, req.userId]);
+    const [listings] = await db.query('SELECT * FROM listings WHERE id = ? AND userId = ?', [id, req.userId]);
     
     if (listings.length === 0) {
       return res.status(403).json({ 
@@ -485,7 +487,7 @@ app.put('/api/listings/:id', auth, async (req, res) => {
       WHERE id = ?
     `;
     
-    await db.promise().query(sql, [
+    await db.query(sql, [
       title, 
       description, 
       price, 
@@ -507,7 +509,7 @@ app.delete('/api/listings/:id', auth, async (req, res) => {
     const { id } = req.params;
 
     // Check ownership
-    const [listings] = await db.promise().query('SELECT * FROM listings WHERE id = ? AND userId = ?', [id, req.userId]);
+    const [listings] = await db.query('SELECT * FROM listings WHERE id = ? AND userId = ?', [id, req.userId]);
     
     if (listings.length === 0) {
       return res.status(403).json({ 
@@ -516,7 +518,7 @@ app.delete('/api/listings/:id', auth, async (req, res) => {
       });
     }
 
-    await db.promise().query('DELETE FROM listings WHERE id = ?', [id]);
+    await db.query('DELETE FROM listings WHERE id = ?', [id]);
     res.json({ success: true, message: 'Listing deleted successfully' });
   } catch (error) {
     console.error('Error searching listings:', error);
@@ -542,7 +544,7 @@ app.post('/api/events', auth, async (req, res) => {
       VALUES (?, ?, ?, ?, ?)
     `;
     
-    const [result] = await db.promise().query(sql, [
+    const [result] = await db.query(sql, [
       userId, title, description, date, location
     ]);
 
@@ -571,7 +573,7 @@ app.get('/api/events', async (req, res) => {
       LIMIT 50
     `;
     
-    const [events] = await db.promise().query(sql);
+    const [events] = await db.query(sql);
     // ...existing code...
     
     res.json({ success: true, events });
@@ -596,7 +598,7 @@ app.get('/api/garage/:userId', async (req, res) => {
       ORDER BY created_at DESC
     `;
     
-    const [vehicles] = await db.promise().query(sql, [userId]);
+    const [vehicles] = await db.query(sql, [userId]);
     
     console.log(` Found ${vehicles.length} vehicles for user ${userId}`);
     
@@ -613,7 +615,7 @@ app.get('/api/notifications/unread-count', auth, async (req, res) => {
     const userId = req.query.userId || req.userId;
     
     const sql = 'SELECT COUNT(*) as count FROM notifications WHERE userId = ? AND isRead = FALSE';
-    const [result] = await db.promise().query(sql, [userId]);
+    const [result] = await db.query(sql, [userId]);
     
     res.json({ success: true, count: result[0].count });
   } catch (error) {
@@ -629,7 +631,7 @@ app.get('/api/posts', async (req, res) => {
   try {
     console.log('📥 GET /api/posts - Fetching all posts');
     
-    const [posts] = await db.promise().query(
+    const [posts] = await db.query(
       `SELECT 
         p.*,
         u.username,
@@ -681,7 +683,7 @@ app.post('/api/posts', auth, upload.single('image'), async (req, res) => {
     }
 
     // Insert the post
-    const [result] = await db.promise().query(
+    const [result] = await db.query(
       'INSERT INTO posts (userId, content, image_url, created_at) VALUES (?, ?, ?, NOW())',
       [userId, content, image_url || null]
     );
@@ -689,7 +691,7 @@ app.post('/api/posts', auth, upload.single('image'), async (req, res) => {
     console.log(' Post created with ID:', result.insertId);
 
     // Fetch the complete post with user data
-    const [newPost] = await db.promise().query(
+    const [newPost] = await db.query(
       `SELECT 
         p.*,
         u.username,
@@ -726,15 +728,15 @@ app.post('/api/social/posts/:postId/like', auth, async (req, res) => {
 
     // Check if already liked
     const checkSql = 'SELECT * FROM post_likes WHERE postId = ? AND userId = ?';
-    const [existing] = await db.promise().query(checkSql, [postId, userId]);
+    const [existing] = await db.query(checkSql, [postId, userId]);
 
     if (existing.length > 0) {
       // Unlike
-      await db.promise().query('DELETE FROM post_likes WHERE postId = ? AND userId = ?', [postId, userId]);
+      await db.query('DELETE FROM post_likes WHERE postId = ? AND userId = ?', [postId, userId]);
       res.json({ success: true, message: 'Post unliked', liked: false });
     } else {
       // Like
-      await db.promise().query('INSERT INTO post_likes (postId, userId) VALUES (?, ?)', [postId, userId]);
+      await db.query('INSERT INTO post_likes (postId, userId) VALUES (?, ?)', [postId, userId]);
       res.json({ success: true, message: 'Post liked', liked: true });
     }
   } catch (error) {
@@ -758,7 +760,7 @@ app.post('/api/social/posts/:postId/comments', auth, async (req, res) => {
     }
 
     const sql = 'INSERT INTO comments (post_id, user_id, content) VALUES (?, ?, ?)';
-    const [result] = await db.promise().query(sql, [postId, userId, content]);
+    const [result] = await db.query(sql, [postId, userId, content]);
 
     // Fetch the created comment with user info
     const getCommentSql = `
@@ -767,7 +769,7 @@ app.post('/api/social/posts/:postId/comments', auth, async (req, res) => {
       JOIN users u ON c.user_id = u.id
       WHERE c.id = ?
     `;
-    const [comments] = await db.promise().query(getCommentSql, [result.insertId]);
+    const [comments] = await db.query(getCommentSql, [result.insertId]);
 
     res.json({ 
       success: true, 
@@ -788,7 +790,7 @@ app.delete('/api/social/posts/:postId', auth, async (req, res) => {
 
     // Check if user owns the post
     const checkSql = 'SELECT * FROM posts WHERE id = ? AND userId = ?';
-    const [posts] = await db.promise().query(checkSql, [postId, userId]);
+    const [posts] = await db.query(checkSql, [postId, userId]);
 
     if (posts.length === 0) {
       return res.status(403).json({ 
@@ -798,7 +800,7 @@ app.delete('/api/social/posts/:postId', auth, async (req, res) => {
     }
 
     // Delete post (cascade will delete likes and comments)
-    await db.promise().query('DELETE FROM posts WHERE id = ?', [postId]);
+    await db.query('DELETE FROM posts WHERE id = ?', [postId]);
 
     res.json({ success: true, message: 'Post deleted successfully' });
   } catch (error) {
@@ -817,7 +819,7 @@ app.delete('/api/garage/vehicles/:id', auth, async (req, res) => {
 
     // Check if vehicle exists and belongs to the user
     const checkSql = 'SELECT * FROM vehicles WHERE id = ? AND user_id = ?';
-    const [vehicles] = await db.promise().query(checkSql, [id, userId]);
+    const [vehicles] = await db.query(checkSql, [id, userId]);
 
     if (vehicles.length === 0) {
       return res.status(403).json({ 
@@ -837,7 +839,7 @@ app.delete('/api/garage/vehicles/:id', auth, async (req, res) => {
     }
 
     // Delete vehicle from database
-    await db.promise().query('DELETE FROM vehicles WHERE id = ?', [id]);
+    await db.query('DELETE FROM vehicles WHERE id = ?', [id]);
 
     console.log(' Vehicle deleted successfully');
 

@@ -51,8 +51,29 @@ const protect = (req, res, next) => {
   });
 };
 
+// New authenticateToken function as per the code block suggestion
+function authenticateToken(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+
+  if (!token) {
+    return res.status(401).json({ message: 'Access denied. No token provided.' });
+  }
+
+  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+    if (err) {
+      console.error('❌ JWT Verification Error:', err.message);
+      return res.status(401).json({ message: `Invalid Token: ${err.message}` });
+    }
+    req.userId = user.id;
+    req.user = user; // Set req.user with the full user object from the token
+    next();
+  });
+}
+
 module.exports = {
   auth,
   requireAdmin,
   protect,
+  authenticateToken, // Exporting the new function
 };

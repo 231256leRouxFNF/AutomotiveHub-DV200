@@ -32,7 +32,7 @@ router.post('/login', async (req, res) => {
 
     console.log('✅ Passed validation - Looking up user:', loginIdentifier);
 
-    const [users] = await db.promise().query(
+    const [users] = await db.query(
       'SELECT * FROM users WHERE email = ? OR username = ?',
       [loginIdentifier, loginIdentifier]
     );

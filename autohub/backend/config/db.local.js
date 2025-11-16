@@ -1,5 +1,5 @@
 require('dotenv').config({ path: require('path').resolve(__dirname, '../.env') });
-const mysql = require('mysql2');
+const mysql = require('mysql2/promise');
 
 const host = process.env.LOCAL_DB_HOST || 'localhost';
 const port = Number(process.env.LOCAL_DB_PORT || 3306);
@@ -21,14 +21,6 @@ console.log('Local Database Configuration:', {
   environment: process.env.NODE_ENV || 'development'
 });
 
-const db = mysql.createConnection({ host, user, password, database, port });
-db.connect((err) => {
-  if (err) {
-    console.error(' Local DB connection failed:', err.message);
-    process.exit(1);
-  } else {
-    console.log(' Local DB connected successfully.');
-  }
-});
-
-module.exports = db;
+const pool = mysql.createPool({ host, user, password, database, port, waitForConnections: true, connectionLimit: 10, queueLimit: 0 });
+console.log(' Local DB pool created.');
+module.exports = pool;
