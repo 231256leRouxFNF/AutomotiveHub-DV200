@@ -8,7 +8,24 @@ import SEO from '../components/SEO'; // ADD THIS
 import './Marketplace.css';
 import AddListingForm from '../components/AddListingForm';
 
+
 const Marketplace = () => {
+    // Get current user and admin status
+    const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+    const isAdmin = currentUser?.role === 'admin';
+
+    // Delete listing handler
+    const handleDeleteListing = async (listingId) => {
+      if (!window.confirm('Are you sure you want to delete this listing?')) return;
+      try {
+        await listingService.deleteListing(listingId);
+        setAllListings(prev => prev.filter(l => l.id !== listingId));
+        setTotalListings(prev => Math.max(0, prev - 1));
+        alert('Listing deleted successfully.');
+      } catch (err) {
+        alert('Failed to delete listing.');
+      }
+    };
   const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedCondition, setSelectedCondition] = useState('');
@@ -31,14 +48,20 @@ const Marketplace = () => {
     return saved === null ? true : saved === 'true';
   });
 
+  // Use attached images for featured listings (correct paths)
+  const featuredImages = [
+    require('../assets/Marketplace-page/Top-Section-1.jpg'), // Mustang
+    require('../assets/Marketplace-page/Top-Section-2.jpg'), // Civic
+    require('../assets/Marketplace-page/Top-Section-3.jpg'), // Jeep
+    require('../assets/Marketplace-page/Top-Section-4.png'), // Audi
+  ];
+
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
       try {
         const offset = (currentPage - 1) * listingsPerPage;
-        // Only fetch listings from backend, use static data for categories/featured
         let response;
-        // listingService.getAllListings expects no params, so fallback to basic fetch
         if (listingService.getAllListings.length === 0) {
           response = await listingService.getAllListings();
         } else {
@@ -55,9 +78,13 @@ const Marketplace = () => {
           });
         }
         // Use correct keys from marketplace.json
-        setFeaturedListings(marketplaceData.featured || []);
+        // Replace featured listing images with attached images
+        const featured = (marketplaceData.featured || []).map((listing, idx) => ({
+          ...listing,
+          image: featuredImages[idx] || listing.image
+        }));
+        setFeaturedListings(featured);
         setCategories(marketplaceData.categories || []);
-        // Handle backend response structure
         let incomingListings = Array.isArray(response) ? response : (response.listings || []);
         setTotalListings(response.totalCount || incomingListings.length || 0);
         setAllListings(incomingListings.map((item, idx) => {
@@ -69,7 +96,6 @@ const Marketplace = () => {
           } catch (e) {
             images = [];
           }
-          // Support both Cloudinary and static fallback
           let imageUrl = images[0]?.url || images[0] || marketplaceData.listings?.[idx % (marketplaceData.listings?.length || 1)]?.image || '';
           return {
             ...item,
@@ -303,23 +329,38 @@ const Marketplace = () => {
           
           {/* Listings Grid - Only dynamic listings */}
           <div className="listings-grid">
-            {allListings.map((listing) => (
-              <div
-                key={listing.id}
-                className="listing-card"
-                onClick={() => handleListingClick(listing.id)}
-              >
-                <img src={listing.image} alt={listing.title} className="listing-image" />
-                <div className="listing-content">
-                  <h3 className="listing-title">{listing.title}</h3>
-                  <div className="listing-price">R {listing.price}</div>
-                  <div className="listing-info">
-                    <div className="listing-location">📍 {listing.location}</div>
-                    <div className="listing-condition">🏷️ {listing.condition}</div>
+            {allListings.map((listing) => {
+              const isOwner = currentUser?.id === listing.userId || currentUser?.id === listing.user_id;
+              return (
+                <div
+                  key={listing.id}
+                  className="listing-card"
+                  onClick={() => handleListingClick(listing.id)}
+                >
+                  <img src={listing.image} alt={listing.title} className="listing-image" />
+                  <div className="listing-content">
+                    <h3 className="listing-title">{listing.title}</h3>
+                    <div className="listing-price">R {listing.price}</div>
+                    <div className="listing-info">
+                      <div className="listing-location">📍 {listing.location}</div>
+                      <div className="listing-condition">🏷️ {listing.condition}</div>
+                    </div>
+                    {(isOwner || isAdmin) && (
+                      <button
+                        className="delete-listing-btn"
+                        onClick={e => {
+                          e.stopPropagation();
+                          handleDeleteListing(listing.id);
+                        }}
+                        style={{marginTop: '12px', background: '#E8618C', color: '#fff', border: 'none', borderRadius: '6px', padding: '8px 16px', cursor: 'pointer'}}
+                      >
+                        Delete Listing
+                      </button>
+                    )}
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Pagination Controls */}
