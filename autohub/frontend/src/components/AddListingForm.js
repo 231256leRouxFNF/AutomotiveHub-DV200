@@ -103,23 +103,45 @@ const AddListingForm = ({ onSuccess, onClose }) => {
         const res = await axios.post('https://api.cloudinary.com/v1_1/dipwvhvz0/image/upload', data);
         uploadedImages.push({ url: res.data.secure_url, public_id: res.data.public_id });
       }
-      // Get userId from localStorage
+      // Get userId from localStorage and validate fields
       const token = localStorage.getItem('token');
-      const userId = localStorage.getItem('userId');
-      // Prepare payload to match backend and card display
+      const userObj = localStorage.getItem('user');
+      let userId = null;
+      if (userObj) {
+        try {
+          const user = JSON.parse(userObj);
+          userId = user && user.id ? Number(user.id) : null;
+        } catch (e) {
+          userId = null;
+        }
+      }
+      if (!userId || isNaN(userId)) {
+        setError('User ID is missing or invalid.');
+        setIsLoading(false);
+        setIsUploading(false);
+        return;
+      }
+      // Validate required fields
+      if (!form.title || !form.price || isNaN(Number(form.price))) {
+        setError('Title and price are required and must be valid.');
+        setIsLoading(false);
+        setIsUploading(false);
+        return;
+      }
+      // Prepare payload: always send all required fields for listings table
       const payload = {
-        title: form.title,
-        description: form.description,
-        price: form.price,
-        make: form.type === 'vehicle' ? form.make : '',
-        model: form.type === 'vehicle' ? form.model : '',
-        year: form.type === 'vehicle' ? form.year : '',
-        category: form.type === 'vehicle' ? 'vehicle' : form.partCategory || 'part',
-        condition: form.condition,
-        mileage: form.type === 'vehicle' ? form.mileage : '',
-        location: form.location,
-        images: uploadedImages,
-        userId,
+        title: form.title || '',
+        description: form.description || '',
+        price: form.price ? Number(form.price) : 0,
+        category: form.category || '',
+        condition: form.condition || '',
+        year: form.year || '',
+        make: form.make || '',
+        model: form.model || '',
+        mileage: form.mileage ? Number(form.mileage) : 0,
+        location: form.location || '',
+        userId: userId,
+        imageUrls: JSON.stringify(uploadedImages),
       };
       const response = await axios.post('/api/listings', payload, token ? {
         headers: { Authorization: `Bearer ${token}` }

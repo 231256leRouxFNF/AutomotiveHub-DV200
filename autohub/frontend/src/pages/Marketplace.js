@@ -36,45 +36,62 @@ const Marketplace = () => {
     const load = async () => {
       try {
         const offset = (currentPage - 1) * listingsPerPage;
-        const [f, c, a] = await Promise.all([
-          axios.get('/api/featured-listings'),
-          axios.get('/api/categories'),
-          listingService.getAllListings({
+        // Only fetch listings from backend, use static data for categories/featured
+        let response;
+        // listingService.getAllListings expects no params, so fallback to basic fetch
+        if (listingService.getAllListings.length === 0) {
+          response = await listingService.getAllListings();
+        } else {
+          response = await listingService.getAllListings({
             q: searchQuery,
             category: selectedCategory,
             condition: selectedCondition,
             make: selectedMake,
-            sort: sortBy === 'Newest' ? 'created_at_desc' : (sortBy === 'Price Low to High' ? 'price_asc' : (sortBy === 'Price High to Low' ? 'price_desc' : '')),
+            sort: sortBy,
             minPrice,
             maxPrice,
             limit: listingsPerPage,
             offset: offset,
-          })
-        ]);
-        if (!cancelled) {
-          const incomingFeatured = Array.isArray(f.data) ? f.data : [];
-          const incomingCategories = Array.isArray(c.data) ? c.data : [];
-          
-          const incomingListingsData = a; // `a` now contains {totalCount, listings}
-          const incomingListings = Array.isArray(incomingListingsData.listings) ? incomingListingsData.listings : [];
-          setTotalListings(incomingListingsData.totalCount || 0);
-
-          setFeaturedListings(incomingFeatured);
-          setCategories(incomingCategories);
-          setAllListings(incomingListings);
+          });
         }
+        // Use correct keys from marketplace.json
+        setFeaturedListings(marketplaceData.featured || []);
+        setCategories(marketplaceData.categories || []);
+        // Handle backend response structure
+        let incomingListings = Array.isArray(response) ? response : (response.listings || []);
+        setTotalListings(response.totalCount || incomingListings.length || 0);
+        setAllListings(incomingListings.map((item, idx) => {
+          let images = [];
+          try {
+            if (item.imageUrls) {
+              images = typeof item.imageUrls === 'string' ? JSON.parse(item.imageUrls) : item.imageUrls;
+            }
+          } catch (e) {
+            images = [];
+          }
+          // Support both Cloudinary and static fallback
+          let imageUrl = images[0]?.url || images[0] || marketplaceData.listings?.[idx % (marketplaceData.listings?.length || 1)]?.image || '';
+          return {
+            ...item,
+            image: imageUrl,
+            price: item.price ? parseFloat(item.price).toFixed(2) : '',
+            location: item.location || 'Unknown',
+            condition: item.condition || 'N/A',
+            seller: item.owner_username || item.seller || 'Anonymous'
+          };
+        }));
       } catch (e) {
         if (!cancelled) {
           console.error("Error loading marketplace data:", e);
-          setFeaturedListings([]);
-          setCategories((marketplaceData.categories || []));
+          setFeaturedListings(marketplaceData.featured || []);
+          setCategories(marketplaceData.categories || []);
           setAllListings([]);
         }
       }
     };
     load();
     return () => { cancelled = true; };
-  }, [searchQuery, selectedCategory, selectedCondition, selectedMake, sortBy, minPrice, maxPrice, currentPage, listingsPerPage]); // Re-run effect when filters change
+  }, [searchQuery, selectedCategory, selectedCondition, selectedMake, sortBy, minPrice, maxPrice, currentPage, listingsPerPage]);
 
 
 

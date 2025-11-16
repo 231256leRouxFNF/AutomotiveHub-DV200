@@ -387,10 +387,9 @@ app.put('/api/user/password', auth, async (req, res) => {
 app.get('/api/listings', async (req, res) => {
   try {
     const sql = `
-      SELECT l.*, u.username, u.display_name 
+      SELECT l.*, u.username
       FROM listings l
       JOIN users u ON l.userId = u.id
-      WHERE l.status = 'active'
       ORDER BY l.created_at DESC
     `;
     const [listings] = await db.promise().query(sql);
@@ -405,7 +404,7 @@ app.get('/api/listings/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const sql = `
-      SELECT l.*, u.username, u.display_name, u.email
+      SELECT l.*, u.username, u.email
       FROM listings l
       JOIN users u ON l.userId = u.id
       WHERE l.id = ?
@@ -425,8 +424,8 @@ app.get('/api/listings/:id', async (req, res) => {
 
 app.post('/api/listings', auth, async (req, res) => {
   try {
-    const { title, description, price, category, condition, images } = req.body;
-    
+    const { title, description, price, category, condition, year, make, model, mileage, location, imageUrls } = req.body;
+
     if (!title || !price || !category) {
       return res.status(400).json({ 
         success: false, 
@@ -435,18 +434,23 @@ app.post('/api/listings', auth, async (req, res) => {
     }
 
     const sql = `
-      INSERT INTO listings (userId, title, description, price, category, \`condition\`, images, status) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, 'active')
+      INSERT INTO listings (userId, title, description, price, category, \`condition\`, year, make, model, mileage, location, imageUrls)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
-    
+
     const [result] = await db.promise().query(sql, [
-      req.userId, 
-      title, 
-      description || '', 
-      price, 
-      category, 
+      req.userId,
+      title,
+      description || '',
+      price,
+      category,
       condition || 'used',
-      JSON.stringify(images || [])
+      year || null,
+      make || '',
+      model || '',
+      mileage || 0,
+      location || '',
+      imageUrls || '[]'
     ]);
 
     res.json({ 

@@ -6,12 +6,12 @@ const Listing = {};
 
 // Example: Create a new listing
 Listing.create = (listingData, callback) => {
-  const { id, userId, title, description, price, category, condition, year, make, model, mileage, location, imageUrls } = listingData;
+  const { userId, title, description, price, category, condition, year, make, model, mileage, location, imageUrls } = listingData;
   const sql = `
-    INSERT INTO listings (id, userId, title, description, price, category, condition, year, make, model, mileage, location, imageUrls)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO listings (userId, title, description, price, category, condition, year, make, model, mileage, location, imageUrls)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
-  const values = [id, userId, title, description, price, category, condition, year, make, model, mileage, location, imageUrls];
+  const values = [userId, title, description, price, category, condition, year, make, model, mileage, location, imageUrls];
   db.query(sql, values, callback);
 };
 
@@ -53,7 +53,12 @@ Listing.delete = (id, callback) => {
 
 // Generic query method for more complex queries
 Listing.query = (sql, values, callback) => {
-  db.query(sql, values, callback);
+  if (typeof callback === 'function') {
+    db.query(sql, values, callback);
+  } else {
+    // Promise-based query for async/await usage
+    return db.promise().query(sql, values);
+  }
 };
 
 module.exports = Listing;
