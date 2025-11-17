@@ -34,22 +34,33 @@ const ProfilePage = () => {
       try {
         let user;
         if (id) {
-          // Fetch public profile by ID
+          // Fetch public profile by ID. Backend may return the user object directly
+          // or a wrapped object. Normalize both shapes below.
           const response = await fetch(`/api/user/${id}/profile`);
           const data = await response.json();
-          user = data.success ? data.user : null;
+          // If backend returned { success: true, user: {...} } use data.user,
+          // otherwise assume response is the user object itself.
+          user = data && data.user ? data.user : data;
         } else {
-          // Fetch current user's profile
-          user = await userService.getProfile();
+          // Fetch current user's profile. userService.getProfile() returns
+          // response.data which may be { success: true, user: {...} }.
+          const profileResp = await userService.getProfile();
+          user = profileResp && profileResp.user ? profileResp.user : profileResp;
+        }
+        // Final safety: if still wrapped under `data` key, unwrap.
+        if (user && user.data && user.data.user) {
+          user = user.data.user;
         }
         setProfile(user);
 
-        // Fetch vehicles for this user
-        const userVehicles = user ? await garageService.getUserVehicles(user.id) : [];
-        setVehicles(userVehicles);
+        // Fetch vehicles and posts in parallel to reduce wait time
+        const [userVehicles, postsResp] = await Promise.all([
+          user ? garageService.getUserVehicles(user.id) : [],
+          socialService.getPosts()
+        ]);
+        setVehicles(userVehicles || []);
 
-        // Fetch posts for this user (from socialService, like CommunityFeed)
-        const response = await socialService.getPosts();
+        const response = postsResp;
         const realPosts = Array.isArray(response) ? response : (response.posts || []);
         // Filter and process posts for this user
         const userPosts = realPosts.filter(post => post.userId === user.id || post.user_id === user.id).map(post => ({
@@ -62,6 +73,7 @@ const ProfilePage = () => {
         }));
         setPosts(userPosts);
       } catch (error) {
+        console.error('Error fetching profile page data:', error);
       } finally {
         setLoading(false);
       }
@@ -69,58 +81,63 @@ const ProfilePage = () => {
     fetchData();
   }, [id]);
 
-  if (loading) return <div>Loading profile...</div>;
-  if (!profile) return <div>Profile not found.</div>;
+  // If fetch finished and no profile, show not found
+  if (!profile && !loading) return <div>Profile not found.</div>;
 
   // Show DM button if viewing another user's profile
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-  const isOwnProfile = !id || (currentUser && currentUser.id === profile.id);
+  const isOwnProfile = !id || (currentUser && currentUser.id === (profile && profile.id));
 
   return (
     <div className="profile-page">
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-        <h1 style={{ fontWeight: 700, fontSize: '2rem', color: '#2457d6', margin: 0 }}>{profile.username}'s Profile</h1>
-        {!isOwnProfile && (
-          <button className="dm-btn" style={{ background: '#2457d6', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 18px', fontWeight: 600, cursor: 'pointer' }} onClick={() => setDmOpen(true)}>
-            Send Message
-          </button>
-        )}
+      <div className="profile-header">
+        <img className="profile-avatar" src={profile?.profile_image || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile?.username || 'User')}&background=667eea&color=fff&size=128`} alt="avatar" />
+        <div className="profile-userinfo">
+          <div className="profile-username">
+            <h2>{profile?.username || (loading ? 'Loading…' : 'Unknown')}</h2>
+            <div className="profile-actions">
+              {isOwnProfile ? (
+                <button onClick={() => navigate('/settings')}>Edit Profile</button>
+              ) : (
+                <button onClick={() => setDmOpen(true)}>Message</button>
+              )}
+            </div>
+          </div>
+          <div className="profile-stats-list">
+            <span>{posts.length} posts</span>
+            <span>{profile?.followers || 0} followers</span>
+            <span>{profile?.following || 0} following</span>
+          </div>
+          <div className="profile-bio">
+            <div style={{ fontWeight: 600 }}>{profile?.display_name || ''}</div>
+            <div>{profile?.bio || profile?.email || ''}</div>
+          </div>
+        </div>
       </div>
-      <div className="profile-stats" style={{ display: 'flex', gap: '32px', marginBottom: 24 }}>
-        <span style={{ background: '#2457d6', color: '#fff', borderRadius: 6, padding: '6px 16px', fontWeight: 600 }}>Email: {profile.email}</span>
-        <span style={{ background: '#2457d6', color: '#fff', borderRadius: 6, padding: '6px 16px', fontWeight: 600 }}>Posts: {posts.length}</span>
-        <span style={{ background: '#2457d6', color: '#fff', borderRadius: 6, padding: '6px 16px', fontWeight: 600 }}>Vehicles: {vehicles.length}</span>
-      </div>
-      <h2 style={{ color: '#2457d6', fontWeight: 700 }}>Garage</h2>
+
+      <h2 style={{ color: '#2457d6', fontWeight: 700, marginTop: 8 }}>Garage</h2>
       <ul>
-        {vehicles.length === 0 ? <li style={{ background: '#f7f7f7', borderRadius: 6, padding: '10px 16px', color: '#2457d6', fontWeight: 600 }}>No vehicles in garage.</li> : vehicles.map(v => (
+        {vehicles.length === 0 ? <li style={{ background: '#f7f7f7', borderRadius: 6, padding: '10px 16px', color: '#2457d6', fontWeight: 600 }}>{loading ? 'Loading vehicles...' : 'No vehicles in garage.'}</li> : vehicles.map(v => (
           <li key={v.id} style={{ background: '#f7f7f7', borderRadius: 6, padding: '10px 16px', marginBottom: 8 }}>{v.make} {v.model} ({v.year})</li>
         ))}
       </ul>
-      <h2 style={{ color: '#2457d6', fontWeight: 700 }}>Posts</h2>
-      <div>
-        {posts.length === 0 ? (
-          <div style={{ background: '#f7f7f7', borderRadius: 6, padding: '10px 16px', color: '#2457d6', fontWeight: 600 }}>No posts yet.</div>
-        ) : (
-          posts.map(post => (
-            <div key={post.id} style={{ background: '#fff', borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.07)', marginBottom: 18, padding: 18 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <img src={post.profile_image} alt="avatar" style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', border: '2px solid #eee' }} />
-                <span style={{ fontWeight: 600, color: '#2457d6' }}>{post.username}</span>
-                <span style={{ color: '#888', fontSize: 13 }}>{post.created_at}</span>
-              </div>
-              <div style={{ marginTop: 10, marginBottom: 10 }}>{post.content}</div>
-              {post.image && (
-                <img src={post.image} alt="post" style={{ maxWidth: '100%', borderRadius: 8, cursor: 'pointer' }} onClick={() => setZoomedImage(post.image)} />
-              )}
+
+      <h2 style={{ color: '#2457d6', fontWeight: 700, marginTop: 20 }}>Posts</h2>
+      {posts.length === 0 ? (
+        <div style={{ background: '#f7f7f7', borderRadius: 6, padding: '10px 16px', color: '#2457d6', fontWeight: 600 }}>{loading ? 'Loading posts...' : 'No posts yet.'}</div>
+      ) : (
+        <div className="posts-grid">
+          {posts.map(post => (
+            <div key={post.id} className="post-item" onClick={() => setZoomedImage(post.image || post.image_url)}>
+              <img src={post.image || post.image_url} alt={`post-${post.id}`} />
             </div>
-          ))
-        )}
-        <ImageModal src={zoomedImage} alt="Post" onClose={() => setZoomedImage(null)} />
-      </div>
+          ))}
+        </div>
+      )}
+      <ImageModal src={zoomedImage} alt="Post" onClose={() => setZoomedImage(null)} />
 
       <Modal open={dmOpen} onClose={() => setDmOpen(false)}>
-        <h2>Send a Message to {profile.username}</h2>
+        <h2>Send a Message to {profile?.username || ''}</h2>
         <textarea value={dmText} onChange={e => setDmText(e.target.value)} rows={4} style={{ width: '100%', marginBottom: 8 }} placeholder="Type your message..." />
         <button style={{ background: '#2457d6', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 18px', fontWeight: 600, cursor: 'pointer' }} onClick={() => { setDmOpen(false); setDmText(''); alert('Message sent (demo only)!'); }}>Send</button>
       </Modal>

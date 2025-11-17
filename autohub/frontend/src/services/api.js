@@ -93,8 +93,8 @@ export const authService = {
 export const garageService = {
   getUserVehicles: async (userId) => {
     try {
-      // Try user-specific endpoint first
-      const response = await api.get(`/api/vehicles/user/${userId}`);
+      // Try backend's garage endpoint first (server exposes /api/garage/:userId)
+      const response = await api.get(`/api/garage/${userId}`);
       return response.data.vehicles || response.data || [];
     } catch (error) {
       // Fallback to getting all vehicles and filtering client-side
