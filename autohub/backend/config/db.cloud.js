@@ -21,6 +21,17 @@ console.log('Cloud Database Configuration:', {
   environment: process.env.NODE_ENV || 'production'
 });
 
-const pool = mysql.createPool({ host, user, password, database, port, waitForConnections: true, connectionLimit: 10, queueLimit: 0 });
+const pool = mysql.createPool({
+  host,
+  user,
+  password,
+  database,
+  port,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
+  connectTimeout: 20000, // 20 seconds
+  acquireTimeout: 20000  // 20 seconds
+});
 console.log(' Cloud DB pool created.');
 module.exports = pool;
