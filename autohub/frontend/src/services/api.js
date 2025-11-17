@@ -257,7 +257,8 @@ export const userService = {
   getProfile: async () => {
     try {
       const response = await api.get('/api/user/profile');
-      return response.data.user || null;
+      // Return the full response object so callers can inspect success/profile
+      return response.data;
     } catch (error) {
       throw error;
     }

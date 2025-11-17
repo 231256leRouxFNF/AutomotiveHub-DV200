@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import Header from '../components/Header';
 import marketplaceData from '../data/marketplace.json';
 import { listingService } from '../services/api'; // Import listingService
@@ -332,33 +332,35 @@ const Marketplace = () => {
             {allListings.map((listing) => {
               const isOwner = currentUser?.id === listing.userId || currentUser?.id === listing.user_id;
               return (
-                <div
-                  key={listing.id}
-                  className="listing-card"
-                  onClick={() => handleListingClick(listing.id)}
-                >
-                  <img src={listing.image} alt={listing.title} className="listing-image" />
-                  <div className="listing-content">
-                    <h3 className="listing-title">{listing.title}</h3>
-                    <div className="listing-price">R {listing.price}</div>
-                    <div className="listing-info">
-                      <div className="listing-location">📍 {listing.location}</div>
-                      <div className="listing-condition">🏷️ {listing.condition}</div>
+                <Link to={`/product/${listing.id}`} className="product-link">
+                  <div
+                    key={listing.id}
+                    className="listing-card"
+                    onClick={() => handleListingClick(listing.id)}
+                  >
+                    <img src={listing.image} alt={listing.title} className="listing-image" />
+                    <div className="listing-content">
+                      <h3 className="listing-title">{listing.title}</h3>
+                      <div className="listing-price">R {listing.price}</div>
+                      <div className="listing-info">
+                        <div className="listing-location">📍 {listing.location}</div>
+                        <div className="listing-condition">🏷️ {listing.condition}</div>
+                      </div>
+                      {(isOwner || isAdmin) && (
+                        <button
+                          className="delete-listing-btn"
+                          onClick={e => {
+                            e.stopPropagation();
+                            handleDeleteListing(listing.id);
+                          }}
+                          style={{marginTop: '12px', background: '#E8618C', color: '#fff', border: 'none', borderRadius: '6px', padding: '8px 16px', cursor: 'pointer'}}
+                        >
+                          Delete Listing
+                        </button>
+                      )}
                     </div>
-                    {(isOwner || isAdmin) && (
-                      <button
-                        className="delete-listing-btn"
-                        onClick={e => {
-                          e.stopPropagation();
-                          handleDeleteListing(listing.id);
-                        }}
-                        style={{marginTop: '12px', background: '#E8618C', color: '#fff', border: 'none', borderRadius: '6px', padding: '8px 16px', cursor: 'pointer'}}
-                      >
-                        Delete Listing
-                      </button>
-                    )}
                   </div>
-                </div>
+                </Link>
               );
             })}
           </div>

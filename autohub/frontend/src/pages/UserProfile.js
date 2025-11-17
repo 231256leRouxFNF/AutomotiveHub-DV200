@@ -10,12 +10,16 @@ const UserProfile = () => {
   const [profileError, setProfileError] = useState(null);
   const [stats, setStats] = useState({ totalVehicles: 0, featured: 0, upcomingEvents: 0 });
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     const load = async () => {
       setLoading(true);
       try {
         const me = authService.getCurrentUser();
+        console.log('Current User:', me); // Debugging current user
+
+        // If not logged in, show guest fallback
         if (!me) {
           setProfile({
             display_name: 'Guest',
@@ -23,70 +27,72 @@ const UserProfile = () => {
             email: '',
             bio: 'Sign in to personalize your profile.',
             location: '',
-            profile_image: ''
+            profile_image: null
           });
-          setLoading(false);
+          setProfileError(null);
           return;
         }
 
-        let p = null;
-        try {
-          const res = await userService.getProfile();
-          if (res && res.success && res.profile) {
-            p = res.profile;
-            setProfileError(null);
-          } else {
-            setProfileError('Profile not found');
-            p = null;
-          }
-        } catch (e) {
+        const res = await userService.getProfile();
+        console.log('Profile Response:', res); // Debugging profile response
+
+        if (res && res.success && res.profile) {
+          setProfile(res.profile);
+          setProfileError(null);
+        } else {
           setProfileError('Profile not found');
-          p = null;
+          setProfile(null);
         }
-        setProfile(p);
 
         try {
-          const s = await garageService.getGarageStats(me.id);
+          const s = await garageService.getGarageStats?.(me.id);
+          console.log('Garage Stats:', s); // Debugging garage stats
           setStats({
-            totalVehicles: Number(s.totalVehicles || 0),
-            featured: Number(s.featured || 0),
-            upcomingEvents: Number(s.upcomingEvents || 0)
+            totalVehicles: Number(s?.totalVehicles || 0),
+            featured: Number(s?.featured || 0),
+            upcomingEvents: Number(s?.upcomingEvents || 0)
           });
-        } catch {
+        } catch (err) {
+          console.error('Garage Stats Error:', err); // Debugging garage stats error
           setStats({ totalVehicles: 0, featured: 0, upcomingEvents: 0 });
         }
+      } catch (err) {
+        console.error('Profile Load Error:', err); // Debugging profile load error
+        setProfileError('Failed loading profile');
+        setProfile(null);
       } finally {
         setLoading(false);
       }
     };
+
     load();
   }, []);
 
   const handleAvatarChange = async (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
     try {
       const res = await userService.uploadAvatar(file);
-      setProfile((prev) => ({ ...prev, profile_image: res.profile_image }));
+      if (res && res.success && res.profile_image) {
+        setProfile((p) => ({ ...(p || {}), profile_image: res.profile_image }));
+      }
     } catch (err) {
-      alert('Failed to upload image');
+      console.error('Avatar upload failed', err);
+      alert('Failed to upload avatar');
     } finally {
       setUploading(false);
     }
   };
+
+  if (loading) return <p>Loading...</p>;
+  if (profileError) return <p style={{ color: 'red' }}>Error: {profileError}</p>;
 
   return (
     <div className="profile-page">
       <Header />
       <main className="profile-main">
         <h1 className="profile-title">My Profile</h1>
-
-        <div className="stats-row">
-          <StatCard icon={<span>🚗</span>} number={String(stats.totalVehicles)} label="Total Vehicles" />
-          <StatCard icon={<span>⭐</span>} number={String(stats.featured)} label="Featured" />
-          <StatCard icon={<span>📅</span>} number={String(stats.upcomingEvents)} label="Upcoming Events" />
-        </div>
 
         <div className="profile-grid">
           <aside className="profile-card">
@@ -96,6 +102,19 @@ const UserProfile = () => {
               ) : (
                 <span>👤</span>
               )}
+              <div style={{ marginTop: 8 }}>
+                <label htmlFor="avatar-upload" className="edit-profile-btn" style={{ cursor: 'pointer' }}>
+                  {uploading ? 'Uploading...' : 'Change Avatar'}
+                  <input
+                    id="avatar-upload"
+                    type="file"
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                    onChange={handleAvatarChange}
+                    disabled={uploading}
+                  />
+                </label>
+              </div>
             </div>
             <h2 className="profile-name">{profile?.display_name || 'Unnamed'}</h2>
             <div className="profile-username">@{profile?.username || 'user'}</div>
@@ -149,11 +168,6 @@ const UserProfile = () => {
             </div>
           </section>
         </div>
-
-        {loading && <div className="muted" style={{ marginTop: 16 }}>Loading profile…</div>}
-        {!loading && profileError && (
-          <div className="muted" style={{ marginTop: 16, color: 'red' }}>{profileError}</div>
-        )}
       </main>
       <Footer />
     </div>

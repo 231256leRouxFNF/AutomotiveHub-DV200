@@ -32,7 +32,7 @@ const db = require('./config/db');
 
 // Import route files
 const authRoutes = require('./routes/authRoutes');
-const userRoutes = require('./routes/userRoutes');
+// const userRoutes = require('./routes/userRoutes');
 // Import routes
 const vehicleRoutes = require('./routes/vehicleRoutes');
 const adminRoutes = require('./routes/adminRoutes');
@@ -102,7 +102,7 @@ const auth = (req, res, next) => {
 
 // Auth routes - MUST be before any other /api/auth routes
 app.use('/api/auth', authRoutes);
-app.use('/api/user', userRoutes);
+// app.use('/api/user', userRoutes);
 // Mount routes
 app.use('/api/vehicles', vehicleRoutes);
 app.use('/api/admin', adminRoutes);

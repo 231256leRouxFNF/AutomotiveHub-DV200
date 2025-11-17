@@ -13,6 +13,8 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import AdminPanel from './pages/AdminPanel';
 import ProfilePage from './pages/ProfilePage';
+import ProductPage from './pages/ProductPage';
+import UserProfile from './pages/UserProfile';
 
 // Simplified Analytics wrapper - removed GA tracking temporarily
 const AnalyticsWrapper = ({ children }) => {
@@ -39,6 +41,7 @@ function App() {
             <Route path="/" element={<CommunityFeed />} />
             <Route path="/community" element={<CommunityFeed />} />
             <Route path="/marketplace" element={<Marketplace />} />
+            <Route path="/product/:id" element={<ProductPage />} />
             <Route path="/garage" element={
               <ProtectedRoute>
                 <VehicleManagement />
@@ -51,6 +54,7 @@ function App() {
                 <AdminPanel />
               </ProtectedRoute>
             } />
+            <Route path="/profile" element={<UserProfile />} />
             <Route path="/profile/:id" element={<ProfilePage />} />
             <Route path="/listing/:id" element={<ListingDetails />} />
           </Routes>
