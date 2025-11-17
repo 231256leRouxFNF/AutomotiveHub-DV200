@@ -1,5 +1,3 @@
-
-
 # AutoHub — React Application
 
 ## Table Of Contents
@@ -26,11 +24,11 @@ AutoHub is a marketplace web application for buying and selling vehicles. The fr
 
 Frontend:
 
-- ![React](https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=white) ![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black) ![React Bootstrap](https://img.shields.io/badge/ReactBootstrap-6F42C1?style=for-the-badge&logo=react-bootstrap&logoColor=white) ![React Router](https://img.shields.io/badge/ReactRouter-CA4245?style=for-the-badge) ![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css3&logoColor=white) ![Axios](https://img.shields.io/badge/Axios-5A29E4?style=for-the-badge) ![MUI](https://img.shields.io/badge/Material_UI-007FFF?style=for-the-badge&logo=mui&logoColor=white)
+- ![React](https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=white) ![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&lo[...]
 
 Backend:
 
-- ![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=node.js&logoColor=white) ![Express.js](https://img.shields.io/badge/Express-000000?style=for-the-badge&logo=express&logoColor=white)
+- ![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=node.js&logoColor=white) ![Express.js](https://img.shields.io/badge/Express-000000?style=for-the-badge&logo=express&lo[...]
 
 Database:
 
@@ -69,17 +67,17 @@ If you need to connect to the local backend during development, start the backen
 
 ## Mockups & Design
 
-Design mockups and screenshots are stored in `../../documents/mock-ups` and have been copied into `autohub/frontend/public/images/` for quick preview below.
+Design mockups and screenshots are stored in `documents/mock-ups` and have been copied into `autohub/frontend/public/images/` for quick preview below.
 
 Screenshots / Mockups
 
-![Mockup — MacBook 13](./public/images/MacBook_13.jpg)
+![Mockup — MacBook 13](documents/mock-ups/MacBook_13.jpg)
 
-![Mockup — MacBook Air 15](./public/images/MacBook_Air_15.jpg)
+![Mockup — MacBook Air 15](documents/mock-ups/MacBook_Air_15.jpg)
 
-![Mockup — ZenBook Duo 14](./public/images/ZenBook_Duo_14.jpg)
+![Mockup — ZenBook Duo 14](documents/mock-ups/ZenBook_Duo_14.jpg)
 
-![Mockup — HP Elite Dragonfly](./public/images/HP_Elite_Dragonfly.jpg)
+![Mockup — HP Elite Dragonfly](documents/mock-ups/HP_Elite_Dragonfly.jpg)
 
 ## Acknowledgments
 
@@ -88,7 +86,7 @@ Screenshots / Mockups
 - **Bootstrapped with:** [Create React App](https://github.com/facebook/create-react-app)
 - **Icons & badges:** Shields.io, Simple Icons
 - **Design & mockups:** Original mockups copied from `documents/mock-ups`
--- **Other acknowledgements:** [Tsungai Katsuro](https://github.com/TsungaiKats), StackOverflow, Google Analytics & Gemini, Cloudinary, React Bits, MDN Web Docs, Material UI, React-Bootstrap, Render, Vercel, AWS
+-- **Other acknowledgements:** [Tsungai Katsuro](https://github.com/TsungaiKats), StackOverflow, Google Analytics & Gemini, Cloudinary, React Bits, MDN Web Docs, Material UI, React-Bootstrap, Render, [...]
 
 If you'd like specific contributor names or links added to this section, tell me which people/URLs to include and I will add them.
 
@@ -166,7 +164,7 @@ CLOUDINARY_URL=cloudinary://your_api_key:your_api_secret@your_cloud_name
 
 The project's database design is captured in the ER diagram below — open the linked PDF to view the full-size diagram and table relationships.
 
-![ER diagram](../../documents/ER-diagrams/ER_Diagram.svg)
+![ER diagram](documents/ER-diagrams/ER_Diagram.svg)
 
 
 ## Highlights and Challenges
