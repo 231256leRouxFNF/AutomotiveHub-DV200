@@ -1,8 +1,17 @@
 import axios from 'axios';
 import { trackUserAction } from '../services/analytics';
 
-// Use environment variable for API URL (supports both local and production)
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+// Determine API base URL:
+// - If `REACT_APP_API_URL` is set (recommended for deployments), use it.
+// - In development, default to localhost backend.
+// - In production (build) default to same origin (empty string) so relative `/api/...` calls work when frontend and backend are served together.
+const API_URL = process.env.REACT_APP_API_URL ?? (process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : '');
+
+// Warn if a production build is still configured to call localhost (common deploy mistake)
+if (process.env.NODE_ENV === 'production' && API_URL && API_URL.includes('localhost')) {
+  // eslint-disable-next-line no-console
+  console.warn('WARNING: Frontend is running in production but API_URL points to localhost. Set REACT_APP_API_URL to your backend URL in Vercel project settings.');
+}
 
 // ...existing code...
 
