@@ -24,11 +24,11 @@ AutoHub is a marketplace web application for buying and selling vehicles. The fr
 
 Frontend:
 
-- ![React](https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=white) ![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&lo[...]
+- ![React](https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=white) ![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black) ![React Bootstrap](https://img.shields.io/badge/ReactBootstrap-6F42C1?style=for-the-badge&logo=react-bootstrap&logoColor=white) ![React Router](https://img.shields.io/badge/ReactRouter-CA4245?style=for-the-badge) ![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css3&logoColor=white) ![Axios](https://img.shields.io/badge/Axios-5A29E4?style=for-the-badge) ![MUI](https://img.shields.io/badge/Material_UI-007FFF?style=for-the-badge&logo=mui&logoColor=white)
 
 Backend:
 
-- ![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=node.js&logoColor=white) ![Express.js](https://img.shields.io/badge/Express-000000?style=for-the-badge&logo=express&lo[...]
+- ![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=node.js&logoColor=white) ![Express.js](https://img.shields.io/badge/Express-000000?style=for-the-badge&logo=express&logoColor=white)
 
 Database:
 
@@ -71,13 +71,13 @@ Design mockups and screenshots are stored in `documents/mock-ups` and have been 
 
 Screenshots / Mockups
 
-![Mockup — MacBook 13](documents/mock-ups/MacBook_13.jpg)
+![Mockup — MacBook 13](autohub/frontend/public/images/MacBook_13.jpg)
 
-![Mockup — MacBook Air 15](documents/mock-ups/MacBook_Air_15.jpg)
+![Mockup — MacBook Air 15](autohub/frontend/public/images/MacBook_Air_15.jpg)
 
-![Mockup — ZenBook Duo 14](documents/mock-ups/ZenBook_Duo_14.jpg)
+![Mockup — ZenBook Duo 14](autohub/frontend/public/images/ZenBook_Duo_14.jpg)
 
-![Mockup — HP Elite Dragonfly](documents/mock-ups/HP_Elite_Dragonfly.jpg)
+![Mockup — HP Elite Dragonfly](autohub/frontend/public/images/HP_Elite_Dragonfly.jpg)
 
 ## Acknowledgments
 
