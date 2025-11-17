@@ -204,6 +204,12 @@ Distributed under the MIT License.
 - React docs: https://reactjs.org/
 - Backend API (local): `http://localhost:5000` (or whichever port your backend uses)
 
+
+##Future plans
+- Implement all pages
+- Implement following, unfollowing, liking, sharing, and commenting
+- Implementing messaging system
+  
 ## Contributing
 
 If you'd like to contribute, please:
