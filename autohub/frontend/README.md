@@ -1,70 +1,230 @@
-# Getting Started with Create React App
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
-## Available Scripts
+# AutoHub — React Application
 
-In the project directory, you can run:
+## Table Of Contents
 
-### `npm start`
+1. [About the Project](#about-the-project)
+2. [Built With](#built-with)
+3. [Getting Started](#getting-started)
+4. [Features and Usage](#features-and-usage)
+5. [Screenshots & Explanations](#screenshots--explanations)
+6. [Demonstration Video](#demonstration-video)
+7. [Architecture / System Design](#architecture--system-design)
+8. [Testing](#testing)
+9. [Highlights and Challenges](#highlights-and-challenges)
+10. [Roadmap](#roadmap--future-improvements)
+11. [Contributing and License](#contributing-and-license)
+12. [Authors and Contact Info](#authors-and-contact-info)
+13. [Acknowledgements](#acknowledgements)
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+## About the Project
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+AutoHub is a marketplace web application for buying and selling vehicles. The frontend is decoupled from the backend and focused on modularity and scalability.
 
-### `npm test`
+### Built With
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+Frontend:
 
-### `npm run build`
+- ![React](https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=white) ![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black) ![React Bootstrap](https://img.shields.io/badge/ReactBootstrap-6F42C1?style=for-the-badge&logo=react-bootstrap&logoColor=white) ![React Router](https://img.shields.io/badge/ReactRouter-CA4245?style=for-the-badge) ![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css3&logoColor=white) ![Axios](https://img.shields.io/badge/Axios-5A29E4?style=for-the-badge) ![MUI](https://img.shields.io/badge/Material_UI-007FFF?style=for-the-badge&logo=mui&logoColor=white)
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+Backend:
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+- ![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=node.js&logoColor=white) ![Express.js](https://img.shields.io/badge/Express-000000?style=for-the-badge&logo=express&logoColor=white)
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+Database:
 
-### `npm run eject`
+- ![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=for-the-badge&logo=mysql&logoColor=white)
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+Authentication:
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+- ![bcrypt](https://img.shields.io/badge/bcrypt-4EAA25?style=for-the-badge) ![JWT](https://img.shields.io/badge/JWT-000000?style=for-the-badge)
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+File Storage:
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+- ![Cloudinary](https://img.shields.io/badge/Cloudinary-2F5FFF?style=for-the-badge&logo=cloudinary&logoColor=white)
 
-## Learn More
+Middleware:
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+- ![Multer](https://img.shields.io/badge/Multer-0E76A8?style=for-the-badge) ![CORS](https://img.shields.io/badge/CORS-6C63FF?style=for-the-badge)
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+Config:
 
-### Code Splitting
+- ![Dotenv](https://img.shields.io/badge/Dotenv-000000?style=for-the-badge)
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+## Getting started (development)
 
-### Analyzing the Bundle Size
+From this directory (`autohub/frontend`) run the usual Create React App commands using PowerShell or another shell:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+```pwsh
+npm install
+npm start
+```
 
-### Making a Progressive Web App
+- `npm start` — Runs the app in development mode at `http://localhost:3000`.
+- `npm test` — Runs the test watcher.
+- `npm run build` — Builds the production bundle into the `build/` folder.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+If you need to connect to the local backend during development, start the backend from `autohub/backend` (see that folder for run instructions).
 
-### Advanced Configuration
+## Mockups & Design
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+Design mockups and screenshots are stored in `../../documents/mock-ups` and have been copied into `autohub/frontend/public/images/` for quick preview below.
 
-### Deployment
+Screenshots / Mockups
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+![Mockup — MacBook 13](./public/images/MacBook_13.jpg)
 
-### `npm run build` fails to minify
+![Mockup — MacBook Air 15](./public/images/MacBook_Air_15.jpg)
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+![Mockup — ZenBook Duo 14](./public/images/ZenBook_Duo_14.jpg)
+
+![Mockup — HP Elite Dragonfly](./public/images/HP_Elite_Dragonfly.jpg)
+
+## Acknowledgments
+
+- **Project lead & repository owner:** 231256leRouxFNF
+- **Contributed format & reference content:** Kai Barker – ReadyUP
+- **Bootstrapped with:** [Create React App](https://github.com/facebook/create-react-app)
+- **Icons & badges:** Shields.io, Simple Icons
+- **Design & mockups:** Original mockups copied from `documents/mock-ups`
+-- **Other acknowledgements:** [Tsungai Katsuro](https://github.com/TsungaiKats), StackOverflow, Google Analytics & Gemini, Cloudinary, React Bits, MDN Web Docs, Material UI, React-Bootstrap, Render, Vercel, AWS
+
+If you'd like specific contributor names or links added to this section, tell me which people/URLs to include and I will add them.
+
+
+
+
+## Getting Started
+
+### Prerequisites
+- Node.js (v18 or newer)
+- npm
+- MySQL (local instance like XAMPP, or hosted)
+- Git
+
+### How to Install
+
+This project is divided into a `frontend` and `backend` directory. Open two terminals to run them.
+
+Clone the repository:
+
+```pwsh
+git clone <your-repo-url>
+cd autohub/frontend
+npm install
+npm start
+```
+
+Open a second terminal for the backend:
+
+```pwsh
+cd autohub/backend
+npm install
+npm start
+```
+
+Example environment variables (frontend):
+
+```
+# This tells your React app where to send API requests
+REACT_APP_API_URL=http://localhost:5000
+```
+
+Example backend `.env` values:
+
+```
+DB_HOST=your_db_host
+DB_USER=your_db_username
+DB_PASS=your_db_password
+DB_NAME=your_database_name
+
+JWT_SECRET=your_super_secret_key_for_jwt
+
+CLOUDINARY_URL=cloudinary://your_api_key:your_api_secret@your_cloud_name
+```
+
+## Features and Usage
+
+- User authentication (bcrypt + JWT)
+- Browse listings, filter, search, and paginate
+- Create, edit, and delete vehicle listings (images via Cloudinary)
+- User profiles with social/contact links
+- Add / remove followers or friends
+- Admin panel for categories and post moderation
+- Responsive UI with Bootstrap and custom CSS
+
+## Architecture / System Design
+
+- Frontend: Renders UI, manages client state, and communicates with backend APIs. (Deployed on Vercel in previous setups)
+- Backend: Authenticates users, processes business logic, and interacts with MySQL DB. (Can be deployed on Render)
+- Database: MySQL storing users, listings, categories, friendships and joins.
+- External services: Cloudinary for media storage.
+
+
+### Database ER Diagram
+
+The project's database design is captured in the ER diagram below — open the linked PDF to view the full-size diagram and table relationships.
+
+![ER diagram](../../documents/ER-diagrams/ER_Diagram.svg)
+
+
+## Highlights and Challenges
+
+### Highlights
+- Implemented JWT-based auth and role-based admin controls
+- Implemented Cloudinary uploads
+
+### Challenges
+- Deploying and configuring environment variables
+- Handling media uploads and deleting orphaned Cloudinary images
+- Synchronizing React state across components
+- Implementing all the pages for such app (W.I.P.)
+
+## Contributing and License
+
+To contribute:
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature-name`
+3. Commit your changes: `git commit -am 'Add feature'`
+4. Push to the branch: `git push origin feature-name`
+5. Open a pull request
+
+### License
+
+Distributed under the MIT License.
+
+## Authors and Contact Info
+
+- 231256leRouxFNF — repository owner
+- 231256@virtualwindow.co.za
+
+
+## Useful links
+- Create React App docs: https://facebook.github.io/create-react-app/docs/getting-started
+- React docs: https://reactjs.org/
+- Backend API (local): `http://localhost:5000` (or whichever port your backend uses)
+
+## Contributing
+
+If you'd like to contribute, please:
+
+1. Fork the repo and create a feature branch.
+2. Run `npm install` and start the app locally.
+3. Open a pull request describing your changes.
+
+### Acknowledgements
+
+Special thanks to the following projects and contributors:
+
+- [Tsungai Katsuro](https://github.com/TsungaiKats) 
+- [dbdiagram.io](https://dbdiagram.io) for the ER Diagram 
+- Google Analytics & Gemini
+- React Bits (for the awesome cursor)
+- Material UI
+- React-Bootstrap
+- Render for hosting the backend
+- Vercel for hosting the frontend
+- Google Cloud for hosting the Autohub_db
+- Cloudinary for hosting the presets of the posts, garage images, etc
